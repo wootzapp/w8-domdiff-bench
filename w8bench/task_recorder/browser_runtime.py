@@ -98,11 +98,8 @@ CDP_HOST_PORT={values['CDP_HOST_PORT']}
 NOVNC_HOST_PORT={values['NOVNC_HOST_PORT']}
 VNC_HOST_PORT={values['VNC_HOST_PORT']}
 
-# Google credentials: actors, rubrics, completion, native verifiers and inventory.
-# OpenAI credentials: audit adjudication.
-OPENAI_API_KEY={values['OPENAI_API_KEY']}
+# Google credentials: actors, rubrics, completion, native verifiers and evidence audit.
 ACTOR_MODEL={values['ACTOR_MODEL']}
-OPENAI_BASE_URL={values.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')}
 GEMINI_BASE_URL={values.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')}
 W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
 TASK_CATALOG_FILE={values.get('TASK_CATALOG_FILE', '')}
@@ -133,13 +130,9 @@ def _configuration_values(existing: dict, defaults: dict, suffix: str, container
         "CDP_HOST_PORT": str(cdp_port),
         "NOVNC_HOST_PORT": str(novnc_port),
         "VNC_HOST_PORT": str(vnc_port),
-        "OPENAI_API_KEY": existing.get(
-            "OPENAI_API_KEY", "replace-with-your-openai-api-key"
-        ),
         "ACTOR_MODEL": existing.get(
             "ACTOR_MODEL", defaults["ACTOR_MODEL"]
         ),
-        "OPENAI_BASE_URL": existing.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
         "GEMINI_BASE_URL": existing.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
         "TASK_CATALOG_FILE": existing.get("TASK_CATALOG_FILE", defaults.get("TASK_CATALOG_FILE", "")),
         "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
@@ -174,7 +167,7 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
     write_env(env_path, values)
     print(f"Created conflict-free w8-core configuration: {env_path}")
     print_runtime_urls(values)
-    print("Set OPENAI_API_KEY and GEMINI_API_KEY credentials before running the benchmark.")
+    print("Set GEMINI_API_KEY credentials before running the benchmark.")
     return 0
 
 

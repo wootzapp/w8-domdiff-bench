@@ -4,7 +4,8 @@ import logging
 from datetime import datetime, timezone
 from string import Template
 from typing import Any, Dict, List, Optional
-import openai
+import httpx
+from google.genai import errors
 
 from .models import TaskAgentResult
 from .clients.providers import ChatCompletionClient
@@ -14,7 +15,7 @@ DEFAULT_SYSTEM_MESSAGES: List[Dict[str, str]] = [
     {"role": "system", "content": "You are a helpful AI assistant."}
 ]
 
-MAX_LLM_RETRIES = 5
+MAX_LLM_RETRIES = 2
 
 _REQUIRED_FIELDS: Dict[str, type] = {
     "reasoning_is_ambiguous": str,
@@ -44,10 +45,9 @@ async def _call_llm(
             messages=messages,
             json_output=json_output if supports_json else False,
         )
-    except openai.AuthenticationError as error:
-        raise UngradedVerifierError("authentication", f"{type(error).__name__}: {error}") from error
-    except openai.BadRequestError as error:
-        if "check-access-response-enc" in str(error):
+    except (errors.APIError, httpx.HTTPStatusError) as error:
+        code = getattr(error, "code", None) or getattr(getattr(error, "response", None), "status_code", None)
+        if code in (401, 403):
             raise UngradedVerifierError("authentication", f"{type(error).__name__}: {error}") from error
         raise
     content = result.content

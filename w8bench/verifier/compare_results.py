@@ -13,6 +13,7 @@ from w8bench.task_recorder.recorder_support import write_json
 from .run_metrics import summarize
 from .paired_metrics import validate_completion_policy_versions, validate_recorded_settings
 from w8bench.settings import normalized_settings, require_same_settings
+from w8bench.usage import valid_token_component
 
 def _validate_recording_pair(dom, screenshot):
     for recording, mode in ((dom, "dom"), (screenshot, "screenshot")):
@@ -103,13 +104,24 @@ def compare(dom: dict[str, Any], screenshot: dict[str, Any], *, allow_nonfresh: 
         "both_successful": both_success,
         "successful_pair_turn_delta": summaries["screenshot"]["model_turns"] - summaries["dom"]["model_turns"] if both_success else None}
     lines = [f"# {receipt['task_id']}: independent actor runs", "",
-        "| Mode | Completion | Actor turns | Rejected | Stall advisories | Actions | Actor seconds | Tokens |",
+        "| Mode | Completion | Actor turns | Rejected | Stall advisories | Actions | Actor seconds | Actor-only tokens |",
         "|---|---|---:|---:|---:|---:|---:|---:|"]
     for mode, row in summaries.items():
         tokens = str(row["token_usage"]["total_tokens"]) + (" (incomplete)" if row["turns_missing_usage"] else "")
         lines.append(f"| {mode} | {row['completion']['verdict']} | {row['model_turns']} | {row['rejected_turns']} | {row['stall_advisory_matches']} | {row['action_attempts']} | {row['actor_latency_seconds']:.3f} | {tokens} |")
+    lines += ["", "| Mode | Actor-only tokens (known) | Matching native verifier | Matching-verifier tokens (known) | Actor + matching-verifier tokens | Coverage |",
+        "|---|---:|---|---:|---:|---|"]
+    for mode, row in summaries.items():
+        arm = row["arm_token_usage"]
+        actor = arm["actor_usage"]["total_tokens"]
+        native = arm["matching_verifier_usage"]["total_tokens"]
+        combined, lower = arm["usage"]["total_tokens"], arm["known_usage_lower_bound"]["total_tokens"]
+        displayed = str(combined) if valid_token_component(combined) else f"≥ {lower}" if valid_token_component(lower) else "unknown"
+        lines.append(f"| {mode} | {actor if valid_token_component(actor) else 'unknown'} | {arm['matching_verifier']} | {native if valid_token_component(native) else 'unknown'} | {displayed} | {arm['coverage']} |")
     lines += ["", f"Browser profiles: {'nonfresh override used for ' + ', '.join(profile_policy['nonfresh_arms']) if profile_policy['override_used'] else 'verified fresh launches'}.",
         "", "Turns include rejected proposals, malformed responses and termination. Judge calls are excluded.",
+        "Arm tokens include the actor and its matching native verifier; both native verifiers execute and all judge cost streams remain separate.",
+        "Component columns show known recorded usage; ≥ marks a lower bound. Tokens per turn remain actor-only.",
         "Cached input and reasoning tokens are subsets of input/output usage; they are not added again.",
         "A successful-pair efficiency comparison is available only when both independently graded runs succeed."]
     return receipt, "\n".join(lines) + "\n"

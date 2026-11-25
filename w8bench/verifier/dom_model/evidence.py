@@ -564,7 +564,14 @@ class DomModelRubricAgent(MMRubricAgent):
                 messages.append(
                     {
                         "role": "user",
-                        "content": f"Error: {exc}. Include every required field with the correct type.",
+                        "content": (
+                            f"Error: {exc}. Include every required field with the correct type. "
+                            "The first line of criterion_analysis must be exactly EVIDENCE_STATUS: "
+                            "SUPPORTED, PARTIAL, CONTRADICTED, or UNKNOWN, with explanation on the next "
+                            "line encoded as \\n in JSON. Cite the actual DOM_MODEL_STATE_INDEX in "
+                            "dom_model_evidence. Required strings must be nonempty; use 'None.' for "
+                            "discrepancies only when no mismatch was found."
+                        ),
                     }
                 )
                 remaining -= 1
@@ -832,7 +839,16 @@ class DomModelRubricAgent(MMRubricAgent):
                 messages.append(
                     {
                         "role": "user",
-                        "content": f"Error: {exc}. Return exactly {len(criterion_indices)} ordered analysis entries with every required field.",
+                        "content": (
+                            f"Error: {exc}. Return exactly {len(criterion_indices)} ordered entries "
+                            f"for criterion indices {criterion_indices}. The first line of each "
+                            "criterion_analysis must be exactly EVIDENCE_STATUS: SUPPORTED, PARTIAL, "
+                            "CONTRADICTED, or UNKNOWN; put explanation on the next line encoded as \\n "
+                            "in JSON. Cite the actual DOM_MODEL_STATE_INDEX in dom_model_evidence. "
+                            "All required strings must be nonempty; use 'None.' for discrepancies "
+                            "only when no mismatch was found. Include boolean environment_issues_confirmed "
+                            "and condition_verification for conditional criteria."
+                        ),
                     }
                 )
                 remaining -= 1

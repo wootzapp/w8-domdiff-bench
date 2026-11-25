@@ -123,7 +123,7 @@ def _audit_protocol(value):
             raise ValueError(f"Generation settings must be an object for {stage}")
         requested, actual = setting.get("requested"), setting.get("actual")
         provider = setting.get("provider")
-        if provider not in {"google", "openai"} or "api_version" not in setting:
+        if provider != "google" or "api_version" not in setting:
             raise ValueError(f"Missing or inconsistent provider/API version for {stage}")
         if not isinstance(requested, dict) or not requested or not isinstance(actual, list) or not actual:
             raise ValueError(f"Actual generation settings are required for {stage}")

@@ -82,7 +82,7 @@ def test_unicode_writers_escape_lone_surrogates_and_keep_valid_unicode(tmp_path,
 
 def test_failure_health_and_interruption_receipts_are_redacted(monkeypatch, tmp_path):
     from types import SimpleNamespace
-    monkeypatch.setenv('OPENAI_API_KEY','secret-health-marker')
+    monkeypatch.setenv('GEMINI_API_KEY','secret-health-marker')
     monkeypatch.setattr(runner,'subprocess',SimpleNamespace(run=lambda *a, **k:SimpleNamespace(returncode=0,stdout='secret-health-marker',stderr='')),raising=False)
     monkeypatch.setattr(runner,'generate_trajectory_artifacts',lambda _: {'status':'complete'})
     manifest={'steps':[],'states':[],'model_turns':0,'browser_profile_provenance':{'container_id':'a'*64}}

@@ -57,7 +57,7 @@ def runs(tmp_path, *, k, flagged=None):
                 stage: {"provider": provider, "api_version": version, "requested": deepcopy(settings),
                         "actual": [deepcopy(settings)], "injected_complete": False}
                 for stage, provider, version, settings in (
-                    ("inventory", "openai", None, audit.OPENAI_GENERATION_SETTINGS),
+                    ("inventory", "google", "v1beta", audit.GEMINI_GENERATION_SETTINGS),
                     ("adjudication", "google", "v1beta", audit.GEMINI_GENERATION_SETTINGS))
             }
             evidence = tmp_path / "evidence" / task_id
@@ -294,7 +294,7 @@ def test_evaluation_join_checks_identity_and_keeps_four_directional_metrics(run_
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen",
         "coverage": {"audit_eligible_states": [1]}, "stages": {"audit": {"status": "complete", "metrics": metrics,
-        "calls": [{"stage": "inventory", "requested_model": "gpt-6.1-sol", "usage": {"prompt_tokens": 11, "completion_tokens": 7,
+        "calls": [{"stage": "inventory", "requested_model": "gemini-4-argon", "usage": {"prompt_tokens": 11, "completion_tokens": 7,
             "completion_tokens_details": {"reasoning_tokens": 5}}}]}}}
     root.mkdir(parents=True)
     write_json(root / "evaluation.json", evaluation)
@@ -317,7 +317,26 @@ def test_aggregate_distributions_categories_and_missing_audit_coverage(run_pair)
     other = copy.deepcopy(pair)
     other.update(task_id="hard_task", difficulty="hard")
     other["dom"]["token_usage"]["input_tokens"] = 120
+    other["dom"]["token_usage"]["total_tokens"] = 160
     other["dom"]["tokens_per_turn"]["input_tokens"].update(tokens=120, known_usage_mean=30, mean=30)
+    pair["dom"]["arm_token_usage"] = {
+        "policy": "actor-plus-matching-verifier/v1", "matching_verifier": "dom_model",
+        "actor_usage": {"input_tokens": 80, "output_tokens": 40, "total_tokens": 120},
+        "matching_verifier_usage": {"input_tokens": 10, "output_tokens": 4, "total_tokens": 14},
+        "usage": {"input_tokens": 90, "output_tokens": 44, "total_tokens": 134},
+        "known_usage_lower_bound": {"input_tokens": 90, "output_tokens": 44, "total_tokens": 134},
+        "coverage": "complete", "matching_verifier_status": "complete",
+        "included_streams": ["actor", "dom_model"], "excluded_judge_streams": ["screenshot_verifier"]}
+    other["dom"]["arm_token_usage"] = {
+        **copy.deepcopy(pair["dom"]["arm_token_usage"]),
+        "actor_usage": {"input_tokens": 120, "output_tokens": 40, "total_tokens": 160},
+        "matching_verifier_usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
+        "usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
+        "known_usage_lower_bound": {"input_tokens": 120, "output_tokens": 40, "total_tokens": 160},
+        "coverage": "partial", "matching_verifier_status": "batch_pending"}
+    pair["dom"]["judge_usage_streams"]["screenshot_verifier"] = {
+        "calls": 1, "usage": {"input_tokens": 9000, "output_tokens": 1000, "total_tokens": 10000},
+        "usage_coverage": "complete"}
     pair["dom"]["evidence_audit"] = {"screenshot_evidence_loss": {"count": 1, "denominator": 4, "rate": .25}}
     pair["dom"]["evidence_audit_status"] = "complete"
     result = aggregate([pair, other])
@@ -330,6 +349,19 @@ def test_aggregate_distributions_categories_and_missing_audit_coverage(run_pair)
         "count": 1, "denominator": 4, "rate": .25, "audited_runs": 1, "attempted_runs": 2}
     assert result["modes"]["screenshot"]["evidence_audit"]["screenshot_evidence_loss"]["rate"] is None
     assert len(result["audit_by_task_trial"]) == 2
+    arm = result["modes"]["dom"]["arm_token_usage"]
+    assert arm["usage"] == {"input_tokens": None, "output_tokens": None, "total_tokens": None}
+    assert arm["known_usage_lower_bound"] == {"input_tokens": 210, "output_tokens": 84, "total_tokens": 294}
+    assert arm["actor_usage"]["total_tokens"] == 280 and arm["matching_verifier_usage"]["total_tokens"] == 14
+    assert arm["complete_runs"] == 1 and arm["coverage"] == "partial"
+    assert arm["distributions"]["total_tokens"] == {
+        "known_runs": 1, "attempted_runs": 2, "mean": 134, "median": 134, "min": 134, "max": 134, "values": [134]}
+    assert result["categories"]["medium"]["dom"]["arm_token_usage"]["usage"]["total_tokens"] == 134
+    assert result["categories"]["hard"]["dom"]["arm_token_usage"]["usage"]["total_tokens"] is None
+    assert result["per_task"]["medium_task"]["dom"]["arm_token_usage"]["usage"]["total_tokens"] == 134
+    assert result["per_task"]["hard_task"]["dom"]["arm_token_usage"]["known_usage_lower_bound"]["total_tokens"] == 160
+    assert result["modes"]["screenshot"]["arm_token_usage"]["matching_verifier_usage"]["total_tokens"] is None
+    assert result["modes"]["dom"]["judge_usage_streams"]["screenshot_verifier"]["usage"]["total_tokens"] == 10000
 
 @pytest.mark.usefixtures("no_network")
 def test_difficulty_groups_keep_easy_separate_from_unknown(run_pair):
@@ -748,7 +780,7 @@ def test_audit_aggregation_compares_effective_stage_contracts(tmp_path, change):
                 "schema_version": "effective-settings/v1", "rubric_sha256": value["frozen_rubric_sha256"],
                 "browser_source": {"overlay_revision": "overlay-one"},
                 "stages": {"inventory": {"model": "gemini-3.1-pro-preview", "prompt_sha256": "prompt-one", "base_url": "https://judge.example:443/v1"},
-                           "adjudication": {"model": "gpt-6.1-sol", "max_output_tokens": None}},
+                           "adjudication": {"model": "gemini-4-argon", "max_output_tokens": None}},
             }
             write_json(path, value)
     selected = roots[1] / "task_01" / "evidence_audit.json"
@@ -847,7 +879,7 @@ def test_audit_aggregation_requires_explicit_nonfresh_override(tmp_path):
         "override_used": True, "nonfresh_recordings": 1}
 
 
-@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gemini-3.6-flash',.75,3.75),('gpt-6.1-sol',2,10)])
+@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gemini-3.6-flash',.75,3.75),('gemini-4-argon',2,10)])
 def test_batch_judge_cost_and_unknown_attempt_usage(model,pin,pout):
     from w8bench.verifier.run_metrics import _price_stream
     def stream(mode):

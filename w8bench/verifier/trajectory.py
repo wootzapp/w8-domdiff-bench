@@ -79,7 +79,7 @@ def parse_text_based_event(event: Dict) -> Dict | None:
 class Trajectory:
     _has_screenshots = False
 
-    def __init__(self, path, gpt_solver=False, skip_web_surfer_log=False):
+    def __init__(self, path, skip_web_surfer_log=False):
         self.path = Path(path)
         if skip_web_surfer_log:
             self.events = []
@@ -102,9 +102,9 @@ class Trajectory:
             with open(metadata_path, 'r') as stream:
                 metadata = json.load(stream)
                 self.is_action = metadata.get("is_action", False)
-        self._normalize_events(gpt_solver)
+        self._normalize_events()
 
-    def _normalize_events(self, gpt_solver):
+    def _normalize_events(self):
         has_structured_events = any((e.get('action') is not None for e in self.events))
         if not has_structured_events and self.events:
             parsed_events = []
@@ -113,17 +113,9 @@ class Trajectory:
                 if parsed:
                     parsed_events.append(parsed)
             self.events = parsed_events
-        if gpt_solver:
-            self.events = [e for e in self.events if e.get('source', None) == 'WebSurfer' and e.get('action', None) is not None]
-            for event in self.events:
-                if event.get('action') and 'arguments' in event and isinstance(event['arguments'], dict):
-                    event['arguments']['action'] = remap_action_names(event['action'])
-            self.actions = []
-            self.thoughts = []
-        else:
-            self.actions = [e['arguments'] for e in self.events if e.get('action', None) is not None]
-            self.thoughts = [a['thoughts'] for a in self.actions]
-            self.actions = [json.dumps({k: v for k, v in a.items() if k != 'thoughts'}) for a in self.actions]
+        self.actions = [e['arguments'] for e in self.events if e.get('action', None) is not None]
+        self.thoughts = [a['thoughts'] for a in self.actions]
+        self.actions = [json.dumps({k: v for k, v in a.items() if k != 'thoughts'}) for a in self.actions]
 
     @property
     def is_aborted(self):

@@ -25,7 +25,7 @@ import importlib
 import io
 import json
 import logging
-import openai
+from google.genai import errors as google_errors
 import pytest
 
 
@@ -41,8 +41,8 @@ def test_task_serialization_preserves_identity_and_instruction(mode):
 
 
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
-def test_wrapper_accepts_openai_dicts_without_conversion(mode):
-    from w8bench.verifier.clients.providers import _to_oai_messages
+def test_wrapper_converts_evidence_messages(mode):
+    from w8bench.verifier.clients.providers import _to_gemini_messages
     parts = [{"type": "text", "text": "score the DOM-model state"}]
     if mode == "screenshot_verifier":
         buf = io.BytesIO()
@@ -52,7 +52,12 @@ def test_wrapper_accepts_openai_dicts_without_conversion(mode):
                  {"type": "text", "text": "score the image"}]
     messages = [{"role": "system", "content": "You are a helpful AI assistant."},
                 {"role": "user", "content": parts}]
-    assert _to_oai_messages(messages, evidence_mode=mode) == messages
+    converted = _to_gemini_messages(messages, evidence_mode=mode)
+    assert converted[0] == {"role": "system", "parts": [{"text": "You are a helpful AI assistant."}]}
+    assert converted[1]["role"] == "user"
+    assert converted[1]["parts"][-1] == {"text": "score the image" if mode == "screenshot_verifier" else "score the DOM-model state"}
+    if mode == "screenshot_verifier":
+        assert converted[1]["parts"][0] == {"inline_data": {"mime_type": "image/png", "data": buf.getvalue()}}
 
 
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
@@ -92,30 +97,30 @@ def test_mm_rubric_agent_accepts_client_instance(mode):
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
-def test_message_to_openai_format_text_only(mode):
-    from w8bench.verifier.clients import SystemMessage, UserMessage, message_to_openai_format
+def test_message_to_gemini_format_text_only(mode):
+    from w8bench.verifier.clients import SystemMessage, UserMessage, message_to_gemini_format
 
-    assert message_to_openai_format(SystemMessage(content="hi"), evidence_mode=mode) == {
+    assert message_to_gemini_format(SystemMessage(content="hi"), evidence_mode=mode) == {
         "role": "system",
-        "content": "hi",
+        "parts": [{"text": "hi"}],
     }
-    assert message_to_openai_format(UserMessage(content="ping"), evidence_mode=mode) == {
+    assert message_to_gemini_format(UserMessage(content="ping"), evidence_mode=mode) == {
         "role": "user",
-        "content": "ping",
+        "parts": [{"text": "ping"}],
     }
 
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
-def test_message_to_openai_format_text_parts():
-    from w8bench.verifier.clients import UserMessage, message_to_openai_format
+def test_message_to_gemini_format_text_parts():
+    from w8bench.verifier.clients import UserMessage, message_to_gemini_format
 
     msg = UserMessage(content=["look", {"type": "text", "text": "DOM state"}])
-    out = message_to_openai_format(msg, evidence_mode='dom_model')
+    out = message_to_gemini_format(msg, evidence_mode='dom_model')
     assert out["role"] == "user"
-    parts = out["content"]
+    parts = out["parts"]
     assert len(parts) == 2
-    assert parts[0] == {"type": "text", "text": "look"}
-    assert parts[1] == {"type": "text", "text": "DOM state"}
+    assert parts[0] == {"text": "look"}
+    assert parts[1] == {"text": "DOM state"}
 
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
@@ -125,13 +130,13 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path, mode):
 
     cfg_dir = tmp_path / "configs"
     cfg_dir.mkdir()
-    # Two configs: one gpt-4o, one gemini-3.8-flash.
+    # Two Google model configurations.
     (cfg_dir / "a.json").write_text(
         json.dumps(
             {
-                "CHAT_COMPLETION_PROVIDER": "openai",
+                "CHAT_COMPLETION_PROVIDER": "google",
                 "CHAT_COMPLETION_KWARGS_JSON": {
-                    "model": "gpt-4o",
+                    "model": "gemini-3.1-pro-preview",
                     "api_key": "sk-test",
                 },
             }
@@ -153,9 +158,9 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path, mode):
 
     logger = logging.getLogger(__name__)
 
-    g4o = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gpt-4o", evidence_mode=mode)
-    assert len(g4o._clients) == 1
-    assert "gpt-4o" in g4o._clients[0].description
+    native = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gemini-3.1-pro-preview", evidence_mode=mode)
+    assert len(native._clients) == 1
+    assert "gemini-3.1-pro-preview" in native._clients[0].description
 
     action = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gemini-3.8-flash", evidence_mode=mode)
     assert len(action._clients) == 1
@@ -170,40 +175,36 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path, mode):
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
-def test_openai_wrapper_create_round_trip(monkeypatch, mode):
-    """Stub the OpenAI client and verify .create() returns a CreateResult
+def test_gemini_wrapper_create_round_trip(monkeypatch, mode):
+    """Stub the Google client and verify .create() returns a CreateResult
     with text content and updated usage."""
-    from w8bench.verifier.clients import UserMessage, OpenAIClientWrapper
+    from w8bench.verifier.clients import UserMessage, GeminiClientWrapper
 
     captured = {}
 
-    async def fake_chat_create(**kwargs):
+    async def fake_generate(**kwargs):
         captured["kwargs"] = kwargs
-        message = SimpleNamespace(content="hi there", tool_calls=None)
-        choice = SimpleNamespace(message=message, finish_reason="stop")
-        usage = SimpleNamespace(
-            prompt_tokens=12,
-            completion_tokens=3,
-            completion_tokens_details=None,
-        )
-        return SimpleNamespace(choices=[choice], usage=usage)
+        from google.genai.types import GenerateContentResponse
+        return GenerateContentResponse.model_validate({"modelVersion": "gemini-3.1-pro-preview",
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [{"text": "hi there"}]}}],
+            "usageMetadata": {"promptTokenCount": 12, "candidatesTokenCount": 3, "thoughtsTokenCount": 0, "totalTokenCount": 15}})
 
-    client = OpenAIClientWrapper(mode, model="gpt-4o", api_key="sk-test")
+    client = GeminiClientWrapper(mode, model="gemini-3.1-pro-preview", api_key="sk-test")
     monkeypatch.setattr(
-        client.client.chat.completions, "create", fake_chat_create, raising=True
+        client.client.aio.models, "generate_content", fake_generate, raising=True
     )
 
     result = asyncio.run(
         client.create(messages=[UserMessage(content="ping")])
     )
     assert result.content == "hi there"
-    assert result.finish_reason == "stop"
+    assert result.finish_reason == "STOP"
     assert result.usage.prompt_tokens == 12
     assert result.usage.completion_tokens == 3
     assert client.total_usage().prompt_tokens == 12
     # Verify message conversion routed correctly.
-    assert captured["kwargs"]["messages"] == [{"role": "user", "content": "ping"}]
-    assert captured["kwargs"]["model"] == "gpt-4o"
+    assert captured["kwargs"]["contents"] == [{"role": "user", "parts": [{"text": "ping"}]}]
+    assert captured["kwargs"]["model"] == "gemini-3.1-pro-preview"
 
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
@@ -213,13 +214,13 @@ def test_client_wrapper_from_config_returns_chat_client(monkeypatch, mode):
     from w8bench.verifier.clients import ChatCompletionClient, create_client_from_config
 
     cfg = {
-        "CHAT_COMPLETION_PROVIDER": "openai",
-        "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-4o", "api_key": "sk-test"},
+        "CHAT_COMPLETION_PROVIDER": "google",
+        "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.1-pro-preview", "api_key": "sk-test"},
     }
     client = create_client_from_config(cfg, evidence_mode=mode)
     assert isinstance(client, ChatCompletionClient)
-    assert client.metadata["model"] == "gpt-4o"
-    assert client.endpoint == "gpt-4o"
+    assert client.metadata["model"] == "gemini-3.1-pro-preview"
+    assert client.endpoint == "gemini-3.1-pro-preview"
 
 
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
@@ -256,18 +257,18 @@ def test_runner_normalizes_verified_one_item_task_data_format(tmp_path, mode):
 
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
-def test_message_to_openai_format_multimodal():
-    from w8bench.verifier.clients import ImageObj, UserMessage, message_to_openai_format
+def test_message_to_gemini_format_multimodal():
+    from w8bench.verifier.clients import ImageObj, UserMessage, message_to_gemini_format
 
     pil = PILImage.new("RGB", (4, 4), (10, 20, 30))
     msg = UserMessage(content=["look", ImageObj.from_pil(pil)])
-    out = message_to_openai_format(msg, evidence_mode='screenshot_verifier')
+    out = message_to_gemini_format(msg, evidence_mode='screenshot_verifier')
     assert out["role"] == "user"
-    parts = out["content"]
+    parts = out["parts"]
     assert len(parts) == 2
-    assert parts[0] == {"type": "text", "text": "look"}
-    assert parts[1]["type"] == "image_url"
-    assert parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert parts[0] == {"text": "look"}
+    assert parts[1]["inline_data"]["mime_type"] == "image/png"
+    assert parts[1]["inline_data"]["data"].startswith(b'\x89PNG')
 
 
 @pytest.mark.usefixtures("inline_sdk_header_initialization")
@@ -286,11 +287,11 @@ def test_request_usage_addition():
 def test_should_include_model_exact_match():
     from w8bench.verifier.clients import GracefulRetryClient
 
-    assert GracefulRetryClient._should_include_model("gpt-4o", "gpt-4o")
-    assert GracefulRetryClient._should_include_model("gpt-4o", "*")
-    assert GracefulRetryClient._should_include_model("gemini-3.8-flash", ["gpt-4o", "gemini-3.8-flash"])
-    assert not GracefulRetryClient._should_include_model("gpt-4o", "gemini-3.8-flash")
-    assert not GracefulRetryClient._should_include_model("gpt-4o-mini", "gpt-4o")
+    assert GracefulRetryClient._should_include_model("gemini-3.1-pro-preview", "gemini-3.1-pro-preview")
+    assert GracefulRetryClient._should_include_model("gemini-3.1-pro-preview", "*")
+    assert GracefulRetryClient._should_include_model("gemini-3.8-flash", ["gemini-3.1-pro-preview", "gemini-3.8-flash"])
+    assert not GracefulRetryClient._should_include_model("gemini-3.1-pro-preview", "gemini-3.8-flash")
+    assert not GracefulRetryClient._should_include_model("gemini-3.1-pro-preview-mini", "gemini-3.1-pro-preview")
 
 
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
@@ -402,12 +403,12 @@ def test_models_are_required_and_flags_override_environment(monkeypatch):
     monkeypatch.delenv("EVIDENCE_AUDIT_MODEL")
     with pytest.raises(ValueError, match="EVIDENCE_AUDIT_MODEL"):
         audit.resolve_audit_config()
-    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gpt-env")
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-env-inventory")
     monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-env")
-    assert audit.resolve_audit_config()["inventory"]["model"] == "gpt-env"
-    selected = audit.resolve_audit_config("custom-inventory", "custom-judge", "google", "openai")
-    assert selected == {"inventory": {"model": "custom-inventory", "provider": "google"},
-                        "adjudication": {"model": "custom-judge", "provider": "openai"}}
+    assert audit.resolve_audit_config()["inventory"]["model"] == "gemini-env-inventory"
+    selected = audit.resolve_audit_config("gemini-custom-inventory", "gemini-custom-judge", "google", "google")
+    assert selected == {"inventory": {"model": "gemini-custom-inventory", "provider": "google"},
+                        "adjudication": {"model": "gemini-custom-judge", "provider": "google"}}
     monkeypatch.delenv("EVIDENCE_ADJUDICATOR_MODEL")
     with pytest.raises(ValueError, match="EVIDENCE_ADJUDICATOR_MODEL"):
         audit.resolve_audit_config()
@@ -422,36 +423,37 @@ def test_cli_requires_explicit_completion_judge_and_keeps_audit_provider_config(
     with pytest.raises(SystemExit):
         run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "actor-model"])
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "openai")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-4-argon")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
     selected = audit.resolve_audit_config()
     assert selected["inventory"] == {"model": "gemini-3.1-pro-preview", "provider": "google"}
-    assert selected["adjudication"] == {"model": "gpt-6.1-sol", "provider": "openai"}
+    assert selected["adjudication"] == {"model": "gemini-4-argon", "provider": "google"}
 
 
-@pytest.mark.parametrize("model,provider", [("gemini-test", "google"), ("gpt-test", "openai"), ("o3", "openai"), ("o4-mini", "openai")])
+@pytest.mark.parametrize("model,provider", [("gemini-test", "google")])
 def test_provider_inference(model, provider):
     assert audit.resolve_provider(model) == provider
 
 
 def test_unknown_and_latest_fail_clearly():
-    with pytest.raises(ValueError, match="set EVIDENCE"):
+    with pytest.raises(ValueError, match="Gemini model ID"):
         audit.resolve_provider("custom-model")
-    assert audit.resolve_provider("custom-model", "google") == "google"
+    assert audit.resolve_provider("gemini-custom-model", "google") == "google"
     with pytest.raises(ValueError, match="latest"):
-        audit.resolve_provider("gpt-latest", "openai")
+        audit.resolve_provider("gemini-latest", "google")
 
 
 def test_model_checks_require_exact_id(monkeypatch):
+    from google import genai
     constructor = MagicMock()
-    constructor.return_value.__enter__.return_value.models.list.return_value = [SimpleNamespace(id="custom-a"), SimpleNamespace(id="custom-b")]
-    monkeypatch.setattr(audit, "OpenAI", constructor)
-    config = audit.resolve_audit_config("custom-a", "custom-b", "openai", "openai")
+    constructor.return_value.__enter__.return_value.models.list.return_value = [SimpleNamespace(name="models/gemini-custom-a"), SimpleNamespace(name="models/gemini-custom-b")]
+    monkeypatch.setattr(genai, "Client", constructor)
+    config = audit.resolve_audit_config("gemini-custom-a", "gemini-custom-b", "google", "google")
     checked = audit.check_audit_models(config)
     assert checked["stages"]["inventory"]["model_listed"] is True
     assert checked["stages"]["inventory"]["listed_at"]
     assert constructor.call_count == 1
-    config["inventory"]["model"] = "custom"
+    config["inventory"]["model"] = "gemini-custom"
     with pytest.raises(ValueError, match="not listed exactly"):
         audit.check_audit_models(config)
 
@@ -485,10 +487,10 @@ def test_connection_retries_are_logged_and_secrets_redacted(monkeypatch):
     assert record["transport_attempts"][-1]["status"] == "accepted"
 
 
-def test_explicit_google_provider_uses_google_settings_for_any_model_id(monkeypatch):
+def test_explicit_google_provider_uses_google_settings_for_named_model(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
     _, generate = _fake_google(monkeypatch)
-    audit._completion("custom-model", [{"role": "system", "content": audit.SYSTEM_PROMPT}], provider="google")
+    audit._completion("gemini-custom-model", [{"role": "system", "content": audit.SYSTEM_PROMPT}], provider="google")
     config = generate.call_args.kwargs["config"]
     assert config["media_resolution"] == "MEDIA_RESOLUTION_HIGH"
     assert "temperature" not in config and "seed" not in config and "thinking_config" not in config
@@ -668,13 +670,9 @@ def test_screenshot_click_with_ref_does_not_require_coordinates(tmp_path):
     assert actions[0]["ref"] == "e107"
 
 
-@pytest.mark.parametrize("kind", ["authentication", "access_token"])
-def test_authentication_refresh_obeys_attempt_budget_and_retains_receipts(monkeypatch, kind):
+def test_authentication_refresh_obeys_attempt_budget_and_retains_receipts(monkeypatch):
     from w8bench.verifier.clients.retry import GracefulRetryClient
-    response = httpx.Response(401 if kind == "authentication" else 400,
-        request=httpx.Request("POST", "https://offline.example.test"))
-    error = (openai.AuthenticationError if kind == "authentication" else openai.BadRequestError)(
-        "check-access-response-enc" if kind == "access_token" else "invalid credentials", response=response, body={})
+    error = google_errors.ClientError(401, {"error": {"message": "invalid credentials"}})
     receipts = []
     async def create(**kwargs):
         receipts.append({"error_type": type(error).__name__, "usage_reported": False})
@@ -685,13 +683,13 @@ def test_authentication_refresh_obeys_attempt_budget_and_retains_receipts(monkey
         create=create, refresh_credentials=Mock(), _call_records=receipts)
     monkeypatch.setattr("w8bench.verifier.clients.retry.asyncio.sleep", AsyncMock())
     pool = GracefulRetryClient([endpoint], max_retries=2)
-    with pytest.raises(type(error), match="credentials|check-access"):
+    with pytest.raises(type(error), match="credentials"):
         asyncio.run(pool.create([{"role": "user", "content": "Read marker"}]))
     assert len(receipts) == 2 and all(row["usage_reported"] is False for row in receipts)
     assert endpoint.refresh_credentials.call_count == 1
 
 
-@pytest.mark.parametrize("returned", [None, "gpt-5.2", "gemini-3.6-flash-mini"])
+@pytest.mark.parametrize("returned", [None, "gemini-3.5-flash-lite", "gemini-3.6-flash-mini"])
 def test_completion_refuses_other_or_missing_judge_ids_and_keeps_usage(completion_case, returned):
     case = completion_case
     case.responses.append({"model": returned, "status": "completed", "usage": {"input_tokens": 7, "output_tokens": 3},
@@ -732,15 +730,15 @@ def test_completion_refuses_incomplete_or_capped_output(completion_case, metadat
     assert grade["refusal_reason"] and grade["judge_calls"] == 1
 
 
-@pytest.mark.parametrize("returned,incomplete", [(None, False), ("gpt-5.2", False), ("gpt-6.1-sol", True)])
+@pytest.mark.parametrize("returned,incomplete", [(None, False), ("gemini-3.5-flash-lite", False), ("gemini-4-argon", True)])
 def test_audit_refuses_response_metadata_and_retains_each_call(monkeypatch, returned, incomplete):
     def respond(model, messages, record, hooks):
         record.update(response_model=returned, incomplete=incomplete, usage={"prompt_tokens": 9, "completion_tokens": 2})
         return '{}'
-    monkeypatch.setattr(audit_requests, "_openai_completion", respond)
+    monkeypatch.setattr(audit_requests, "_gemini_completion", respond)
     records = []
     with pytest.raises(ValueError, match="model|incomplete"):
-        audit_requests._completion("gpt-6.1-sol", [{"role": "system", "content": audit_requests.ADJUDICATION_SYSTEM_PROMPT}], records=records)
+        audit_requests._completion("gemini-4-argon", [{"role": "system", "content": audit_requests.ADJUDICATION_SYSTEM_PROMPT}], records=records)
     assert len(records) == 1 and records[0]["usage"]["prompt_tokens"] == 9
     assert records[0]["refusal_reason"]
 
@@ -784,15 +782,15 @@ def test_audit_refusals_consume_the_stage_budget_without_losing_usage(monkeypatc
     records, invalid = [], []
     def respond(model, messages, record, hooks):
         accepted = eventually_valid and len(records) == 3
-        record.update(response_model=model if accepted else "gpt-5.2", incomplete=False,
+        record.update(response_model=model if accepted else "gemini-3.5-flash-lite", incomplete=False,
             usage={"prompt_tokens": 9, "completion_tokens": 2})
         return '{"criteria":[]}'
-    monkeypatch.setattr(audit_requests, "_openai_completion", respond)
+    monkeypatch.setattr(audit_requests, "_gemini_completion", respond)
     validator = Mock(return_value=[])
     monkeypatch.setattr(audit_requests, "validate_audit_response" if inventory else "validate_adjudication_response", validator)
     def complete(model, messages):
         return audit_requests._completion(model, messages, records=records)
-    arguments = dict(model="gpt-6.1-sol", messages=[{"role": "system", "content": audit_requests.SYSTEM_PROMPT if inventory else audit_requests.ADJUDICATION_SYSTEM_PROMPT}],
+    arguments = dict(model="gemini-4-argon", messages=[{"role": "system", "content": audit_requests.SYSTEM_PROMPT if inventory else audit_requests.ADJUDICATION_SYSTEM_PROMPT}],
         criteria=[], screenshot_sources=set(), dom_sources=set(), screenshot_root=tmp_path, dom_root=tmp_path,
         complete=complete, max_attempts=3, invalid_receipts=invalid, inventory=inventory)
     if eventually_valid:
@@ -815,7 +813,7 @@ def test_audit_refusals_consume_the_stage_budget_without_losing_usage(monkeypatc
     'global_rescore', 'side_effects', 'outcome', 'failure_analysis'])
 def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeypatch, mode, stage, json_output):
     from w8bench.verifier import batch
-    from w8bench.verifier.clients.providers import OpenAIClientWrapper
+    from w8bench.verifier.clients.providers import GeminiClientWrapper
     messages = [{'role':'system', 'content': f'Judge {stage}; preserve the frozen rubric.'},
         {'role':'user', 'content':[{'type':'text', 'text':'Frozen criterion: report Saved.\nState 1: Saved.'}]}]
     if mode == 'screenshot_verifier':
@@ -825,15 +823,15 @@ def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeyp
             'url':'data:image/png;base64,'+base64.b64encode(image.getvalue()).decode(),'detail':'high'}})
     normal = []
     def answer(wire):
+        assert wire.url.path == '/v1beta/models/gemini-3.5-flash-lite:generateContent'
         normal.append(json.loads(wire.content))
-        return httpx.Response(200,json={'id':'tiny','object':'chat.completion','created':0,
-            'model':'gemini-3.5-flash-lite','choices':[{'index':0,'finish_reason':'stop',
-                'message':{'role':'assistant','content':'{"ok":true}'}}],
-            'usage':{'prompt_tokens':7,'completion_tokens':2,'total_tokens':9}})
+        return httpx.Response(200,json={'modelVersion':'gemini-3.5-flash-lite',
+            'candidates':[{'finishReason':'STOP','content':{'role':'model','parts':[{'text':'{"ok":true}'}]}}],
+            'usageMetadata':{'promptTokenCount':7,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':9}},request=wire)
     async def create(transport):
         monkeypatch.setenv('JUDGE_TRANSPORT',transport)
-        client=OpenAIClientWrapper(mode,model='gemini-3.5-flash-lite',reasoning_effort='medium',
-            api_key='offline-key',provider='google',http_client=httpx.AsyncClient(transport=httpx.MockTransport(answer)))
+        client=GeminiClientWrapper(mode,model='gemini-3.5-flash-lite',reasoning_effort='medium',
+            api_key='offline-key',provider='google',http_options={'httpx_async_client':httpx.AsyncClient(transport=httpx.MockTransport(answer))})
         client._logical_stage.set((stage,))
         try:
             return await client.create(messages,json_output=json_output)
@@ -845,8 +843,9 @@ def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeyp
             asyncio.run(create('batch'))
     saved=json.loads(next((tmp_path/'requests').glob('*.json')).read_text())
     assert saved['body']==normal[0]
-    assert saved['body']['reasoning_effort']=='medium'
-    assert saved['body'].get('response_format')==({'type':'json_object'} if json_output else None)
+    thinking = saved['body']['generationConfig']['thinkingConfig']
+    assert thinking.get('thinkingLevel', thinking.get('thinking_level'))=='MEDIUM'
+    assert saved['body']['generationConfig'].get('responseMimeType')==('application/json' if json_output else None)
     assert 'max_tokens' not in saved['body'] and 'max_output_tokens' not in saved['body']
     assert len(normal)==1 and saved['stage']==f'{mode}.{stage}'
 
@@ -962,40 +961,28 @@ def test_google_completion_usage_is_identical_across_transports(completion_case,
 
 
 @pytest.mark.parametrize('provider,stage,model', [('google','inventory','gemini-3.1-pro-preview'),
-    ('openai','adjudication','gpt-6.1-sol')])
+    ('google','adjudication','gemini-4-argon')])
 def test_audit_batch_wire_body_matches_normal(tmp_path,monkeypatch,provider,stage,model):
     from w8bench.verifier import batch
     from google.genai import types
     from w8bench.verifier import audit_requests as audit
-    from openai import DefaultHttpxClient, OpenAI
     captured=[]
     def answer(wire):
         captured.append(json.loads(wire.content))
-        body=({'candidates':[{'content':{'role':'model','parts':[{'text':'{"ok":true}'}]},'finishReason':'STOP'}],
+        body={'candidates':[{'content':{'role':'model','parts':[{'text':'{"ok":true}'}]},'finishReason':'STOP'}],
                 'modelVersion':model,'usageMetadata':{'promptTokenCount':4,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':6}}
-            if provider=='google' else {'id':'audit','object':'chat.completion','created':0,'model':model,
-                'choices':[{'index':0,'finish_reason':'stop','message':{'role':'assistant','content':'{"ok":true}'}}],
-                'usage':{'prompt_tokens':4,'completion_tokens':2,'total_tokens':6}})
         return httpx.Response(200,json=body,request=wire)
     messages=[{'role':'system','content':audit.ADJUDICATION_SYSTEM_PROMPT if stage=='adjudication' else audit.SYSTEM_PROMPT},
         {'role':'user','content':[{'type':'text','text':'Source 1: Saved.'},
             {'type':'image_url','image_url':{'url':'data:image/png;base64,iVBORw0KGgo=','detail':'high'}}]}]
-    if provider=='google':
-        from google import genai
-        original=genai.Client
-        def constructor(**kwargs):
-            options=kwargs['http_options']
-            options.client_args={**(options.client_args or {}),'transport':
-                (batch.http_transport(provider,f'audit.{stage}',record) if batch.judge_transport()=='batch' else httpx.MockTransport(answer))}
-            return original(**kwargs)
-        monkeypatch.setattr(genai,'Client',constructor)
-    else:
-        original=DefaultHttpxClient
-        def http_client(**kwargs):
-            kwargs['transport']=(batch.http_transport(provider,f'audit.{stage}',record)
-                if batch.judge_transport()=='batch' else httpx.MockTransport(answer))
-            return original(**kwargs)
-        monkeypatch.setattr(audit,'DefaultHttpxClient',http_client)
+    from google import genai
+    original=genai.Client
+    def constructor(**kwargs):
+        options=kwargs['http_options']
+        options.client_args={**(options.client_args or {}),'transport':
+            (batch.http_transport(provider,f'audit.{stage}',record) if batch.judge_transport()=='batch' else httpx.MockTransport(answer))}
+        return original(**kwargs)
+    monkeypatch.setattr(genai,'Client',constructor)
     monkeypatch.setenv('JUDGE_TRANSPORT','normal')
     record={'api_attempts':[]}
     assert audit._completion(model,messages,records=[])=={'ok':True}
@@ -1025,14 +1012,14 @@ def test_native_named_profiles_pin_all_stages(monkeypatch,profile,model):
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize('model,output,expected_cost', [
     ('gemini-3.5-flash-lite', 5, 0.0001708), ('gemini-3.1-pro-preview', 9, 0.001151)])
-def test_google_chat_batch_camel_case_is_valid_and_priced(tmp_path, monkeypatch, model, output, expected_cost):
+def test_google_batch_native_usage_is_valid_and_priced(tmp_path, monkeypatch, model, output, expected_cost):
     from w8bench.verifier import batch
-    from w8bench.verifier.clients.providers import OpenAIClientWrapper
+    from w8bench.verifier.clients.providers import GeminiClientWrapper
     from w8bench.verifier.run_metrics import _price_stream
     monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
     async def create():
-        client = OpenAIClientWrapper('dom_model', model=model, provider='google', api_key='offline',
-            http_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda wire: pytest.fail('network dispatch'))))
+        client = GeminiClientWrapper('dom_model', model=model, provider='google', api_key='offline',
+            http_options={'httpx_async_client':httpx.AsyncClient(transport=httpx.MockTransport(lambda wire: pytest.fail('network dispatch')))})
         try:
             result = await client.create([{'role': 'user', 'content': 'Return ok.'}], json_output=True)
             return result, client._call_records[-1]
@@ -1041,19 +1028,19 @@ def test_google_chat_batch_camel_case_is_valid_and_priced(tmp_path, monkeypatch,
     with batch.evaluation_scope(tmp_path, {'smoke': model}):
         with pytest.raises(batch.BatchPending): asyncio.run(create())
     request = json.loads(next((tmp_path / 'requests').glob('*.json')).read_text())
-    raw = {'id': 'saved', 'object': 'chat.completion', 'created': 0, 'model': model,
-        'choices': [{'index': 0, 'finishReason': 'stop', 'message': {'role': 'assistant', 'content': '{"ok":true}'}}],
-        'usage': {'promptTokens': 1097, 'completionTokens': output, 'totalTokens': 1097 + output}}
+    raw = {'modelVersion': model,
+        'candidates': [{'finishReason': 'STOP', 'content': {'role': 'model', 'parts': [{'text': '{"ok":true}'}]}}],
+        'usageMetadata': {'promptTokenCount': 1097, 'candidatesTokenCount': output, 'thoughtsTokenCount': 0, 'totalTokenCount': 1097 + output}}
     batch._save(tmp_path / 'responses' / (request['id'] + '.json'),
         {'job_id': 'batches/saved', 'status_code': 200, 'body': raw})
     with batch.evaluation_scope(tmp_path, {'smoke': model}):
         result, record = asyncio.run(create())
     assert json.loads(result.content) == {'ok': True}
-    assert result.finish_reason == record['finish_reason'] == 'stop'
+    assert result.finish_reason == record['finish_reason'] == 'STOP'
     assert record['input_tokens'] == result.usage.prompt_tokens == 1097
     assert record['output_tokens'] == result.usage.completion_tokens == output
     assert record['total_tokens'] == 1097 + output
-    assert record['cached_input_tokens'] is record['reasoning_tokens'] is None
+    assert record['cached_input_tokens'] is None and record['reasoning_tokens'] == 0
     stream = {'model': model, 'calls': 1, 'call_records': record['batch_items'], 'usage_coverage': 'complete'}
     _price_stream(stream)
     assert stream['cost']['estimated_usd'] == pytest.approx(expected_cost)
@@ -1111,10 +1098,10 @@ def test_native_usage_filter_keeps_validation_of_known_and_nonusage_fields():
         with pytest.raises(ValueError): _record_gemini_response({}, response, {})
 
 
-def test_google_chat_reported_total_does_not_fill_missing_input_or_output():
-    from w8bench.verifier.clients.providers import ChatCompletionClient, _record_openai_usage
+def test_google_reported_total_does_not_fill_missing_input_or_output():
+    from w8bench.verifier.clients.providers import ChatCompletionClient, _record_usage
     record = {}
-    _record_openai_usage({'model': 'gemini-3.5-flash-lite', 'usage': {'totalTokens': 1102}},
+    _record_usage({'modelVersion': 'gemini-3.5-flash-lite', 'usageMetadata': {'totalTokenCount': 1102}},
         ChatCompletionClient(), record=record)
     assert record['total_tokens'] == 1102
     assert record['input_tokens'] is record['output_tokens'] is None

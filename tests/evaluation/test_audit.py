@@ -16,7 +16,6 @@ from w8bench.verifier.common import canonical_sha256
 from w8bench.verifier.evidence_audit import calculate_metrics, run_evidence_audit
 from w8bench.verifier.evidence_audit import run_evidence_audit
 import json
-import openai
 import pytest
 
 
@@ -422,8 +421,10 @@ def test_run_audit_uses_inventory_and_adjudication_calls(pair_factory):
     )
     assert len(calls) == 2
     assert calls[0][0] == "gemini-3.1-pro-preview"
-    assert calls[1][0] == "gpt-6.1-sol"
-    assert audit["adjudicator_model"] == "gpt-6.1-sol"
+    assert calls[1][0] == audit["adjudicator_model"]
+    assert audit["adjudicator_model"] == "gemini-4-argon"
+    assert audit["adjudicator_provider"] == "google"
+    assert audit["adjudicator_model"] != audit["audit_model"]
     content = calls[0][1][1]["content"]
     text_parts = [part.get("text", "") for part in content]
     assert any("SCREENSHOT SOURCE FILE: screenshot0.png" in text for text in text_parts)
@@ -669,23 +670,18 @@ def test_finding_feedback_preserves_nested_citation_errors(pair_factory):
     )
 
 
-@pytest.mark.parametrize("model", ["gpt-5.2", "gpt-6.1-sol"])
-def test_openai_routing_records_actual_request_settings(monkeypatch, model):
-    create = Mock(return_value=SimpleNamespace(id="openai-id", model=model + "-001",
-        usage=None, system_fingerprint="fingerprint",
-        choices=[SimpleNamespace(message=SimpleNamespace(content='{"ok":true}'))]))
-    client = Mock()
-    client.__enter__ = Mock(return_value=SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
-    client.__exit__ = Mock(return_value=False)
-    constructor = Mock(return_value=client)
-    monkeypatch.setattr(audit, "OpenAI", constructor)
-    monkeypatch.setattr(audit, "DefaultHttpxClient", Mock())
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_audit_stage_routing_records_actual_request_settings(monkeypatch, stage):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    model = audit.resolve_audit_config()[stage]["model"]
+    constructor, create = _fake_google(monkeypatch)
     records = []
-    assert audit._completion(model, [{"role": "system", "content": audit.SYSTEM_PROMPT}], records=records) == {"ok": True}
+    prompt = audit.SYSTEM_PROMPT if stage == "inventory" else audit.ADJUDICATION_SYSTEM_PROMPT
+    assert audit._completion(model, [{"role": "system", "content": prompt}], records=records) == {"ok": True}
     args = create.call_args.kwargs
-    assert "temperature" not in args and "seed" not in args
-    assert args["response_format"] == {"type": "json_object"}
-    assert records[0]["provider"] == "openai"
+    assert "temperature" not in args["config"] and "seed" not in args["config"]
+    assert args["config"]["response_mime_type"] == "application/json"
+    assert records[0]["provider"] == "google" and records[0]["stage"] == stage
     assert records[0]["requested_model"] == model
     assert records[0]["response_model"] == model + "-001"
     assert "temperature" not in records[0]["generation_settings"]
@@ -693,18 +689,17 @@ def test_openai_routing_records_actual_request_settings(monkeypatch, model):
     assert records[0]["completed_at"] >= records[0]["started_at"]
     assert records[0]["requested_reasoning_effort"] is None
     assert records[0]["requested_max_output_tokens"] is None
-    assert constructor.call_args.kwargs["max_retries"] == 0
-    hook = audit.DefaultHttpxClient.call_args.kwargs["event_hooks"]["request"][0]
-    hook(SimpleNamespace(content=json.dumps({"model": model, "messages": ["private prompt"],
-                                            "response_format": {"type": "json_object"}}).encode()))
-    assert records[0]["api_attempts"][0]["request_settings"] == {"model": model, "response_format": {"type": "json_object"}}
+    options = constructor.call_args.kwargs["http_options"]
+    assert options["retry_options"] == {"attempts": 1}
+    hook = options["client_args"]["event_hooks"]["request"][0]
+    config = {"responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}
+    hook(SimpleNamespace(content=json.dumps({"generationConfig": config, "contents": ["private prompt"]}).encode()))
+    assert records[0]["api_attempts"][0]["request_settings"] == config
 
 
 def test_gemini_native_routing_preserves_base64_and_retry_roles(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "fake-gemini-key")
     constructor, generate = _fake_google(monkeypatch)
-    openai = Mock(side_effect=AssertionError("Gemini must not reach OpenAI"))
-    monkeypatch.setattr(audit, "OpenAI", openai)
     messages = [{"role": "system", "content": audit.ADJUDICATION_SYSTEM_PROMPT},
                 {"role": "user", "content": [{"type": "text", "text": "Saved"},
                  {"type": "image_url", "image_url": {"url": "data:image/png;base64,YWJj", "detail": "high"}}]},
@@ -736,14 +731,12 @@ def test_gemini_native_routing_preserves_base64_and_retry_roles(monkeypatch):
     assert records[0]["provider"] == "google" and records[0]["response_model"] == "gemini-3.1-pro-preview-001"
     assert records[0]["usage"] == {"prompt_tokens": 10, "completion_tokens": 5,
                                     "reasoning_tokens": 2, "cached_input_tokens": 4, "cache_write_input_tokens": None, "total_tokens": 15}
-    openai.assert_not_called()
 
 
 @pytest.mark.parametrize("model, key", [("gemini-pro-latest", "fake-key"), ("gemini-3.1-pro-preview", "")])
 def test_gemini_missing_key_and_alias_never_fall_back(monkeypatch, model, key):
     monkeypatch.setenv("GEMINI_API_KEY", key)
-    client = Mock(side_effect=AssertionError("No OpenAI fallback"))
-    monkeypatch.setattr(audit, "OpenAI", client)
+    client, generate = _fake_google(monkeypatch)
     records = []
     with pytest.raises(ValueError):
         audit._completion(model, [{"role": "system", "content": audit.ADJUDICATION_SYSTEM_PROMPT}], records=records)
@@ -753,6 +746,7 @@ def test_gemini_missing_key_and_alias_never_fall_back(monkeypatch, model, key):
     assert records[0]["generation_settings"] is None
     assert records[0]["error_type"] == "ValueError"
     client.assert_not_called()
+    generate.assert_not_called()
 
 
 def test_gemini_empty_and_non_json_responses_fail_loudly(monkeypatch):
@@ -772,27 +766,16 @@ def test_gemini_rejects_non_inline_image_before_request(monkeypatch):
     constructor.assert_not_called(); generate.assert_not_called()
 
 
-def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, monkeypatch):
+def test_every_audit_records_the_settings_sent_by_both_stages(pair_factory, monkeypatch):
     inventory, final = _responses()
     monkeypatch.setenv("GEMINI_API_KEY", "fake-gemini-key")
-    _fake_google(monkeypatch, json.dumps(inventory))
-    response = SimpleNamespace(
-        id="inventory-id", model="gpt-6.1-sol-001", usage=None,
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(final)))],
-    )
-    client = Mock()
-    client.__enter__ = Mock(return_value=SimpleNamespace(
-        chat=SimpleNamespace(completions=SimpleNamespace(create=Mock(return_value=response))),
-    ))
-    client.__exit__ = Mock(return_value=False)
-    monkeypatch.setattr(audit, "OpenAI", Mock(return_value=client))
-    monkeypatch.setattr(audit, "DefaultHttpxClient", Mock())
+    _fake_google(monkeypatch, [json.dumps(inventory), json.dumps(final)])
     monkeypatch.setattr(audit, "check_audit_models", lambda config: {
         "stages": {stage: {**value, "model_listed": True, "listed_at": "2026-01-01T00:00:00Z"}
                    for stage, value in config.items()}})
     result = _run(pair_factory(), None)
     assert [(call["provider"], call["response_model"]) for call in result["calls"]] == [
-        ("google", "gemini-3.1-pro-preview-001"), ("openai", "gpt-6.1-sol-001"),
+        ("google", "gemini-3.1-pro-preview-001"), ("google", result["adjudicator_model"] + "-001"),
     ]
     for stage in ("inventory", "adjudication"):
         settings = result["generation_settings"][stage]
@@ -801,7 +784,7 @@ def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, m
         assert "temperature" not in settings["actual"][0]
         assert "seed" not in settings["actual"][0]
         assert settings["requested"] == settings["actual"][0]
-    assert result["generation_settings"]["adjudication"]["actual"][0]["response_format"] == {"type": "json_object"}
+    assert result["generation_settings"]["adjudication"]["actual"][0]["response_mime_type"] == "application/json"
     assert result["generation_settings"]["inventory"]["actual"][0]["response_mime_type"] == "application/json"
     assert "thinking_config" not in result["generation_settings"]["inventory"]["actual"][0]
     assert result["generation_settings"]["inventory"]["actual"][0]["media_resolution"] == "MEDIA_RESOLUTION_HIGH"
@@ -818,7 +801,7 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     final["criteria"][0]["screenshot_evidence_loss"] = _finding(True, modality="dom_model")
     final["criteria"][1]["dom_model_evidence_loss"] = _finding(True, modality="screenshot")
     result = _run(pair, _complete(inventory, final))
-    assert result["schema_version"] == "automated-evidence-audit/v8"
+    assert result["schema_version"] == "automated-evidence-audit/v9"
     assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v8"
     assert result["criteria"][0]["screenshot_evidence_loss"] is True
     assert result["criteria"][1]["dom_model_evidence_loss"] is True
@@ -866,7 +849,7 @@ def test_validation_retry_logs_loss_and_miss_flips_without_overriding(pair_facto
         invalid["criteria"][0]["screenshot_verifier_miss"] = _finding(True, modality="screenshot")
     seen = {"inventory": 0, "adjudication": 0}
     def complete(model, messages):
-        current = "inventory" if model.startswith("gemini-") else "adjudication"
+        current = "adjudication" if messages[0]["content"] == audit.ADJUDICATION_SYSTEM_PROMPT else "inventory"
         seen[current] += 1
         if current == stage and seen[current] == 1:
             return deepcopy(invalid)

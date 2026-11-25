@@ -142,9 +142,9 @@ class Trajectory(_Trajectory):
     _has_screenshots = False
 
     @staticmethod
-    def from_folder(path, gpt_solver=False, skip_web_surfer_log=False):
+    def from_folder(path, skip_web_surfer_log=False):
         try:
-            return Trajectory(path, gpt_solver=gpt_solver, skip_web_surfer_log=skip_web_surfer_log)
+            return Trajectory(path, skip_web_surfer_log=skip_web_surfer_log)
         except Exception:
             return None
 

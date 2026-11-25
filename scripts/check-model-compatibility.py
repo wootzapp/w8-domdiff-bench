@@ -128,7 +128,7 @@ try:
         receipt.update(response=response, usage=response.get('usage') if response else None)
     for stage, model, provider, system in (
         ('inventory', 'gemini-3.1-pro-preview', 'google', SYSTEM_PROMPT),
-        ('adjudication', 'gpt-6.1-sol', 'openai', ADJUDICATION_SYSTEM_PROMPT),
+        ('adjudication', 'gemini-4-argon', 'google', ADJUDICATION_SYSTEM_PROMPT),
     ):
         records=[]
         receipt={'stage':stage, 'configured_model':model, 'provider':provider, 'call_records':records}

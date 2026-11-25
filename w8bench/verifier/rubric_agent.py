@@ -1690,7 +1690,7 @@ class RubricAgent(VerifierAgent):
         response_preview = response_text[:200] + "..." if response_text else "N/A"
         errors.append(f"  Attempt {attempt}: [{error_type}] {e}")
         self.logger.warning(
-            f"Rubric generation attempt {attempt}/5 failed: [{error_type}] {e} | Response preview: {response_preview}"
+            f"Rubric generation attempt {attempt}/{self.config.max_iters} failed: [{error_type}] {e} | Response preview: {response_preview}"
         )
         messages.append(
             {
@@ -1704,7 +1704,7 @@ class RubricAgent(VerifierAgent):
         response_preview = response_text[:200] + "..." if response_text else "N/A"
         errors.append(f"  Attempt {attempt}: [{error_type}] {e}")
         self.logger.warning(
-            f"Rubric dependency check attempt {attempt}/5 failed: [{error_type}] {e} | Response preview: {response_preview}"
+            f"Rubric dependency check attempt {attempt}/{self.config.max_iters} failed: [{error_type}] {e} | Response preview: {response_preview}"
         )
         messages.append(
             {

@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-import openai
+import httpx
+from google.genai import errors
 
 from .factory import create_client_from_config
 from .messages import CreateResult, LLMMessage, Tool, ToolSchema
@@ -88,10 +89,10 @@ class GracefulRetryClient(ChatCompletionClient):
         client_jsons = []
         for client_config in files:
             with open(client_config) as f:
-                config_openai = json.load(f)
-            model_name = config_openai[_KWARGS_JSON_KEY]["model"]
+                endpoint_config = json.load(f)
+            model_name = endpoint_config[_KWARGS_JSON_KEY]["model"]
             if GracefulRetryClient._should_include_model(model_name, eval_model):
-                client_jsons.append(config_openai)
+                client_jsons.append(endpoint_config)
 
         clients = [create_client_from_config(config=cfg, evidence_mode=evidence_mode) for cfg in client_jsons]
         if not clients:
@@ -133,7 +134,7 @@ class GracefulRetryClient(ChatCompletionClient):
 
     @staticmethod
     def _is_reasoning_model(description: str) -> bool:
-        return any(tag in description for tag in ("o1", "o3", "o4", "gpt-5", "gpt-6", "gemini-"))
+        return any(tag in description for tag in ("gemini-",))
 
     def _remove_reasoning_effort_if_needed(
         self, client: ChatCompletionClient, extra_create_args: Mapping[str, Any]
@@ -206,21 +207,22 @@ class GracefulRetryClient(ChatCompletionClient):
             json_output=json_output, extra_create_args=extra)
 
     async def _handle_failure(self, error, state, request_tokens):
-        if isinstance(error, asyncio.TimeoutError):
+        code = getattr(error, "code", getattr(error, "status_code", None))
+        if isinstance(error, httpx.HTTPStatusError):
+            code = error.response.status_code
+        if isinstance(error, (asyncio.TimeoutError, httpx.TimeoutException)):
             await self._transient_failure(error, state)
-        elif isinstance(error, openai.BadRequestError):
+        elif code == 400:
             return await self._bad_request_failure(error, state)
-        elif isinstance(error, (openai.InternalServerError, openai.RateLimitError)):
+        elif code == 429 or isinstance(code, int) and code >= 500:
             await self._transient_failure(error, state)
-        elif isinstance(error, openai.NotFoundError):
-            await self._block_endpoint(error, state, "NotFoundError")
-        elif isinstance(error, openai.PermissionDeniedError):
-            await self._block_endpoint(error, state, "PermissionDeniedError")
-        elif isinstance(error, openai.APIConnectionError):
-            await self._block_endpoint(error, state, "APIConnectionError")
-        elif isinstance(error, openai.AuthenticationError):
+        elif code in {403, 404}:
+            await self._block_endpoint(error, state, f"HTTP{code}")
+        elif isinstance(error, httpx.ConnectError):
+            await self._block_endpoint(error, state, "ConnectionError")
+        elif code == 401:
             self._authentication_failure(error, state)
-        elif isinstance(error, openai.APIStatusError):
+        elif isinstance(error, (errors.APIError, httpx.HTTPStatusError)):
             return await self._api_status_failure(error, state, request_tokens)
         else:
             return await self._generic_failure(error, state)
@@ -231,14 +233,14 @@ class GracefulRetryClient(ChatCompletionClient):
         await asyncio.sleep(delay)
 
     async def _transient_failure(self, error, state):
-        if isinstance(error, asyncio.TimeoutError):
+        if isinstance(error, (asyncio.TimeoutError, httpx.TimeoutException)):
             state.tries -= 1
             self.logger.error(
                 f"GracefulRetryClient.create() TimeoutError: {state.client.description} "
                 f"timed out after {self.timeout}s, switching client"
             )
             delay = 1
-        elif isinstance(error, openai.InternalServerError):
+        elif isinstance(getattr(error, "code", None), int) and error.code >= 500:
             self.logger.error(
                 f"GracefulRetryClient.create() InternalServerError: {state.client.description}, switching client: {error}"
             )
@@ -253,18 +255,6 @@ class GracefulRetryClient(ChatCompletionClient):
         await self._switch_client_and_wait(state, delay)
 
     async def _bad_request_failure(self, error, state):
-        if "check-access-response-enc" in str(error):
-            state.tries -= 1
-            state.last_error = error
-            self.logger.error(
-                f"GracefulRetryClient.create() AccessTokenError: {state.client.description}, refreshing credentials\n{error}"
-            )
-            if state.tries <= 0:
-                return True
-            if hasattr(state.client, "refresh_credentials"):
-                state.client.refresh_credentials()
-            await self._switch_client_and_wait(state, 1)
-            return True
         if "previous_response_not_found" in str(error):
             self.logger.warning(
                 f"GracefulRetryClient.create() previous_response_not_found: {state.client.description}\n{error}"
@@ -277,7 +267,7 @@ class GracefulRetryClient(ChatCompletionClient):
             )
         else:
             self.logger.error(
-                f"GracefulRetryClient.create() {state.client.description} Raising openai.BadRequestError: {error}"
+                f"GracefulRetryClient.create() {state.client.description} Raising BadRequestError: {error}"
             )
             return False
         state.tries -= 1
@@ -309,9 +299,6 @@ class GracefulRetryClient(ChatCompletionClient):
             self.logger.error(
                 f"GracefulRetryClient.create() PromptTooLargeError: ({request_tokens} tokens) is too big\n{error}"
             )
-        if "DeploymentNotFound" in str(error):
-            await self._block_endpoint(error, state, "DeploymentNotFound")
-            return True
         if "Request body too large" in str(error):
             self.logger.error(
                 f"GracefulRetryClient.create() Request body too large: {state.client.description}\n{error}"
@@ -341,59 +328,10 @@ class GracefulRetryClient(ChatCompletionClient):
             raise state.last_error
         valid_clients = [client for client in self._clients if client.endpoint not in self.blocklist]
         raise Exception(
-            f"GracefulRetryClient.create(): all clients exhausted after {self.max_retries} retries; "
+            f"GracefulRetryClient.create(): all clients exhausted after {self.max_retries} attempts; "
             f"{len(valid_clients)}/{len(self._clients)} clients reachable. Blocklist size: {len(self.blocklist)}"
         )
 
     @property
     def parameters(self) -> dict[str, Any]:
         return {"LlmClient": self._clients[0].description}
-
-
-class ResponsesGracefulRetryClient(GracefulRetryClient):
-    """Retry pool for Responses API clients."""
-
-    @staticmethod
-    def from_files(
-        files: Sequence[os.PathLike],
-        logger: logging.Logger,
-        eval_model: str | list[str],
-        *, evidence_mode: str = "screenshot_verifier",
-    ) -> "ResponsesGracefulRetryClient":
-        client_jsons = []
-        for client_config in files:
-            with open(client_config) as f:
-                config_openai = json.load(f)
-            model_name = config_openai[_KWARGS_JSON_KEY]["model"]
-            if GracefulRetryClient._should_include_model(model_name, eval_model):
-                client_jsons.append(config_openai)
-        clients = [create_client_from_config(config=cfg, use_responses_api=True, evidence_mode=evidence_mode) for cfg in client_jsons]
-        if not clients:
-            raise ValueError(
-                f"Error! None of the models in the input config files match --eval_model={eval_model} in {list(files)}"
-            )
-        return ResponsesGracefulRetryClient(clients=clients, logger=logger, evidence_mode=evidence_mode)
-
-    @staticmethod
-    def from_path(
-        path: os.PathLike,
-        logger: logging.Logger,
-        eval_model: str | list[str],
-        *, evidence_mode: str = "screenshot_verifier",
-    ) -> "ResponsesGracefulRetryClient":
-        endpoint_config = Path(path).resolve()
-        if not endpoint_config.exists():
-            raise ValueError(f"Endpoint config file {endpoint_config} does not exist.")
-        files = (
-            [p for p in endpoint_config.iterdir() if p.suffix == ".json"]
-            if endpoint_config.is_dir()
-            else [endpoint_config]
-        )
-        logger.info(f"loaded {len(files)} endpoint configuration files: {path}")
-        client_group = ResponsesGracefulRetryClient.from_files(
-            files=files, logger=logger, eval_model=eval_model, evidence_mode=evidence_mode
-        )
-        logger.info(
-            f"Instantiated {len(client_group._clients)} clients for the {eval_model} endpoints"
-        )
-        return client_group

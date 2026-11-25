@@ -7,6 +7,8 @@ from math import isfinite
 from pathlib import Path
 from typing import Any
 
+from w8bench.usage import known_token_component
+
 from .common import (
     native_judge_model,
     CANONICAL_SETTINGS,
@@ -109,6 +111,18 @@ def _accounting(raw):
     calls_judge = raw.get("call_metrics", {}).get("judge", {})
     calls_action = raw.get("call_metrics", {}).get("action_judge", {})
     combined_usage = sum_usage(usage_judge, usage_action)
+    for key in ("total_tokens", "unattributed_tokens"):
+        values = [value for row in (usage_judge, usage_action)
+            if (value := known_token_component(row.get(key))) is not None]
+        combined_usage[key] = sum(values) if values else None
+    reconciliation = [row.get("token_components_reconcile") for row in (usage_judge, usage_action)]
+    if any(value is not None for value in reconciliation):
+        combined_usage["token_components_reconcile"] = (False if False in reconciliation
+            else None if None in reconciliation else True)
+    for key in ("total_tokens", "unattributed_tokens"):
+        known = [row.get("usage_known_calls", {}).get(key) for row in (usage_judge, usage_action)]
+        if any(value is not None for value in known):
+            combined_usage.setdefault("usage_known_calls", {})[key] = sum(value for value in known if value is not None)
     combined_calls = sum_call_metrics(calls_judge, calls_action)
     return calls_judge, calls_action, combined_usage, combined_calls
 

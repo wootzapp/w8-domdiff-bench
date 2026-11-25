@@ -983,34 +983,62 @@ def _run_batch_actor(
         f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
 
 
-def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]]) -> None:
-    """Advance ready judge requests across the recorded arms in one round."""
-    judge_models = {partner["judge_model"] for partner in partners}
-    if len(judge_models) != 1:
-        raise RunnerError("scheduled completion judge models differ")
-    log_path = Path(partners[0]["log"]).with_name(f"judge_round_{partners[-1]['sequence']:06d}.log")
-    with log_path.open("a", encoding="utf-8") as log:
-        result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-            "--run", *[partner["recording"] for partner in partners], "--rubric", str(args.rubric_dir.resolve()),
-            "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
-            cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]], *, reconcile_only: bool = False) -> None:
+    """Advance judging or reconcile its bound receipts without dispatching work."""
+    if not reconcile_only:
+        judge_models = {partner["judge_model"] for partner in partners}
+        if len(judge_models) != 1:
+            raise RunnerError("scheduled completion judge models differ")
+        log_path = Path(partners[0]["log"]).with_name(f"judge_round_{partners[-1]['sequence']:06d}.log")
+        with log_path.open("a", encoding="utf-8") as log:
+            result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+                "--run", *[partner["recording"] for partner in partners], "--rubric", str(args.rubric_dir.resolve()),
+                "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
+                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
     from .prepare_verifier_data import inspect_recording
     for partner in partners:
         recording_path = Path(partner["recording"])
+        if reconcile_only and (not partner.get("completed") or not (recording_path / "final.json").is_file()):
+            continue
+        if reconcile_only and not (recording_path.parent.parent / "evaluations" / "profiles" / "primary").is_dir():
+            continue
         checked = inspect_recording(recording_path)
         evaluation_path = (recording_path.parent.parent / "evaluations" / "profiles" / "primary" / partner["run_name"] /
             partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
         evaluation = json.loads(evaluation_path.read_text()) if evaluation_path.is_file() else {}
-        pending = evaluation.get("status") == "batch_pending" or result.returncode == 75 and not evaluation
-        if result.returncode == 130:
+        if not reconcile_only and result.returncode == 130:
             partner.update(judge_log=str(log_path), evaluation_path=str(evaluation_path),
                 evaluation_outcome="cancelled", grade_outcome="ungraded", judge_exit_code=130)
             continue
-        partner.update(judge_log=str(log_path), evaluation_path=str(evaluation_path),
+        if evaluation:
+            from w8bench.verifier.run_full_comparison import _validate_scheduled_recording, _scheduled_summary, _scheduled_grade
+            _validate_scheduled_recording(partner, partner["arm"], checked["task"], checked["manifest"])
+            # A bound receipt can advance after the ledger's last observation.
+            summary = _scheduled_summary({**partner, "evaluation_outcome": None}, checked, checked["manifest"])
+            _scheduled_grade(partner, summary)
+        elif reconcile_only:
+            continue
+        pending = evaluation.get("status") == "batch_pending" or not reconcile_only and result.returncode == 75 and not evaluation
+        stages = evaluation.get("stages", {})
+        audit_deferred = (evaluation.get("status") == "incomplete"
+            and stages.get("audit", {}).get("status") == "blocked"
+            and stages["audit"].get("reason") == "audit_configuration_failed"
+            and all(stages.get(name, {}).get("status") == "complete" for name in ("screenshot_verifier", "dom_model"))
+            and stages.get("paired_completion", {}).get("status") in {"model_judge", "exact_final_answer"})
+        if not reconcile_only:
+            partner["judge_log"] = str(log_path)
+        partner.update(evaluation_path=str(evaluation_path),
             evaluation_outcome=evaluation.get("status", "batch_pending" if pending else "unavailable"),
-            grade_outcome=evaluation.get("stages", {}).get("paired_completion", {}).get("verdict",
+            grade_outcome=stages.get("paired_completion", {}).get("verdict",
                 "batch_pending" if pending else "grading_error"),
-            judge_exit_code=75 if pending else 0 if evaluation.get("status") == "complete" else result.returncode)
+            judge_exit_code=75 if pending else 0 if evaluation.get("status") in {"complete", "awaiting_adjudication"}
+                else 1 if reconcile_only else result.returncode)
+        if audit_deferred:
+            partner["evaluation_reason"] = "audit_configuration_failed"
+        else:
+            partner.pop("evaluation_reason", None)
+        if reconcile_only:
+            partner["grade_completed"] = not pending and not audit_deferred
 
 
 def _grade_batch_pair(
@@ -1054,7 +1082,8 @@ def _grade_batch_pair(
             partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
                 judge_error=f"{type(error).__name__}: {error}")
     for partner in partners:
-        partner.update(grade_completed=partner.get("judge_exit_code") != 75, judge_ended_at=utc_now())
+        partner.update(grade_completed=partner.get("judge_exit_code") != 75
+            and partner.get("evaluation_reason") != "audit_configuration_failed", judge_ended_at=utc_now())
     write_json_lines(ledger_path, ledger)
 
 
@@ -1241,6 +1270,8 @@ def run_batch(args: argparse.Namespace) -> int:
     with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
         ledger = _batch_ledger(ledger_path, schedule, planning_only)
         _guard_batch_processes(batch_dir, ledger)
+        if args.resume and not args.dry_run:
+            _execute_batch_judge(args, ledger, reconcile_only=True)
         write_json_lines(ledger_path, ledger)
         if args.dry_run:
             print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +

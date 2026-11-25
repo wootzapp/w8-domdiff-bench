@@ -528,6 +528,18 @@ def test_ungraded_native_results_keep_costs_and_stay_out_of_score_means(
                 "signals": {"process_score": score, "rubric_is_success": None if status == "ungraded" else False},
             }})
             summaries[arm] = summarize(recording)
+            arm_usage = summaries[arm]["arm_token_usage"]
+            matching = "dom_model" if arm == "dom" else "screenshot_verifier"
+            assert arm_usage["matching_verifier"] == matching
+            assert arm_usage["actor_usage"]["total_tokens"] == 6
+            if native == matching:
+                assert arm_usage["usage"] == {"input_tokens": 7, "output_tokens": 3, "total_tokens": 10}
+                assert arm_usage["matching_verifier_usage"]["total_tokens"] == 4
+                assert arm_usage["coverage"] == "complete"
+            else:
+                assert arm_usage["usage"]["total_tokens"] is None
+                assert arm_usage["known_usage_lower_bound"]["total_tokens"] == 6
+                assert native + ":gemini-3.1-pro-preview" in arm_usage["excluded_judge_streams"]
         pairs.append({"task_id": "custom", "trial_id": f"trial_{trial:04d}", "shared_controls": {},
                       "both_successful": False, "successful_pair_turn_delta": None, **summaries})
     result = aggregate(pairs)
@@ -930,7 +942,7 @@ def test_same_model_role_accounting_keeps_unknown_calls_and_partial_known_usage(
     unknown = {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
         "cached_input_tokens": None, "reasoning_tokens": None, "cache_write_input_tokens": None,
         "usage_known_calls": dict.fromkeys(components, 0), "calls_without_reported_usage": 1}
-    known = {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7,
+    known = {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 12,
         "cached_input_tokens": 0, "reasoning_tokens": 0, "cache_write_input_tokens": 0,
         "usage_known_calls": dict.fromkeys(components, 1), "calls_without_reported_usage": 0}
     raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
@@ -941,6 +953,7 @@ def test_same_model_role_accounting_keeps_unknown_calls_and_partial_known_usage(
             "action_judge": {"logical_calls": 1, "api_attempts": 1, "calls": [{
                 "configured_model": CANONICAL_JUDGE_MODEL, "returned_model": CANONICAL_JUDGE_MODEL,
                 "usage_reported": True, "input_tokens": 5, "output_tokens": 2,
+                "total_tokens": 12,
                 "cached_input_tokens": 0, "cache_write_input_tokens": 0}]}}}
     path = tmp_path / "partial.json"
     write_json(path, raw)
@@ -955,8 +968,13 @@ def test_same_model_role_accounting_keeps_unknown_calls_and_partial_known_usage(
     metric_evaluation_factory(recording, stages={native: {"status": "ungraded", "usage_coverage": "partial",
         "calls": normalized["llm_calls"], "usage": normalized["token_usage"],
         "provider_call_metrics": normalized["provider_call_metrics"]}})
-    stream = summarize(recording)["judge_usage_streams"][native + ":" + CANONICAL_JUDGE_MODEL]
+    summary = summarize(recording)
+    stream = summary["judge_usage_streams"][native + ":" + CANONICAL_JUDGE_MODEL]
     assert stream["calls"] == 2 and stream["usage_coverage"] == "partial"
+    assert stream["usage"]["total_tokens"] == 12 and stream["usage"]["unattributed_tokens"] == 5
+    assert stream["cost"]["unreconciled_calls"] == 1
     assert stream["cost"]["estimated_usd"] is None
     assert stream["cost"]["priced_calls"] == 1 and stream["cost"]["unpriced_calls"] == 1
     assert stream["cost"]["known_usage_estimate_usd"] > 0
+    assert summary["arm_token_usage"]["usage"]["total_tokens"] is None
+    assert summary["arm_token_usage"]["known_usage_lower_bound"]["total_tokens"] == (12 if native == "dom_model" else None)

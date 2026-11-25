@@ -81,9 +81,9 @@ def test_scheduled_rows_include_full_stage_and_actor_policy(effective_settings_b
     ("AGENT_BROWSER_TIMEOUT", "45", "actor.agent_browser_timeout"),
     ("BROWSER_LANG", "fr", "actor.browser_lang"),
     ("GEMINI_BASE_URL", "https://actor.example.test/another-api", "actor.base_url"),
-    ("OPENAI_BASE_URL", "https://judge.example.test/another-api", "base_url"),
+    ("GEMINI_BASE_URL", "https://judge.example.test/another-api", "base_url"),
     ("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview-2026-11-17", "stages.inventory.models"),
-    ("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol-2026-11-17", "stages.adjudication.models"),
+    ("EVIDENCE_ADJUDICATOR_MODEL", "gemini-4-argon-2026-11-17", "stages.adjudication.models"),
 ])
 def test_resume_checks_effective_policy_even_when_every_actor_is_completed(
     effective_settings_batch, monkeypatch, key, value, field
@@ -117,7 +117,7 @@ def test_resume_ignores_deployment_and_credential_changes(effective_settings_bat
     assert task_cli.main(batch.arguments) == 0
     for key, value in {"IMAGE": "w8-core:another-tag", "CONTAINER_NAME": "another-container",
         "COMPOSE_PROJECT_NAME": "another-project", "CDP_HOST_PORT": "49101", "NOVNC_HOST_PORT": "49102",
-        "VNC_HOST_PORT": "49103", "OPENAI_API_KEY": "another-offline-key", "GEMINI_API_KEY": "another-offline-key"}.items():
+        "VNC_HOST_PORT": "49103", "GEMINI_API_KEY": "another-offline-key"}.items():
         monkeypatch.setenv(key, value)
     assert task_cli.main((batch.arguments) + ["--resume"]) == 0
 
@@ -661,8 +661,8 @@ def test_effective_config_hash_depends_on_content_not_location_or_credentials(tm
     from w8bench.settings import endpoint_settings
     first, second = tmp_path / "first", tmp_path / "second"
     first.mkdir(); second.mkdir()
-    config = {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {
-        "model": "gpt-5.2", "reasoning_effort": "medium", "api_key": "first-secret"}}
+    config = {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {
+        "model": "gemini-3.5-flash-lite", "reasoning_effort": "medium", "api_key": "first-secret"}}
     (first / "model.json").write_text(json.dumps(config))
     config["CHAT_COMPLETION_KWARGS_JSON"]["api_key"] = "second-secret"
     (second / "another-name.json").write_text(json.dumps(config, indent=2))
@@ -694,7 +694,7 @@ def test_actor_settings_include_both_observation_policies_and_exclude_resource_n
 def test_judge_settings_bind_rubric_prompts_schema_and_each_stage(monkeypatch):
     from w8bench.settings import evaluation_settings
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-4-argon")
     recording = {"manifest": {"controls": {"model": "gemini-3.8-flash"}}, "task": {}}
     settings = evaluation_settings(recording, eval_config="config", rubric_hash="one", judge_model="gemini-3.6-flash")
     assert settings["rubric_sha256"] == "one"
@@ -745,7 +745,7 @@ def test_completion_refusal_resumes_without_turning_unknown_into_failure(full_ev
     original = completion.ModelClient._post
     def mismatch(self, payload):
         response = original(self, payload)
-        return {**response, "model": "gpt-5.2"}
+        return {**response, "model": "gemini-3.5-flash-lite"}
     monkeypatch.setattr(completion.ModelClient, "_post", mismatch)
     args = evaluation_args(paths, rubric, comparison.DEFAULT_CONFIG)
     assert comparison.main(args) == 1
@@ -990,6 +990,11 @@ def test_ledger_evaluator_preserves_pending_and_stops_on_errors(tmp_path, monkey
     with pytest.raises(SystemExit) as error:
         runpy.run_path(str(script), run_name='__main__')
     assert error.value.code == expected and len(commands) == count
+    if expected == 130:
+        saved = [json.loads(line) for line in ledger.read_text().splitlines()]
+        assert saved[0]['evaluation_outcome'] == 'cancelled' and saved[0]['grade_outcome'] == 'ungraded'
+        assert saved[0]['judge_exit_code'] == 130 and saved[0]['grade_completed'] is True
+        assert saved[0]['judge_ended_at'] and saved[1] == {'recording': str(runs[1])}
 
 
 @pytest.mark.usefixtures('no_network')

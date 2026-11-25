@@ -100,7 +100,7 @@ def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any
 
 def _package_versions() -> dict[str, str]:
     versions: dict[str, str] = {}
-    for name in ("openai", "tiktoken", "httpx", "Pillow", "pydantic", "azure-identity"):
+    for name in ("google-genai", "tiktoken", "httpx", "Pillow", "pydantic"):
         try:
             versions[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
@@ -193,11 +193,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--judge-profile", choices=tuple(NATIVE_JUDGE_PROFILES), default=None)
     parser.add_argument("--compare-profiles", action="store_true", help="evaluate primary and pro native profiles separately on the same recordings")
     parser.add_argument("--cancel", action="store_true", help="cancel this collection's outstanding judge batches and forbid late result imports")
+    parser.add_argument("--stage", choices=("evaluate", "adjudicate"), default="evaluate",
+        help="evaluate completion, native evidence and inventory; adjudicate saved inventories")
     parser.add_argument("--execute", action="store_true",
         help="evaluate the run; saved effective settings must match before any stage resumes")
     args = parser.parse_args(argv)
     if args.judge_model != "gemini-3.6-flash":
         parser.error("completion judge must be explicitly set to gemini-3.6-flash")
+    if args.stage == "adjudicate" and args.judge_evidence_policy != "paired":
+        parser.error("adjudication requires the paired evidence policy")
     return args
 
 
@@ -277,7 +281,7 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
     task = recording["task"]
     evaluation_file = root / "evaluation.json"
     evaluation = read_object(evaluation_file) if evaluation_file.exists() else {
-        "schema_version": "within-run-evaluation/v2", "recording_sha256": recording["recording_sha256"],
+        "schema_version": "within-run-evaluation/v3", "recording_sha256": recording["recording_sha256"],
         "rubric_sha256": rubric_hash, "task_id": task["source_task_id"], "actor_arm": task["observation_mode"],
         "trial_id": str(task.get("run_name") or recording["manifest"]["run_name"]), "coverage": recording["coverage"],
         "validity_date": read_object(root / "input_receipt.json")["validity_date"],
@@ -359,13 +363,11 @@ def _audit_configuration_error(resolve_audit_config):
         audit_config = resolve_audit_config()
         if (audit_config["inventory"]["model"] != "gemini-3.1-pro-preview" or
                 audit_config["inventory"]["provider"] != "google" or
-                audit_config["adjudication"]["model"] != "gpt-6.1-sol" or
-                audit_config["adjudication"]["provider"] != "openai"):
-            raise ValueError("audit inventory must be Google gemini-3.1-pro-preview and adjudication must be OpenAI gpt-6.1-sol")
+                audit_config["adjudication"]["model"] != "gemini-4-argon" or
+                audit_config["adjudication"]["provider"] != "google"):
+            raise ValueError("audit inventory must be gemini-3.1-pro-preview and adjudication must be gemini-4-argon through Google")
         if not os.environ.get("GEMINI_API_KEY"):
-            raise ValueError("Google credentials are required for the evidence inventory and both verifiers")
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise ValueError("OpenAI credentials are required for audit adjudication")
+            raise ValueError("Google credentials are required for the evidence audit")
     except Exception as error:
         audit_configuration_error = f"{type(error).__name__}: {error}"
     return audit_configuration_error
@@ -532,28 +534,39 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
     _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, stage, run_commands, evaluation_file, evaluation)
 
 
-def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit):
+def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit, *, phase="evaluate"):
     call_records = []
+    inventory_path = root / "audit_inventory.json"
+    inventory_receipt = evaluation["stages"].get("audit", {}).get("inventory")
     os.environ["W8_JUDGE_STAGE_ATTEMPT"] = str(len(audit_history) + 1)
-    evaluation["stages"]["audit"] = {"status": "running", "calls": call_records,
+    evaluation["stages"]["audit"] = {"status": "running", "phase": phase, "calls": call_records,
         "usage_coverage": "unknown", "attempt_history": audit_history,
-        "effective_settings": stage_settings(evaluation.get("effective_settings"), "audit")}
+        "effective_settings": stage_settings(evaluation.get("effective_settings"), "audit"),
+        **({"inventory": inventory_receipt} if inventory_receipt else {})}
     write_json(evaluation_file, evaluation)
     try:
         audit = run_evidence_audit(screenshot_dir=screenshot_task, dom_dir=dom_task, rubric_file=rubric,
             screenshot_result=root / "screenshot_verifier" / "result.json", dom_result=root / "dom_model" / "result.json",
-            task_alias=task["source_task_id"], model="gemini-3.1-pro-preview", adjudicator_model="gpt-6.1-sol",
-            audit_provider="google", adjudicator_provider="openai", call_records=call_records,
-            run_name=evaluation["trial_id"])
-        write_json(root / "evidence_audit.json", audit)
-        audit_stage = {"status": "complete", "result": str(root / "evidence_audit.json"),
-            "result_sha256": hashlib.sha256((root / "evidence_audit.json").read_bytes()).hexdigest(),
-            "metrics": audit["metrics"], "calls": call_records}
+            task_alias=task["source_task_id"], model="gemini-3.1-pro-preview", adjudicator_model="gemini-4-argon",
+            audit_provider="google", adjudicator_provider="google", call_records=call_records,
+            run_name=evaluation["trial_id"], inventory_only=phase == "evaluate", inventory_path=inventory_path)
+        inventory_receipt = {"status": "complete", "result": str(inventory_path),
+            "result_sha256": hashlib.sha256(inventory_path.read_bytes()).hexdigest()}
+        if phase == "evaluate":
+            audit_stage = {"status": "awaiting_adjudication", "phase": phase,
+                "inventory": inventory_receipt, "calls": audit["calls"], "usage_coverage": "complete"}
+        else:
+            write_json(root / "evidence_audit.json", audit)
+            audit_stage = {"status": "complete", "phase": phase, "inventory": inventory_receipt,
+                "result": str(root / "evidence_audit.json"),
+                "result_sha256": hashlib.sha256((root / "evidence_audit.json").read_bytes()).hexdigest(),
+                "metrics": audit["metrics"], "calls": call_records}
     except BaseException as error:
         refusal = isinstance(error, ModelResponseRefusal) or any(row.get("refusal_reason") for row in call_records)
         audit_stage = {"status": "batch_pending" if isinstance(error, BatchPending) else "interrupted" if isinstance(error, KeyboardInterrupt) else "ungraded" if refusal else "failed",
-            "reason": str(error) if refusal else None,
-            "error": f"{type(error).__name__}: {error}", "calls": call_records, "usage_coverage": "unknown"}
+            "phase": phase, "reason": str(error) if refusal else None,
+            "error": f"{type(error).__name__}: {error}", "calls": call_records, "usage_coverage": "unknown",
+            **({"inventory": inventory_receipt} if inventory_receipt else {})}
         if not isinstance(error, Exception):
             audit_stage["attempt_history"] = audit_history
             audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
@@ -565,30 +578,44 @@ def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, ev
     return audit_stage
 
 
-def _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit):
+def _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit, *, phase="evaluate"):
     audit_stage = evaluation["stages"].get("audit", {})
+    inventory_receipt = audit_stage.get("inventory")
     if audit_stage.get("status") == "complete":
         if hashlib.sha256((root / "evidence_audit.json").read_bytes()).hexdigest() != audit_stage["result_sha256"]:
             raise ValueError("saved audit judge artifact changed")
-    if audit_stage.get("status") != "complete":
-        audit_history = _attempt_history(audit_stage)
-        if not recording["coverage"]["audit_eligible_states"]:
-            audit_stage = {"status": "not_eligible", "reason": "no_eligible_paired_states", "calls": [], "usage_coverage": "complete"}
-        elif audit_configuration_error is not None:
-            audit_stage = {"status": "blocked", "reason": "audit_configuration_failed",
-                "error": audit_configuration_error, "calls": [], "usage_coverage": "complete"}
-        elif evaluation["preflight"]["status"] != "passed":
-            audit_stage = {"status": "blocked", "reason": "paired_preflight_failed",
-                "error": evaluation["preflight"].get("error"), "calls": [], "usage_coverage": "complete"}
-        elif any(evaluation["stages"][name]["status"] == "batch_pending" for name in run_commands):
-            audit_stage = {"status": "batch_pending", "reason": "native_dependency_pending", "calls": [], "usage_coverage": "complete"}
-        elif any(evaluation["stages"][name]["status"] != "complete" for name in run_commands):
-            audit_stage = {"status": "blocked", "reason": "verifier_results_unavailable", "usage_coverage": "none"}
-        else:
-            audit_stage = _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit)
-        audit_stage["attempt_history"] = audit_history
-        audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
-        evaluation["stages"]["audit"] = audit_stage
+        return
+    if phase == "evaluate" and audit_stage.get("phase") == "adjudicate":
+        raise ValueError("adjudication has started; resume with --stage adjudicate")
+    if audit_stage.get("status") == "awaiting_adjudication":
+        inventory = audit_stage.get("inventory") or {}
+        if (inventory.get("status") != "complete" or Path(inventory.get("result", "")).resolve() != (root / "audit_inventory.json").resolve()
+                or not (root / "audit_inventory.json").is_file()
+                or hashlib.sha256((root / "audit_inventory.json").read_bytes()).hexdigest() != inventory.get("result_sha256")):
+            raise ValueError("saved inventory artifact changed or is missing")
+        if phase == "evaluate":
+            return
+    audit_history = _attempt_history(audit_stage)
+    if not recording["coverage"]["audit_eligible_states"]:
+        audit_stage = {"status": "not_eligible", "reason": "no_eligible_paired_states", "calls": [], "usage_coverage": "complete"}
+    elif audit_configuration_error is not None:
+        audit_stage = {"status": "blocked", "reason": "audit_configuration_failed",
+            "error": audit_configuration_error, "calls": [], "usage_coverage": "complete"}
+    elif evaluation["preflight"]["status"] != "passed":
+        audit_stage = {"status": "blocked", "reason": "paired_preflight_failed",
+            "error": evaluation["preflight"].get("error"), "calls": [], "usage_coverage": "complete"}
+    elif any(evaluation["stages"][name]["status"] == "batch_pending" for name in run_commands):
+        audit_stage = {"status": "batch_pending", "reason": "native_dependency_pending", "calls": [], "usage_coverage": "complete"}
+    elif any(evaluation["stages"][name]["status"] != "complete" for name in run_commands):
+        audit_stage = {"status": "blocked", "reason": "verifier_results_unavailable", "usage_coverage": "none"}
+    else:
+        audit_stage = _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit, phase=phase)
+    if inventory_receipt is not None:
+        audit_stage.setdefault("inventory", inventory_receipt)
+    audit_stage.setdefault("phase", phase)
+    audit_stage["attempt_history"] = audit_history
+    audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
+    evaluation["stages"]["audit"] = audit_stage
 
 
 def _evaluate_recording(args, run, recording):
@@ -600,13 +627,34 @@ def _evaluate_recording(args, run, recording):
     from .dom_model.runner import preflight_dom_model_task
     from .screenshot_verifier.preflight import preflight_screenshot_task
     from .normalize_results import normalize_dom_model, normalize_screenshot
-    if not os.environ.get("GEMINI_API_KEY"):
+    phase = args.stage
+    if phase == "evaluate" and not os.environ.get("GEMINI_API_KEY"):
         raise ValueError("primary model grading requires an explicitly configured Google credential")
     task = recording["task"]
     root, screenshot_task, dom_task = _prepare_inputs(run, recording)
     rubric, generation, frozen, rubric_hash = _prepare_rubric(args, root, task, load_canonical_rubric)
     current_settings = evaluation_settings(recording, eval_config=args.eval_config, rubric_hash=rubric_hash,
         judge_model=args.judge_model, evidence_policy="paired")
+    if phase == "adjudicate":
+        evaluation_file = root / "evaluation.json"
+        if not evaluation_file.is_file():
+            raise ValueError("adjudication requires a saved evaluation and inventory")
+        evaluation = read_object(evaluation_file)
+        audit = evaluation.get("stages", {}).get("audit", {})
+        if not recording["coverage"]["audit_eligible_states"] or any(
+                evaluation.get("stages", {}).get(name, {}).get("status") in {"ungraded", "failed", "blocked", "not_available"}
+                for name in ("screenshot_verifier", "dom_model")):
+            return 1
+        primary = root / "paired_completion.json"
+        inventory = audit.get("inventory") or {}
+        checkpoint = root / "audit_inventory.json"
+        if (not primary.is_file() or read_object(primary).get("method") not in {"model_judge", "exact_final_answer"}
+                or any(evaluation.get("stages", {}).get(name, {}).get("status") != "complete"
+                    for name in ("screenshot_verifier", "dom_model"))
+                or inventory.get("status") != "complete" or not checkpoint.is_file()
+                or Path(inventory.get("result", "")).resolve() != checkpoint.resolve()
+                or hashlib.sha256(checkpoint.read_bytes()).hexdigest() != inventory.get("result_sha256")):
+            raise ValueError("adjudication requires completed completion, native verifiers and an unchanged saved inventory")
     evaluation_file, evaluation = _open_evaluation(root, recording, rubric_hash, current_settings)
     pending = False
     grade = None
@@ -623,11 +671,13 @@ def _evaluate_recording(args, run, recording):
         except BatchPending:
             pending = True
     try:
-        _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit)
+        _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit, phase=phase)
     except BatchPending:
         pending = True
-    evaluation.update(status="batch_pending" if pending else "complete" if all(evaluation["stages"][name].get("status") == "complete"
-        for name in ("screenshot_verifier", "dom_model", "audit")) and grade is not None and grade["method"] != "ungraded" else "incomplete",
+    stage_ready = grade is not None and grade["method"] != "ungraded" and all(
+        evaluation["stages"][name].get("status") == "complete" for name in ("screenshot_verifier", "dom_model"))
+    evaluation.update(status="batch_pending" if pending else "complete" if stage_ready and evaluation["stages"]["audit"].get("status") == "complete"
+        else "awaiting_adjudication" if stage_ready and evaluation["stages"]["audit"].get("status") == "awaiting_adjudication" else "incomplete",
         completed_at=datetime.now(timezone.utc).isoformat())
     if inspect_recording(run)["recording_sha256"] != recording["recording_sha256"]:
         raise ValueError("actor recording changed during full evaluation")
@@ -635,7 +685,7 @@ def _evaluate_recording(args, run, recording):
     print(json.dumps({"completion": grade, "evaluation": str(evaluation_file), "status": evaluation["status"]}, indent=2))
     if pending:
         raise BatchPending(str(evaluation_file))
-    return 0 if evaluation["status"] == "complete" else 1
+    return 0 if evaluation["status"] in {"complete", "awaiting_adjudication"} else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -663,6 +713,16 @@ def main(argv: list[str] | None = None) -> int:
             return 130
         with jobs.locked() if args.execute and judge_transport() == "batch" else nullcontext():
             if args.execute and judge_transport() == "batch":
+                other_stage = "adjudicate" if args.stage == "evaluate" else "evaluate"
+                open_jobs = [read_object(path) for path in (root / "jobs").glob("*.json")]
+                outstanding = [job for job in open_jobs if job.get("status") not in {
+                    "completed", "failed", "expired", "cancelled", "upload_abandoned", "creation_rejected"}]
+                outstanding.extend(read_object(path) for path in (root / "requests").glob("*.json")
+                    if not (root / "responses" / path.name).is_file())
+                if any(not isinstance(item.get("stage"), str) for item in outstanding):
+                    raise ValueError("outstanding requests require a stage identity")
+                if any(item["stage"].startswith("audit.adjudication") == (args.stage == "evaluate") for item in outstanding):
+                    raise ValueError(f"outstanding requests require --stage {other_stage}")
                 jobs.poll()
             pending, failed = False, False
             for profile in profiles:
@@ -680,7 +740,8 @@ def main(argv: list[str] | None = None) -> int:
                         print(json.dumps({"status": "preflight", "recording_sha256": recording["recording_sha256"],
                             "coverage": recording["coverage"], "judge_model": args.judge_model,
                             "native_profile": profile, "native_model": native_judge_model(), "transport": judge_transport(),
-                            "evidence_policy": args.judge_evidence_policy, "model_calls": 0, "writes_performed": False}))
+                            "evidence_policy": args.judge_evidence_policy, "stage": args.stage,
+                            "model_calls": 0, "writes_performed": False}))
                         continue
                     identity = {"recording_sha256": recording["recording_sha256"], "task": recording["task"]["source_task_id"],
                         "arm": recording["task"]["observation_mode"], "trial": recording["task"].get("run_name"), "profile": profile,

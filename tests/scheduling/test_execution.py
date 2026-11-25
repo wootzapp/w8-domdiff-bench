@@ -272,7 +272,7 @@ def test_batch_resume_refuses_live_owned_recorder(tmp_path, monkeypatch):
     assert ledger.read_bytes() == original
 
 @pytest.mark.usefixtures('no_network')
-@pytest.mark.parametrize("judge", [None, "gemini-3.8-flash", "gpt-5.6"])
+@pytest.mark.parametrize("judge", [None, "gemini-3.8-flash", "gemini-3.1-pro-preview"])
 def test_batch_completion_judge_is_explicit_and_cannot_fall_back_to_actor(tmp_path, monkeypatch, judge):
     arguments = ["--trials", "1", "--rubric-dir", str(tmp_path/"rubrics"),
         "--output-dir", str(tmp_path/"out"), "--env-file", str(tmp_path/"absent.env"), "--dry-run"]
@@ -479,6 +479,7 @@ def test_batch_actor_failure_preserves_attempt_state(launcher_batch, monkeypatch
 def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launcher_batch, monkeypatch, judge_running):
     from types import SimpleNamespace
     from w8bench.task_recorder import prepare_verifier_data
+    from w8bench.verifier import run_full_comparison
     args, ledger, *_ = launcher_batch
     assert task_cli.main(args + ["--dry-run"]) == 0
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -488,7 +489,11 @@ def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launche
     second.update(technical_outcome="completed", completed=True, grade_completed=True, grade_outcome="success")
     write_json(Path(first["recording"]) / "final.json", {"run_status": "completed"})
     write_json_lines(ledger, rows)
-    monkeypatch.setattr(prepare_verifier_data, "inspect_recording", lambda path: {"recording_sha256": "r" * 64})
+    monkeypatch.setattr(prepare_verifier_data, "inspect_recording", lambda path: {
+        "recording_sha256": "r" * 64, "task": {}, "manifest": {}})
+    monkeypatch.setattr(run_full_comparison, "_validate_scheduled_recording", lambda *args: None)
+    monkeypatch.setattr(run_full_comparison, "_scheduled_summary", lambda *args: {})
+    monkeypatch.setattr(run_full_comparison, "_scheduled_grade", lambda *args: None)
     judges = []
     def judge(command, **kwargs):
         assert command[2] == "w8bench.verifier.run_comparison"
@@ -598,7 +603,7 @@ def test_profile_claim_tracks_container_lifetime_and_exact_image(tmp_path, monke
         "Config": {
             "Image": "browser:mutable-tag",
             "Labels": {"com.docker.compose.project.working_dir": str(tmp_path)},
-            "Env": ["LANG=en_US.UTF-8", "TZ=UTC", "OPENAI_API_KEY=do-not-record"],
+            "Env": ["LANG=en_US.UTF-8", "TZ=UTC", "GEMINI_API_KEY=do-not-record"],
         },
     }
     image = {"Id": image_id, "RepoDigests": ["browser@" + image_id], "Config": {"Labels": {"org.opencontainers.image.revision": "b" * 40}}}

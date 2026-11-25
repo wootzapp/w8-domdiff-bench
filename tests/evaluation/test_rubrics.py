@@ -25,7 +25,7 @@ import httpx
 import importlib
 import json
 import logging
-import openai
+from google.genai import errors
 import pytest
 import re
 
@@ -419,9 +419,9 @@ def test_task_validity_exhaustion_reports_unknown_instead_of_valid():
     result = asyncio.run(validity.classify_task("Read marker.", "https://example.test", client,
         prompt_template="$task_definition $url $date $apps", date="2026-11-17",
         logger=logging.getLogger("offline-validity")))
-    assert client.create.await_count == 5
+    assert client.create.await_count == 2
     assert result.score is None and result.is_invalid is None and result.is_ambiguous is None
-    assert "Failed after 5 attempts" in result.reasoning
+    assert "Failed after 2 attempts" in result.reasoning
 
 
 @pytest.mark.parametrize("mode", ["dom_model", "screenshot_verifier"])
@@ -806,7 +806,7 @@ def test_penalty_score_requires_numeric_zero_within_finite_weight(mode, score):
 def test_terminal_authentication_is_ungraded_without_stage_repair(mode, stage):
     from w8bench.verifier import validity
     response = httpx.Response(401, request=httpx.Request("POST", "https://offline.example.test"))
-    error = openai.AuthenticationError("invalid credentials", response=response, body={})
+    error = errors.ClientError(401, {"error": {"code": 401, "message": "invalid credentials"}}, response=response)
     agent, client = native_agent(mode)
     client.create.side_effect = error
     rubric = {"items": [{"criterion": "Saved", "description": "Saved marker", "max_points": 10,

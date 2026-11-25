@@ -445,17 +445,17 @@ def test_actor_default_limits_and_single_model_configuration(tmp_path, monkeypat
     launched = task_cli.parse_args(["sample", "--output-dir", str(tmp_path)])
     assert launched.max_steps == 200 and launched.max_output_tokens == 10000
     assert runner.MAX_TASK_MEMORY_CHARS == 8000
-    definition = {"instruction": "Read heading", "start_url": "https://example.test", "model": "gpt-6.1-sol"}
+    definition = {"instruction": "Read heading", "start_url": "https://example.test", "model": "gemini-4-argon"}
     command = task_cli.build_runner_command(definition, task_id="sample", task_name="sample",
         run_id="sample", output_dir=tmp_path, env_file=tmp_path/"absent.env", model="",
         max_steps=200, observation_mode="dom")
     assert command[command.index("--model")+1] == "gemini-3.8-flash"
     assert command[command.index("--max-output-tokens")+1] == "10000"
-    assert "gpt-6.1-sol" not in command  # Catalog metadata cannot select a second actor.
+    assert "gemini-4-argon" not in command  # Catalog metadata cannot select a second actor.
 
 @pytest.mark.usefixtures("no_network")
-@pytest.mark.parametrize("configured,override", [("", None), ("gpt-6.1-sol", None),
-    ("gemini-3.8-flash", "gpt-6.1-sol")])
+@pytest.mark.parametrize("configured,override", [("", None), ("gemini-4-argon", None),
+    ("gemini-3.8-flash", "gemini-4-argon")])
 def test_actor_startup_rejects_missing_wrong_or_overridden_model(tmp_path, monkeypatch, configured, override):
     monkeypatch.setenv("ACTOR_MODEL", configured)
     monkeypatch.setattr(runner, "CDPClient", lambda *a,**k: pytest.fail("invalid model opened a browser"))
@@ -475,12 +475,12 @@ def test_actor_env_rejects_duplicate_or_conflicting_model_values(tmp_path, monke
     envfile.write_text("ACTOR_MODEL=gemini-3.8-flash\nACTOR_MODEL=gemini-3.8-flash\n")
     with pytest.raises(RunnerError, match="exactly one"):
         runner.load_env(envfile)
-    envfile.write_text("ACTOR_MODEL=gpt-6.1-sol\n")
+    envfile.write_text("ACTOR_MODEL=gemini-4-argon\n")
     with pytest.raises(RunnerError, match="conflicts"):
         runner.load_env(envfile)
 
 @pytest.mark.usefixtures("no_network")
-@pytest.mark.parametrize("returned", ["gpt-6.1-sol", "gemini-3.8-flash-mini", None])
+@pytest.mark.parametrize("returned", ["gemini-4-argon", "gemini-3.8-flash-mini", None])
 @pytest.mark.parametrize("mode", ["dom", "screenshot"])
 def test_non_gemini_actor_response_stops_before_any_action(run_pair, tmp_path, monkeypatch, mode, returned):
     calls = []

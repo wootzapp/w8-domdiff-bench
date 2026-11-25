@@ -1,7 +1,7 @@
-SCORING_PROMPT_VERSION = "native-rubric-output-contract/v3"
+SCORING_PROMPT_VERSION = "native-rubric-output-contract/v4"
 
 
-GROUNDING_POLICY_VERSION = "dom_model_evidence_grounding_v1"
+GROUNDING_POLICY_VERSION = "dom_model_evidence_grounding_v2"
 
 
 EVIDENCE_STATUSES = frozenset({"SUPPORTED", "PARTIAL", "CONTRADICTED", "UNKNOWN"})
@@ -16,16 +16,29 @@ unproven.
 
 EVIDENCE_ANALYSIS_GROUNDING_POLICY = """
 DOM evidence rule:
-- Start criterion_analysis with exactly one status:
-  EVIDENCE_STATUS: SUPPORTED
-  EVIDENCE_STATUS: PARTIAL
-  EVIDENCE_STATUS: CONTRADICTED
-  EVIDENCE_STATUS: UNKNOWN
+- The first line of criterion_analysis must be EVIDENCE_STATUS: followed by exactly one status:
+  SUPPORTED, PARTIAL, CONTRADICTED or UNKNOWN. Include one space after the colon, with no punctuation
+  or explanation after the status. Put the explanation on the next line, encoded as \\n in JSON.
+  These JSON string examples illustrate the encoding; choose the status from evidence, not a default:
+  "EVIDENCE_STATUS: SUPPORTED\\nThe quoted facts establish the required claims."
+  "EVIDENCE_STATUS: PARTIAL\\nThe quoted facts establish only part of the criterion."
+  "EVIDENCE_STATUS: CONTRADICTED\\nThe quoted source conflicts with the required claim."
+  "EVIDENCE_STATUS: UNKNOWN\\nThe required source facts are absent from this state."
 - SUPPORTED means all material browser facts are explicit; PARTIAL means some are; CONTRADICTED means
   the state conflicts; UNKNOWN means relevant coverage is absent, omitted, truncated, or pixel-only.
 - Cite DOM_MODEL_STATE_INDEX and exact text, labels, values, controls, URL, dialogs, or errors.
 - Actions prove actions and the final answer proves delivery; neither proves browser facts. The answer
   need not appear in the DOM, but its browser-derived claims require DOM support.
+- For criteria requiring a reported result, compare each required final-answer claim with this state's
+  source facts. A visited page or a populated row does not establish correctness. Identify contradictions
+  in dates, values, units, scope or calculations even when other parts are correct. Process-only criteria
+  require the specified execution, not an unrequested final-answer statement.
+- Preserve decisive source quotes, values and conflicting final claims in the evidence and analysis
+  passed to later judges. Do not replace those facts with a positive verdict or a generic reference
+  to the source. When a state supports only part of a criterion, state which parts remain unproven.
+- Every required string must be nonempty. Use "None." for discrepancies only when no mismatch was
+  found; otherwise describe the conflict or missing support. Cite the actual DOM_MODEL_STATE_INDEX
+  in dom_model_evidence, not merely in criterion_analysis.
 - Never fill gaps with outside knowledge or plausibility: not contradicted is not supported. Absence
   proves nonexistence only when the relevant scope is represented and was explored.
 """.strip()
@@ -44,6 +57,16 @@ its represented portion; UNKNOWN gives no confirmation; CONTRADICTED warrants a 
 deduction. Do not fill gaps with outside knowledge,
 plausibility, or "not contradicted." Missing or pixel-only evidence is unproven, not automatically
 false. Do not penalize an answer merely because its text is not rendered.
+Check each required part of the frozen criterion before awarding full credit; use its existing
+partial-credit rules for missing or incorrect parts. For reported results, compare final-answer
+claims with the quoted source facts, including dates, values, units, scope and calculation inputs.
+Apply an exception for unavailable information only when its preconditions are evidenced. A claim
+of uncertainty does not override an explicit source answer. For process-only criteria, assess the
+required actions without demanding an unrequested final-answer statement.
+Baseline scores, positive evidence analyses and other judges' conclusions are claims to check,
+not proof. Resolve contradictions in their underlying evidence independently; retain the source
+fact and conflicting final claim in the existing justification or reasoning field. Do not carry
+forward full credit or outcome success merely because earlier stages awarded it.
 """.strip()
 
 from pathlib import Path
@@ -2087,3 +2110,5 @@ RUBRIC_REALITY_CHECK_PROMPT = (
 )
 MM_CRITERION_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_CRITERION_RESCORING_PROMPT
 MM_RUBRIC_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_RUBRIC_RESCORING_PROMPT
+OUTCOME_VERIFICATION_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + OUTCOME_VERIFICATION_PROMPT
+FIRST_POINT_OF_FAILURE_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + FIRST_POINT_OF_FAILURE_PROMPT

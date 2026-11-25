@@ -14,7 +14,7 @@ import tempfile
 import httpx
 from .common import canonical_sha256 as _digest
 
-POLICY_VERSION = "judge-batch/v1"
+POLICY_VERSION = "judge-batch/v2"
 _occurrences = defaultdict(int)
 
 
@@ -89,6 +89,8 @@ def evaluation_scope(root, identity):
 
 def request(body, *, provider, endpoint, stage, model=None, record=None):
     """Return a saved wire response, or queue the unchanged request body."""
+    if provider != "google" or endpoint != "generateContent":
+        raise ValueError("Batch judging requires Google generateContent")
     root_value = os.environ.get("W8_JUDGE_BATCH_ROOT")
     identity_value = os.environ.get("W8_JUDGE_RUN_ID")
     if not root_value or not identity_value:
@@ -124,7 +126,7 @@ def request(body, *, provider, endpoint, stage, model=None, record=None):
     if record is not None:
         record.update(transport="batch", batch_request_id=key, batch_job_id=value["job_id"],
             batch_policy_version=POLICY_VERSION, batch_evaluation_attempt=generation)
-        usage = value["body"].get("usage")
+        usage = None
         if "usageMetadata" in value["body"]:
             from .audit_requests import _record_gemini_response
             normalized = {}
@@ -132,7 +134,7 @@ def request(body, *, provider, endpoint, stage, model=None, record=None):
             usage = normalized["usage"]
         record.setdefault("batch_items", []).append({"batch_request_id": key, "batch_job_id": value["job_id"],
             "model": item["model"], "usage": usage, "transport": "batch", "status_code": value["status_code"],
-            "returned_model": value["body"].get("modelVersion", value["body"].get("model")),
+            "returned_model": value["body"].get("modelVersion"),
             "submitted_at": value.get("submitted_at"), "completed_at": value.get("completed_at")})
     return value
 
@@ -140,12 +142,10 @@ def request(body, *, provider, endpoint, stage, model=None, record=None):
 def http_transport(provider, stage, record):
     """Intercept the SDK's serialized request without changing its body."""
     def handle(wire):
-        endpoint = "/v1/chat/completions"
-        model = None
-        if ":generateContent" in wire.url.path:
-            endpoint = "generateContent"
-            model = wire.url.path.split("/models/", 1)[1].split(":", 1)[0]
-        value = request(json.loads(wire.content), provider=provider, endpoint=endpoint,
+        if ":generateContent" not in wire.url.path:
+            raise ValueError("Batch judging requires Google generateContent")
+        model = wire.url.path.split("/models/", 1)[1].split(":", 1)[0]
+        value = request(json.loads(wire.content), provider=provider, endpoint="generateContent",
             model=model, stage=stage, record=record)
         return httpx.Response(value["status_code"], json=value["body"], request=wire)
     return httpx.MockTransport(handle)
@@ -168,18 +168,11 @@ class BatchJobs:
             finally:
                 fcntl.flock(stream, fcntl.LOCK_UN)
 
-    def _client(self, provider, native=False):
-        key = (provider, native)
-        if key not in self.clients:
-            if provider == "google" and native:
-                from google import genai
-                self.clients[key] = genai.Client(api_key=os.environ["GEMINI_API_KEY"], http_options={"retry_options": {"attempts": 1}})
-            else:
-                from openai import OpenAI
-                self.clients[key] = OpenAI(api_key=os.environ["GEMINI_API_KEY" if provider == "google" else "OPENAI_API_KEY"],
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/" if provider == "google"
-                        else os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), max_retries=0)
-        return self.clients[key]
+    def _client(self):
+        if "google" not in self.clients:
+            from google import genai
+            self.clients["google"] = genai.Client(api_key=os.environ["GEMINI_API_KEY"], http_options={"retry_options": {"attempts": 1}})
+        return self.clients["google"]
 
     def submit(self):
         if (self.root / "cancelled.json").exists():
@@ -191,21 +184,22 @@ class BatchJobs:
         groups = defaultdict(list)
         for path in sorted((self.root / "requests").glob("*.json")):
             row = json.loads(path.read_text())
+            if row["provider"] != "google" or row["endpoint"] != "generateContent":
+                raise ValueError("Batch judging requires Google generateContent")
             if row["id"] not in assigned and not (self.root / "responses" / f"{row['id']}.json").exists():
                 groups[(row["provider"], row["endpoint"], row["model"], row["stage"])].append(path)
         submitted = 0
         for (provider, endpoint, model, stage), rows in groups.items():
             chunk, size = [], 0
-            limit = 2_000_000_000 if provider == "google" else 200_000_000
+            limit = 2_000_000_000
             with tempfile.TemporaryFile() as stream:
                 for path in rows:
                     row = json.loads(path.read_text())
-                    envelope = ({"key": row["id"], "request": row["body"]} if endpoint == "generateContent" else
-                        {"custom_id": row["id"], "method": "POST", "url": endpoint, "body": row["body"]})
+                    envelope = {"key": row["id"], "request": row["body"]}
                     line = (json.dumps(envelope, ensure_ascii=True) + "\n").encode()
                     if len(line) > limit:
                         raise ValueError("One unchanged judge request exceeds the provider Batch file limit; use normal transport for this stage")
-                    if chunk and (size + len(line) > limit or provider == "openai" and len(chunk) >= 50000):
+                    if chunk and size + len(line) > limit:
                         stream.seek(0)
                         self._submit_job(provider, endpoint, model, stage, chunk, stream)
                         submitted += 1
@@ -239,25 +233,17 @@ class BatchJobs:
             "request_ids": keys, "input_sha256": digest.hexdigest(), "transport": "batch",
             "status": "uploading", "job_id": None, "created_at": datetime.now(timezone.utc).isoformat()}
         _save(path, job)
-        if provider == "google":
-            client = self._client(provider, True)
-            uploaded = client.files.upload(file=str(input_path), config={"mime_type": "application/jsonl"})
-            file_id = uploaded.name
-        else:
-            with input_path.open("rb") as stream:
-                file_id = self._client(provider).files.create(file=stream, purpose="batch").id
+        client = self._client()
+        uploaded = client.files.upload(file=str(input_path), config={"mime_type": "application/jsonl"})
+        file_id = uploaded.name
         job.update(input_file_id=file_id, status="submission_uncertain")
         _save(path, job)
         # Creation is deliberately never retried. An uncertain receipt blocks
         # resume until its actual provider ID has been reconciled.
         try:
-            if endpoint == "generateContent":
-                result = self._client(provider, True).batches.create(model=model, src=file_id,
-                    config={"display_name": f"w8-{input_path.stem}"})
-                job_id = result.name
-            else:
-                result = self._client(provider).batches.create(input_file_id=file_id, endpoint=endpoint, completion_window="24h")
-                job_id = result.id
+            result = client.batches.create(model=model, src=file_id,
+                config={"display_name": f"w8-{input_path.stem}"})
+            job_id = result.name
         except Exception as error:
             code = getattr(error, "status_code", None) or getattr(error, "code", None)
             if type(code) is int and 400 <= code < 500:
@@ -275,6 +261,8 @@ class BatchJobs:
         active = 0
         for path in sorted((self.root / "jobs").glob("*.json")):
             job = json.loads(path.read_text())
+            if job["provider"] != "google" or job["endpoint"] != "generateContent":
+                raise ValueError("Batch judging requires Google generateContent")
             if job["status"] in {"completed", "failed", "expired", "cancelled", "upload_abandoned", "creation_rejected"}:
                 continue
             if not job.get("job_id"):
@@ -284,16 +272,15 @@ class BatchJobs:
                     _save(path, job)
                     continue
                 raise RuntimeError("Uncertain batch submission requires provider job-ID reconciliation; refusing to resubmit")
-            native = job["endpoint"] == "generateContent"
-            client = self._client(job["provider"], native)
-            response = client.batches.get(name=job["job_id"]) if native else client.batches.retrieve(job["job_id"])
+            client = self._client()
+            response = client.batches.get(name=job["job_id"])
             data = response.model_dump(mode="json", exclude_none=True) if hasattr(response, "model_dump") else response
-            reported_input = data.get("src", {}).get("file_name") if native else data.get("input_file_id")
+            reported_input = data.get("src", {}).get("file_name")
             if reported_input is not None and reported_input != job["input_file_id"]:
                 raise ValueError("Provider batch input file differs from its saved submission")
             if job["status"] == "submission_uncertain":
                 job["status"] = "submitted"
-            state = data.get("state", data.get("status"))
+            state = data.get("state")
             state = {"JOB_STATE_SUCCEEDED": "completed", "JOB_STATE_FAILED": "failed", "JOB_STATE_EXPIRED": "expired",
                 "JOB_STATE_CANCELLED": "cancelled"}.get(state, state)
             if state not in {"completed", "failed", "expired", "cancelled"}:
@@ -301,25 +288,21 @@ class BatchJobs:
                 _save(path, job)
                 active += 1
                 continue
-            output_ids = ([data.get("dest", {}).get("file_name")] if native else
-                [data.get("output_file_id"), data.get("error_file_id")])
+            output_ids = [data.get("dest", {}).get("file_name")]
             imported = set()
             for file_id in filter(None, output_ids):
-                if job["provider"] == "google":
-                    raw = self._client("google", True).files.download(file=file_id)
-                else:
-                    raw = client.files.content(file_id).content
+                raw = client.files.download(file=file_id)
                 for line in raw.decode().splitlines():
                     if not line.strip():
                         continue
                     row = json.loads(line)
-                    key = row.get("key", row.get("custom_id"))
+                    key = row.get("key")
                     if key not in job["request_ids"] or key in imported:
                         raise ValueError("Batch output has an unknown or duplicate request ID")
                     imported.add(key)
                     result = row.get("response") or {}
-                    body = result if native else result.get("body")
-                    status = 200 if native and not row.get("error") else result.get("status_code", 503)
+                    body = result
+                    status = 200 if not row.get("error") else 503
                     if row.get("error"):
                         error = row["error"]
                         code = error.get("code") if isinstance(error, dict) else None
@@ -327,8 +310,7 @@ class BatchJobs:
                             status = code if 400 <= code <= 599 else {3: 400, 4: 504, 5: 404, 7: 403,
                                 8: 429, 9: 400, 13: 500, 14: 503, 16: 401}.get(code, 500)
                         else:
-                            status = {"invalid_request_error": 400, "invalid_prompt": 400,
-                                "rate_limit_exceeded": 429, "authentication_error": 401}.get(code, 503)
+                            status = 503
                         body = {"error": error}
                     self._answer(key, job, status, body or {"error": {"message": "Batch item unavailable"}})
             for key in set(job["request_ids"]) - imported:
@@ -366,14 +348,14 @@ class BatchJobs:
                 response = self.root / "responses" / f"{key}.json"
                 value = json.loads(response.read_text()) if response.exists() else {}
                 body = value.get("body") or {}
-                usage = body.get("usage")
+                usage = None
                 if "usageMetadata" in body:
                     from .audit_requests import _record_gemini_response
                     normalized = {}
                     _record_gemini_response(normalized, body, {})
                     usage = normalized["usage"]
                 records.append({"batch_request_id": key, "batch_job_id": job.get("job_id"),
-                    "model": job["model"], "returned_model": body.get("modelVersion", body.get("model")),
+                    "model": job["model"], "returned_model": body.get("modelVersion"),
                     "stage": job["stage"], "transport": "batch", "usage": usage,
                     "status": "answered" if value else "submission_uncertain" if not job.get("job_id") else "submitted"})
         return records
@@ -393,10 +375,7 @@ class BatchJobs:
                 errors.append({"job_id": None, "reason": "submission_uncertain_requires_provider_reconciliation"})
             if job.get("job_id") and job["status"] not in {"completed", "failed", "expired", "cancelled"}:
                 try:
-                    if job["provider"] == "google":
-                        self._client(job["provider"], True).batches.cancel(name=job["job_id"])
-                    else:
-                        self._client(job["provider"]).batches.cancel(job["job_id"])
+                    self._client().batches.cancel(name=job["job_id"])
                 except Exception as error:
                     errors.append({"job_id": job["job_id"], "error_type": type(error).__name__})
         _save(self.root / "cancellation_receipt.json", {"errors": errors, "late_results_ignored": True})
@@ -562,27 +541,28 @@ def main(argv=None):
     load_env(args.env_file)
     image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8//8/AwMDEwMDAwMDAwAkBgMB/DXemwAAAABJRU5ErkJggg=="
     schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"], "additionalProperties": False}
-    messages = [{"role": "user", "content": [{"type": "text", "text": 'Return only {"ok":true}.'},
-        {"type": "image_url", "image_url": {"url": image, "detail": "high"}}]}]
     cases = [
         ("google", "generateContent", "gemini-3.6-flash", "completion", {
             "contents": [{"role": "user", "parts": [{"text": 'Return only {"ok":true}.'},
                 {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
             "generationConfig": {"thinkingConfig": {"thinkingLevel": "MEDIUM"}, "maxOutputTokens": 10000,
                 "mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json", "responseJsonSchema": schema}}),
-        ("openai", "/v1/chat/completions", "gpt-6.1-sol", "adjudication", {"model": "gpt-6.1-sol", "messages": messages,
-            "response_format": {"type": "json_object"}}),
-        ("google", "/v1/chat/completions", "gemini-3.5-flash-lite", "native_primary", {"model": "gemini-3.5-flash-lite",
-            "messages": messages, "reasoning_effort": "medium", "response_format": {"type": "json_object"}}),
-        ("google", "/v1/chat/completions", "gemini-3.1-pro-preview", "native_pro", {"model": "gemini-3.1-pro-preview",
-            "messages": messages, "reasoning_effort": "medium", "response_format": {"type": "json_object"}}),
+        ("google", "generateContent", "gemini-4-argon", "adjudication", {"contents": [{"role": "user", "parts": [
+            {"text": 'Return only {"ok":true}.'}, {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
+            "generationConfig": {"responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}}),
+        ("google", "generateContent", "gemini-3.5-flash-lite", "native_primary", {"contents": [{"role": "user", "parts": [
+            {"text": 'Return only {"ok":true}.'}, {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
+            "generationConfig": {"thinkingConfig": {"thinkingLevel": "MEDIUM"}, "responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}}),
+        ("google", "generateContent", "gemini-3.1-pro-preview", "native_pro", {"contents": [{"role": "user", "parts": [
+            {"text": 'Return only {"ok":true}.'}, {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
+            "generationConfig": {"thinkingConfig": {"thinkingLevel": "MEDIUM"}, "responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}}),
         ("google", "generateContent", "gemini-3.1-pro-preview", "inventory", {"contents": [{"role": "user", "parts": [
             {"text": 'Return only {"ok":true}.'}, {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
             "generationConfig": {"responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}}),
     ]
     if not args.execute:
         print(json.dumps({"status": "offline_preflight", "model_calls": 0, "writes_performed": False,
-            "generation_requests_if_approved": {"google": 4, "openai": 1},
+            "generation_requests_if_approved": {"google": 5},
             "approval_required": True, "cases": [{"provider": p, "endpoint": e, "model": m, "stage": stage, "body": body}
                 for p, e, m, stage, body in cases]}, indent=2))
         return 0
@@ -603,20 +583,10 @@ def main(argv=None):
                     pending = True
                     continue
                 raw = result["body"]
-                returned = raw.get("modelVersion", raw.get("model"))
-                if endpoint == "generateContent":
-                    from .audit_requests import _record_gemini_response
-                    content = _record_gemini_response(record, raw, {})
-                    acceptance_input = record
-                elif endpoint == "/v1/chat/completions":
-                    choices = raw.get("choices") or []
-                    content = (choices[0].get("message") or {}).get("content") if len(choices) == 1 else None
-                    acceptance_input = {"incomplete": len(choices) != 1 or
-                        (choices[0].get("finish_reason") or choices[0].get("finishReason")) != "stop"}
-                else:
-                    from w8bench.task_recorder.runner import response_text
-                    content, acceptance_input = response_text(raw), raw
-                acceptance = response_acceptance(model, returned, acceptance_input)
+                returned = raw.get("modelVersion")
+                from .audit_requests import _record_gemini_response
+                content = _record_gemini_response(record, raw, {})
+                acceptance = response_acceptance(model, returned, record)
                 valid = result["status_code"] == 200 and acceptance["accepted"] and json.loads(content or "null") == {"ok": True}
                 results.append({"provider": provider, "stage": stage, "configured_model": model, "returned_model": returned,
                     "accepted": valid, "acceptance": acceptance, "receipt": record})

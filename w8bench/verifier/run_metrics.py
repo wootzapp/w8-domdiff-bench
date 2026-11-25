@@ -15,10 +15,9 @@ from w8bench.settings import actual_browser_source_version
 # USD per million tokens; estimates use published Standard model tariffs.
 # Columns: input, output, cached input, 30-minute cache write, long-context threshold.
 TOKEN_PRICES = {
-    "gpt-6.1-sol": (2.0, 10.0, 0.1, 2.5, 272000),
+    "gemini-4-argon": (2.0, 10.0, 0.1, 0.0, None),
     "gemini-3.8-flash": (0.75, 3.75, 0.075, 0.75, None),
     "gemini-3.6-flash": (0.75, 3.75, 0.075, 0.75, None),
-    "gpt-5.2": (1.75, 14.0, 0.175, 1.75, None),
     "gemini-3.1-pro-preview": (2.0, 12.0, 0.2, 2.0, 200000),
     "gemini-3.5-flash-lite": (0.30, 2.50, 0.03, 0.30, None),
 }
@@ -55,7 +54,22 @@ def _normalized_usage(value):
     if not raw:
         return None
     values = _usage_values(raw)
+    reported_total = raw.get("total_tokens", raw.get("totalTokens"))
+    invalid_total = reported_total is not None and not valid_token_component(reported_total)
+    if invalid_total:
+        values["total_tokens"] = None
     normalized = {**raw, **values}
+    if invalid_total:
+        normalized.update(unattributed_tokens=None, token_components_reconcile=False)
+    if all(values[key] is not None for key in ("input_tokens", "output_tokens", "total_tokens")):
+        difference = values["total_tokens"] - values["input_tokens"] - values["output_tokens"]
+        counts = raw.get("usage_known_calls") or {}
+        comparable = not counts or (counts.get("total_tokens") is not None
+            and counts.get("input_tokens") == counts.get("output_tokens") == counts["total_tokens"]
+            and not raw.get("calls_without_reported_usage"))
+        normalized["unattributed_tokens"] = (difference if difference >= 0 else None) if comparable else raw.get("unattributed_tokens")
+        normalized["token_components_reconcile"] = (False if raw.get("token_components_reconcile") is False
+            else difference == 0 if comparable else raw.get("token_components_reconcile"))
     for alias, component in (("prompt_tokens", "input_tokens"), ("completion_tokens", "output_tokens"),
                              ("cache_creation_input_tokens", "cache_write_input_tokens")):
         if alias in normalized:
@@ -196,7 +210,7 @@ def _audit_streams(streams, stages):
         calls = [call for attempt in audit_attempts for call in attempt.get("calls", []) if call.get("stage") == stage_name]
         if not calls and not audit:
             continue
-        stream_usage = dict.fromkeys(("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), None)
+        stream_usage = dict.fromkeys(("input_tokens", "output_tokens", "total_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), None)
         coverage = dict.fromkeys(stream_usage, 0)
         for call in calls:
             values = _usage_values(call.get("usage"))
@@ -205,12 +219,10 @@ def _audit_streams(streams, stages):
                 if valid_token_component(value):
                     stream_usage[key] = (stream_usage[key] or 0) + value
                     coverage[key] += 1
-        stream_usage["total_tokens"] = ((stream_usage["input_tokens"] or 0) + (stream_usage["output_tokens"] or 0)
-            if coverage["input_tokens"] or coverage["output_tokens"] else None)
         unknown_attempts = sum(attempt.get("usage_coverage") in {"unknown", "none"} and
             attempt.get("status") not in {"blocked", "not_eligible", "not_available"} for attempt in audit_attempts)
         streams[f"audit:{stage_name}"] = {"unknown_attempts": unknown_attempts, "attempt_count": len(audit_attempts), "models": sorted({call.get("requested_model", call.get("model")) for call in calls}),
-            "calls": len(calls), "call_records": calls, "usage": stream_usage, "usage_known_calls": coverage,
+            "calls": len(calls), "call_records": calls, "usage": _normalized_usage({**stream_usage, "usage_known_calls": coverage}), "usage_known_calls": coverage,
             "usage_coverage": "complete" if calls and not unknown_attempts and coverage["input_tokens"] == coverage["output_tokens"] == len(calls)
                 else "complete" if audit.get("status") == "not_eligible" and not unknown_attempts else "partial" if calls else "unknown"}
     return audit
@@ -274,7 +286,7 @@ def _combine_attempt_usage(streams):
         unknown_attempts = sum(attempt.get("usage_coverage") != "complete" or
             any(_usage_values(attempt.get("usage"))[key] is None for key in ("input_tokens", "output_tokens"))
             and attempt.get("calls") != 0 for attempt in attempts)
-        member.update(current_attempt=current, attempts=attempts, attempt_count=len(attempts), usage=totals,
+        member.update(current_attempt=current, attempts=attempts, attempt_count=len(attempts), usage=_normalized_usage(totals),
             call_records=[call for attempt in attempts for call in attempt.get("call_records") or []],
             usage_known_attempts=reported, known_calls=sum(attempt.get("calls", 0) or 0 for attempt in attempts if isinstance(attempt.get("calls"), int)),
             calls=sum(attempt["calls"] for attempt in attempts) if all(isinstance(attempt.get("calls"), int) for attempt in attempts) else None,
@@ -306,7 +318,7 @@ def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary):
             usage = {field: sum(row[field] for row in values if row[field] is not None)
                 if any(row[field] is not None for row in values) else None for field in values[0]}
             streams[key] = {"model": records[0]["model"], "calls": len(records), "call_records": records,
-                "usage": usage, "usage_coverage": "complete" if all(row["input_tokens"] is not None and row["output_tokens"] is not None
+                "usage": _normalized_usage(usage), "usage_coverage": "complete" if all(row["input_tokens"] is not None and row["output_tokens"] is not None
                     for row in values) else "partial" if any(row["input_tokens"] is not None for row in values) else "unknown",
                 "scope": "Provider batch items from this pending stage attempt; earlier attempts remain separate."}
     _append_attempt_history(streams, stages, evaluation_path)
@@ -343,11 +355,18 @@ def _price_call(call, stream, assumptions, price_sources):
     if (any(not valid_token_component(value) for value in (cached, written))
             or cached + written > input_tokens):
         return None
-    price_sources.add("https://ai.google.dev/gemini-api/docs/pricing" if selected.startswith("gemini-")
-        else "https://developers.openai.com/api/docs/pricing")
+    price_sources.add("https://aistudio.google.com/docs/pricing")
     if selected in {"gemini-3.8-flash", "gemini-3.6-flash"}:
         assumptions.add(f"{selected.replace('-', '_').replace('.', '_')}_introductory_rates_through_2026_12_31")
     pin, pout, pcache, pwrite, threshold = TOKEN_PRICES[selected]
+    if selected == "gemini-4-argon":
+        if written:
+            return None
+        timestamp = call.get("completed_at") or call.get("started_at")
+        if timestamp and str(timestamp)[:10] >= "2026-12-01":
+            pin, pout, pcache = pin * 2, pout * 2, pcache * 2
+        else:
+            assumptions.add("gemini_4_argon_introductory_rates_through_2026_11_30")
     if threshold is not None and input_tokens > threshold:
         pin, pout, pcache, pwrite = pin * 2, pout * 1.5, pcache * 2, pwrite * 2
     transport = call.get("transport", "normal")
@@ -366,19 +385,55 @@ def _price_call(call, stream, assumptions, price_sources):
         + written * pwrite + written_12h * pwrite + output_tokens * pout) / 1000000
 
 
-def _price_stream(stream):
+def _price_stream(stream, *, reconcile_usage=True):
     estimate, priced, assumptions, price_sources = 0.0, 0, set(), set()
     records = stream.get("call_records", [])
     billing_items = [item for call in records for item in (call.get("batch_items") or [call])]
+    unreconciled = 0
+    conflicts = 0
+    residuals = []
+    totals = dict.fromkeys(("input_tokens", "output_tokens", "total_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), None)
+    known = dict.fromkeys(totals, 0)
+    unknown_reconciliation = 0
     for call in billing_items:
         amount = _price_call(call, stream, assumptions, price_sources)
         if amount is not None:
             estimate += amount
             priced += 1
+        if reconcile_usage:
+            raw = call.get("usage") if isinstance(call.get("usage"), dict) else call
+            usage = _usage_values(raw)
+            reported_total = raw.get("total_tokens", raw.get("totalTokens"))
+            invalid_total = reported_total is not None and not valid_token_component(reported_total)
+            if invalid_total:
+                usage["total_tokens"] = None
+                unreconciled += 1
+                conflicts += 1
+            for key, value in usage.items():
+                if value is not None:
+                    totals[key] = (totals[key] or 0) + value
+                    known[key] += 1
+            if all(usage[key] is not None for key in ("input_tokens", "output_tokens", "total_tokens")):
+                difference = usage["total_tokens"] - usage["input_tokens"] - usage["output_tokens"]
+                unreconciled += difference != 0
+                conflicts += difference < 0
+                if difference >= 0:
+                    residuals.append(difference)
+            else:
+                unknown_reconciliation += 1
+    if reconcile_usage and billing_items:
+        declared = _usage_values(stream.get("usage"))
+        stream["usage_accounting"] = {"source": "per_call_receipts",
+            "aggregate_discrepancies": {key: {"recorded": declared[key], "per_call": value}
+                for key, value in totals.items() if declared[key] != value},
+            "unknown_reconciliation_calls": unknown_reconciliation, "conflicting_total_calls": conflicts}
+        stream["usage"] = {**_object(stream.get("usage")), **totals, "usage_known_calls": known,
+            "unattributed_tokens": sum(residuals) if residuals else None,
+            "token_components_reconcile": (False if unreconciled else None if unknown_reconciliation else True)}
     calls = stream.get("calls")
     complete = (type(calls) is int and len(records) == calls and len(billing_items) == priced and not stream.get("unknown_attempts")
-        and stream.get("usage_coverage") == "complete")
-    stream["cost"] = {"currency": "USD", "kind": "estimated_from_list_prices", "price_date": "2026-11-16",
+        and stream.get("usage_coverage") == "complete" and not unreconciled)
+    stream["cost"] = {"currency": "USD", "kind": "estimated_from_list_prices", "price_date": "2026-11-25",
         "transport_modes": dict(Counter(call.get("transport", "normal") for call in records)),
         "sources": sorted(price_sources),
         "source": next(iter(price_sources)) if len(price_sources) == 1 else None,
@@ -387,7 +442,11 @@ def _price_stream(stream):
         "priced_calls": priced, "billing_items": len(billing_items),
         "unpriced_calls": max(calls, len(billing_items)) - priced if type(calls) is int else None,
         "unknown_attempts": stream.get("unknown_attempts", 0), "coverage": "complete" if complete else "partial" if priced else "unknown",
-        "assumptions": sorted(assumptions), "reason": None if complete else "missing_per_call_usage_or_attempt_coverage"}
+        "assumptions": sorted(assumptions), "reason": None if complete else
+            "unreconciled_provider_total" if unreconciled else "missing_per_call_usage_or_attempt_coverage"}
+    if reconcile_usage:
+        stream["cost"].update(unreconciled_calls=unreconciled,
+            unattributed_tokens=sum(residuals) if residuals else None)
 
 
 def _actor_statistics(recording, manifest, decisions, partial, cap):
@@ -471,15 +530,43 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
         "unknown_attempts": max(int(partial and not known_zero_calls), transport_unknown),
         "response_calls": len(decisions), "failed_transport_attempts": len(failed_transport),
         "usage_coverage": "partial" if partial and not known_zero_calls or missing or transport_unknown else "complete"}, **streams}
-    for stream in cost_streams.values():
-        _price_stream(stream)
+    for name, stream in cost_streams.items():
+        _price_stream(stream, reconcile_usage=name != "actor")
     response_cost = {"model": task.get("model"), "calls": len(decisions), "call_records": decisions,
         "usage_coverage": "partial" if missing else "complete"}
     transport_cost = {"model": task.get("model"), "calls": len(failed_transport), "call_records": failed_transport,
         "unknown_attempts": transport_unknown, "usage_coverage": "partial" if transport_unknown else "complete"}
-    _price_stream(response_cost)
-    _price_stream(transport_cost)
+    _price_stream(response_cost, reconcile_usage=False)
+    _price_stream(transport_cost, reconcile_usage=False)
     cost_streams["actor"]["cost_breakdown"] = {"responses": response_cost["cost"], "failed_transport": transport_cost["cost"]}
+    matching_verifier = {"dom": "dom_model", "screenshot": "screenshot_verifier"}[task["observation_mode"]]
+    matching_streams = {name: stream for name, stream in streams.items()
+        if name == matching_verifier or name.startswith(f"{matching_verifier}:")}
+    components = ("input_tokens", "output_tokens", "total_tokens")
+    actor_usage = {key: usage.get(key) for key in components}
+    matching_usage = {key: sum(values) if (values := [value for stream in matching_streams.values()
+        if valid_token_component(value := (stream.get("usage") or {}).get(key))]) else None for key in components}
+    matching_status = stages.get(matching_verifier, {}).get("status", "not_available")
+    complete = (not (partial and not known_zero_calls) and not missing
+        and matching_status in {"complete", "ungraded", "failed"} and bool(matching_streams)
+        and all(not stream.get("unknown_attempts")
+            and all(valid_token_component((stream.get("usage") or {}).get(key)) for key in components)
+            and ((counts := (stream.get("usage") or {}).get("usage_known_calls"))
+                and type(stream.get("calls")) is int and len(stream.get("call_records", [])) == stream["calls"]
+                and all(counts.get(key) == stream["calls"] for key in components)
+                or not counts and stream.get("usage_coverage") == "complete")
+            for stream in matching_streams.values())
+        and all(valid_token_component(actor_usage[key]) for key in components))
+    lower_bound = {key: sum(values) if (values := [value for value in (actor_usage[key], matching_usage[key])
+        if valid_token_component(value)]) else None for key in components}
+    arm_token_usage = {"policy": "actor-plus-matching-verifier/v1", "matching_verifier": matching_verifier,
+        "actor_usage": actor_usage, "matching_verifier_usage": matching_usage,
+        "usage": {key: lower_bound[key] if complete else None for key in components},
+        "known_usage_lower_bound": lower_bound,
+        "coverage": "complete" if complete else "partial" if any(value is not None for value in lower_bound.values()) else "unknown",
+        "matching_verifier_status": matching_status,
+        "included_streams": ["actor", *matching_streams],
+        "excluded_judge_streams": [name for name in streams if name not in matching_streams]}
     cap = manifest.get("controls", {}).get("max_turns")
     return {"run": str(source), "recording_available": not partial, "partial_recording": partial,
         "turns_complete": not partial or known_zero_calls,
@@ -494,6 +581,7 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
         "actual_browser_source_version": actual_browser_source_version(manifest),
         "completion_grade_available": grade is not None,
         "cost_streams": cost_streams,
+        "arm_token_usage": arm_token_usage,
         "judge_calls": sum(stream.get("calls") if isinstance(stream.get("calls"), int) else stream.get("known_calls", 0) for stream in primary_streams),
         "judge_calls_missing_usage": sum(max(1, stream.get("unknown_attempts", 0)) for stream in primary_streams if stream["usage_coverage"] != "complete"),
         "recording_sha256": recording.get("recording_sha256"),

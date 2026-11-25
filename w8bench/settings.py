@@ -136,14 +136,13 @@ def endpoint_settings(path):
     result = {}
     for source in files:
         payload = json.loads(source.read_text())
-        provider = payload.get("CHAT_COMPLETION_PROVIDER", "openai")
+        provider = payload.get("CHAT_COMPLETION_PROVIDER", "google")
         kwargs = payload.get("CHAT_COMPLETION_KWARGS_JSON", {})
         if isinstance(kwargs, str):
             kwargs = json.loads(kwargs)
         model = kwargs.get("model", "")
-        base = kwargs.get("base_url") or ("https://generativelanguage.googleapis.com/v1beta/openai/" if provider == "google"
-            else os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"))
-        row = normalized_settings({"model": model, "provider": provider, "route": "chat/completions", "base_url": base,
+        base = kwargs.get("base_url") or os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
+        row = normalized_settings({"model": model, "provider": provider, "route": "models/{model}:generateContent", "base_url": base,
             "reasoning_effort": kwargs.get("reasoning_effort"), "temperature": kwargs.get("temperature"),
             "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_tokens")),
             "config_sha256": settings_hash(payload), "request_settings": {key: value for key, value in kwargs.items()
@@ -173,8 +172,7 @@ def completion_settings(recording, *, rubric_hash, judge_model, base_url, eviden
 def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evidence_policy="paired"):
     from .model_identity import MODEL_ACCEPTANCE_POLICY
     from .verifier.completion import COMPLETION_POLICY_VERSION, GRADE_SCHEMA, JUDGE_PROMPT
-    from .verifier.audit_requests import (ADJUDICATION_SYSTEM_PROMPT, SYSTEM_PROMPT, GEMINI_GENERATION_SETTINGS,
-        OPENAI_GENERATION_SETTINGS, resolve_audit_config)
+    from .verifier.audit_requests import (ADJUDICATION_SYSTEM_PROMPT, SYSTEM_PROMPT, GEMINI_GENERATION_SETTINGS, resolve_audit_config)
     from .verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION
     from .verifier.common import native_judge_model, CANONICAL_RUBRIC_MODEL, CANONICAL_SETTINGS
     endpoints = endpoint_settings(eval_config)
@@ -193,20 +191,20 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
             "prompt_sha256": _native_prompts(mode), "schema_version": "finite-earned-points/v2",
             "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
             "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
-            "scoring_controls": CANONICAL_SETTINGS, "input_token_limit": 115000, "validation_attempts": 5,
+            "scoring_controls": CANONICAL_SETTINGS, "input_token_limit": 115000, "validation_attempts": 2,
             "max_output_tokens": None, "temperature": None, "dom_state_char_budget": 350000 if mode == "dom_model" else None,
             "evidence_policy": mode}
     audit = resolve_audit_config(model=os.environ.get("EVIDENCE_AUDIT_MODEL") or "gemini-3.1-pro-preview",
-        adjudicator_model=os.environ.get("EVIDENCE_ADJUDICATOR_MODEL") or "gpt-6.1-sol",
+        adjudicator_model=os.environ.get("EVIDENCE_ADJUDICATOR_MODEL") or "gemini-4-argon",
         audit_provider=os.environ.get("EVIDENCE_AUDIT_PROVIDER") or "google",
-        adjudicator_provider=os.environ.get("EVIDENCE_ADJUDICATOR_PROVIDER") or "openai")
+        adjudicator_provider=os.environ.get("EVIDENCE_ADJUDICATOR_PROVIDER") or "google")
     for stage in ("inventory", "adjudication"):
-        selected = audit[stage];google = selected["provider"] == "google"
+        selected = audit[stage]
         stages[stage] = {"models": [selected["model"]], "provider": selected["provider"],
-            "route": "models/{model}:generateContent" if google else "chat/completions",
-            "base_url": "https://generativelanguage.googleapis.com/v1beta" if google else os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            "route": "models/{model}:generateContent",
+            "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
             "reasoning_effort": None, "max_output_tokens": None, "temperature": None,
-            "generation_settings": GEMINI_GENERATION_SETTINGS if google else OPENAI_GENERATION_SETTINGS,
+            "generation_settings": GEMINI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if stage == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
             "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
@@ -251,7 +249,7 @@ def native_stage_settings(args, mode, *, rubric_hash):
         "prompt_sha256": _native_prompts(mode), "schema_version_policy": "finite-earned-points/v2",
         "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
         "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
-        "scoring_controls": controls, "validation_attempts": 5, "input_token_limit": 115000,
+        "scoring_controls": controls, "validation_attempts": 2, "input_token_limit": 115000,
         "evidence_policy": mode, "browser_source": browser_source_version()})
 
 
@@ -264,16 +262,15 @@ def guard_result_settings(path, current, *, label):
 
 def audit_settings(config, *, rubric_hash=None):
     from .model_identity import MODEL_ACCEPTANCE_POLICY
-    from .verifier.audit_requests import SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT, GEMINI_GENERATION_SETTINGS, OPENAI_GENERATION_SETTINGS
+    from .verifier.audit_requests import SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT, GEMINI_GENERATION_SETTINGS
     from .verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION
     stages = {}
     for name, selected in config.items():
-        google = selected["provider"] == "google"
         stages[name] = {"models": [selected["model"]], "provider": selected["provider"],
-            "route": "models/{model}:generateContent" if google else "chat/completions",
-            "base_url": "https://generativelanguage.googleapis.com/v1beta" if google else os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            "route": "models/{model}:generateContent",
+            "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
             "reasoning_effort": None, "max_output_tokens": None, "temperature": None,
-            "generation_settings": GEMINI_GENERATION_SETTINGS if google else OPENAI_GENERATION_SETTINGS,
+            "generation_settings": GEMINI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if name == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
             "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,

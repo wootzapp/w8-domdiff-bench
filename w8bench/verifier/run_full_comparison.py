@@ -78,7 +78,7 @@ def _scheduled_summary(row, recording, manifest):
         require_same_settings(expected, summary.get("evaluation_effective_settings"), label="scheduled evaluation")
     if row.get("evaluation_path") and summary.get("evaluation_path") and Path(row["evaluation_path"]).resolve() != Path(summary["evaluation_path"]).resolve():
         raise ValueError("evaluation receipt path differs from its scheduled attempt")
-    if row.get("evaluation_outcome") in {"complete", "incomplete"} and (
+    if row.get("evaluation_outcome") in {"complete", "incomplete", "awaiting_adjudication"} and (
             summary.get("evaluation") is None or row["evaluation_outcome"] != summary["evaluation"].get("status")):
         raise ValueError("evaluation outcome differs from its scheduled receipt")
     return summary
@@ -86,7 +86,8 @@ def _scheduled_summary(row, recording, manifest):
 
 def _scheduled_grade(row, summary):
     grade = summary["completion"]
-    if (grade.get("method") != "ungraded" or summary.get("evaluation")) and row.get("rubric"):
+    grade_available = summary.get("completion_grade_available") is True or grade.get("method") != "ungraded"
+    if (grade_available or summary.get("evaluation")) and row.get("rubric"):
         frozen = json.loads(Path(row["rubric"]).read_text())
         rubric_hash = hashlib.sha256(json.dumps(frozen.get("precomputed_rubric", frozen),sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
         rubric_hashes = {rubric_hash}
@@ -95,9 +96,9 @@ def _scheduled_grade(row, summary):
                 "max_points": 1, "earned_points": None, "justification": None} for item in frozen["criteria"]]}
             rubric_hashes.add(hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest())
         if (hashlib.sha256(Path(row["rubric"]).read_bytes()).hexdigest() != row["rubric_sha256"]
-                or grade.get("rubric_sha256") not in rubric_hashes
                 or summary.get("evaluation") is not None and summary["evaluation"].get("rubric_sha256") not in rubric_hashes
-                or grade.get("judge_model") != row["judge_model"] or grade.get("evidence_policy") != "paired"):
+                or grade_available and (grade.get("rubric_sha256") not in rubric_hashes
+                    or grade.get("judge_model") != row["judge_model"] or grade.get("evidence_policy") != "paired")):
             raise ValueError("grade differs from scheduled rubric, judge or primary evidence policy")
     return grade
 
@@ -331,6 +332,17 @@ def _report_markdown(summary, pairs, reports):
         "|---|---:|---:|---:|---:|---:|"]
     for mode, row in summary["modes"].items():
         lines.append(f"| {mode} | {row['completion_counts'].get('success', 0)} / {row['attempted_runs']} | {row['definitively_graded_tasks']} | {row['mean_turns_all_attempts']} | {row['rejected_turns']} | {row['stall_advisory_matches']} |")
+    lines += ["", "| Mode | Actor-only tokens (known) | Matching native verifier | Matching-verifier tokens (known) | Actor + matching-verifier tokens | Complete runs |",
+        "|---|---:|---|---:|---:|---:|"]
+    for mode, row in summary["modes"].items():
+        arm = row["arm_token_usage"]
+        actor = arm["actor_usage"]["total_tokens"]
+        native = arm["matching_verifier_usage"]["total_tokens"]
+        combined, lower = arm["usage"]["total_tokens"], arm["known_usage_lower_bound"]["total_tokens"]
+        displayed = str(combined) if valid_token_component(combined) else f"≥ {lower}" if valid_token_component(lower) else "unknown"
+        lines.append(f"| {mode} | {actor if valid_token_component(actor) else 'unknown'} | {arm['matching_verifier']} | {native if valid_token_component(native) else 'unknown'} | {displayed} | {arm['complete_runs']} / {arm['attempted_runs']} |")
+    lines += ["", "Arm tokens include the actor and its matching native verifier. Both native verifiers still run for each recording; all judge cost streams remain separate.",
+        "Component columns show known recorded usage; ≥ marks a lower bound. Actor tokens per turn remain actor-only."]
     lines += ["", "| Mode | k | pass@k confirmed lower | Possible upper |", "|---|---:|---:|---:|"]
     for mode in ("dom", "screenshot"):
         for k, estimate in summary["modes"][mode]["pass_at_k"].items():

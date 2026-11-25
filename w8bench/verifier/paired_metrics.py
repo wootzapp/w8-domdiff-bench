@@ -386,6 +386,37 @@ def _cost_estimates(metrics, rows):
 def _group_metrics(target, mode, selected):
     rows = [pair[mode] for pair in selected]
     metrics = target.setdefault(mode, {})
+    matching_verifier = "dom_model" if mode == "dom" else "screenshot_verifier"
+    arm_rows = []
+    for row in rows:
+        value = row.get("arm_token_usage", {})
+        arm_rows.append(value if value.get("policy") == "actor-plus-matching-verifier/v1"
+            and value.get("matching_verifier") == matching_verifier else {})
+    arm_tokens = {"policy": "actor-plus-matching-verifier/v1", "matching_verifier": matching_verifier,
+        "attempted_runs": len(rows), "usage": {}, "known_usage_lower_bound": {},
+        "actor_usage": {}, "matching_verifier_usage": {}, "usage_known_runs": {}, "distributions": {},
+        "coverage_counts": dict(Counter(value.get("coverage", "unknown") for value in arm_rows)),
+        "matching_verifier_status_counts": dict(Counter(value.get("matching_verifier_status", "not_available") for value in arm_rows)),
+        "included_streams": sorted({name for value in arm_rows for name in value.get("included_streams", [])}),
+        "excluded_judge_streams": sorted({name for value in arm_rows for name in value.get("excluded_judge_streams", [])}),
+        "complete_runs": sum(value.get("coverage") == "complete" and all(
+            valid_token_component(value.get("usage", {}).get(key))
+            for key in ("input_tokens", "output_tokens", "total_tokens")) for value in arm_rows)}
+    for component in ("input_tokens", "output_tokens", "total_tokens"):
+        values = [number for value in arm_rows
+            if valid_token_component(number := value.get("usage", {}).get(component))]
+        arm_tokens["usage"][component] = sum(values) if len(values) == len(rows) else None
+        arm_tokens["usage_known_runs"][component] = len(values)
+        for field in ("known_usage_lower_bound", "actor_usage", "matching_verifier_usage"):
+            known = [number for value in arm_rows
+                if valid_token_component(number := value.get(field, {}).get(component))]
+            arm_tokens[field][component] = sum(known) if known else None
+        arm_tokens["distributions"][component] = {"known_runs": len(values), "attempted_runs": len(rows),
+            "mean": statistics.mean(values) if values else None, "median": statistics.median(values) if values else None,
+            "min": min(values) if values else None, "max": max(values) if values else None, "values": values}
+    arm_tokens["coverage"] = ("complete" if all(valid_token_component(value) for value in arm_tokens["usage"].values())
+        else "partial" if any(valid_token_component(value) for value in arm_tokens["known_usage_lower_bound"].values()) else "unknown")
+    metrics["arm_token_usage"] = arm_tokens
     distributions = _distributions(rows)
     tpt = _tokens_per_turn(rows)
     streams = _judge_streams(rows)
@@ -445,10 +476,18 @@ def _paired_outcomes(result, pairs):
     result["mean_successful_pair_token_delta"] = statistics.mean(
         (pair["screenshot"]["token_usage"]["total_tokens"] or 0) - (pair["dom"]["token_usage"]["total_tokens"] or 0)
         for pair in common) if common and all(pair[mode].get("cost_coverage") == "complete" for pair in common for mode in ("dom", "screenshot")) else None
+    result["mean_successful_pair_arm_token_delta"] = statistics.mean(
+        pair["screenshot"]["arm_token_usage"]["usage"]["total_tokens"]
+        - pair["dom"]["arm_token_usage"]["usage"]["total_tokens"] for pair in common
+    ) if common and all((arm := pair[mode].get("arm_token_usage", {})).get("policy") == "actor-plus-matching-verifier/v1"
+        and arm.get("matching_verifier") == ("dom_model" if mode == "dom" else "screenshot_verifier")
+        and valid_token_component(arm.get("usage", {}).get("total_tokens"))
+        for pair in common for mode in ("dom", "screenshot")) else None
     result["denominator_notes"] = [
         "Every scheduled ledger row, including startup failure or missing recording, is in the denominator.",
         "Technical failures are ungraded and never agent failures; agent-eligible success excludes them while the scheduled lower bound retains all rows.",
         "Actor efficiency uses the final attempt only; prior technical-attempt usage and costs are reported separately.",
+        "Actor-only token deltas use actor tokens; arm-token deltas use actor plus its matching native verifier. Other evaluation overhead is excluded from the arm comparison; all judge and full cost streams remain reported separately.",
         "Missing/incomplete recordings retain known usage as lower bounds; exact cost means are null when coverage is incomplete.",
         "Input/output TPT each use their own known-usage call denominator; all call types qualify, including rejected, failed and termination calls.",
         "Unknown usage is null, never an observed zero; reasoning and cached reads/writes are reported as subsets with their own coverage.",
@@ -460,7 +499,7 @@ def _paired_outcomes(result, pairs):
         "Only k supported by every retained task is computed; no trial or task is silently omitted to increase k.",
         "All-trials-success reliability differs from pass@k, which requires at least one successful selected attempt.",
         "Success-conditioned means may use different task sets; the paired delta uses only tasks both modes complete.",
-        "Positive screenshot-minus-DOM deltas mean more screenshot actor turns.",
+        "Positive screenshot-minus-DOM deltas mean more screenshot actor turns or tokens in the labelled actor-only or actor-plus-matching-verifier scope.",
         "This benchmark includes target grounding differences between refs and coordinates; it does not isolate visual perception alone.",
         "Public web states can differ between independent runs; alternate run order and repeat trials before drawing conclusions."]
 
@@ -487,6 +526,7 @@ def aggregate(pairs: list[dict[str, Any]], *, pass_k: list[int] | None = None) -
         _validate_task_grades(task_id, attempts)
         for mode in ("dom", "screenshot"):
             result["per_task"][task_id][mode] = _task_mode_metrics(attempts, mode, ks)
+            _group_metrics(result["per_task"][task_id], mode, attempts)
     for mode in ("dom", "screenshot"):
         rows = [pair[mode] for pair in pairs]
         result["modes"][mode] = _mode_metrics(rows, len(by_task))

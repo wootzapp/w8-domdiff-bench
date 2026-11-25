@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, Callable
 
 import httpx
-from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 
 from w8bench.model_identity import MODEL_ACCEPTANCE_POLICY, ModelResponseRefusal, response_acceptance
 from w8bench.usage import known_token_component
@@ -26,9 +25,6 @@ from .audit_validation import CITATION_KEYS, validate_audit_response, validate_a
 GEMINI_API_VERSION = "v1beta"
 
 
-OPENAI_GENERATION_SETTINGS = {"response_format": {"type": "json_object"}}
-
-
 GEMINI_GENERATION_SETTINGS = {
     "response_mime_type": "application/json",
     "media_resolution": "MEDIA_RESOLUTION_HIGH",
@@ -40,16 +36,12 @@ def resolve_provider(model: str, provider: str | None = None) -> str:
         raise ValueError("A model ID is required")
     if model.endswith("-latest"):
         raise ValueError("Use an exact model ID, not a -latest alias")
-    if provider:
-        if provider not in {"openai", "google"}:
-            raise ValueError("Provider must be openai or google")
-        return provider
+    if provider and provider != "google":
+        raise ValueError("Audit provider must be google")
     name = model.removeprefix("models/")
     if name.startswith("gemini-"):
         return "google"
-    if name.startswith("gpt-") or re.match(r"^o\d", name):
-        return "openai"
-    raise ValueError("Cannot infer provider; set EVIDENCE_AUDIT_PROVIDER or EVIDENCE_ADJUDICATOR_PROVIDER, or the matching CLI provider flag")
+    raise ValueError("Audit models must use a Gemini model ID")
 
 
 def resolve_audit_config(model=None, adjudicator_model=None, audit_provider=None, adjudicator_provider=None) -> dict:
@@ -78,7 +70,7 @@ def _transport_request(call, record: dict):
             return result
         except Exception as error:
             code = getattr(error, "status_code", None) or getattr(error, "code", None)
-            retryable = isinstance(error, (APIConnectionError, httpx.TransportError, ConnectionError, TimeoutError)) or (
+            retryable = isinstance(error, (httpx.TransportError, ConnectionError, TimeoutError)) or (
                 isinstance(code, int) and (code == 429 or 500 <= code <= 599))
             message = str(error)
             for key, value in os.environ.items():
@@ -101,27 +93,25 @@ def check_audit_models(config: dict, *, records: list | None = None) -> dict:
     listings = {}
     for stage, selected in config.items():
         provider, model = selected["provider"], selected["model"]
+        resolve_provider(model, provider)
         if provider not in listings:
             record = {"provider": provider, "requested_at": datetime.now(timezone.utc).isoformat()}
             if records is not None:
                 records.append(record)
-            if provider == "google":
-                from google import genai
-                from google.genai import types
-                key = os.environ.get("GEMINI_API_KEY", "").strip()
-                if not key:
-                    raise ValueError("GEMINI_API_KEY is required for Google model checks")
-                with genai.Client(api_key=key, http_options=types.HttpOptions(
-                    api_version=GEMINI_API_VERSION, retry_options={"attempts": 1},
-                )) as client:
-                    names = _transport_request(lambda: [item.name.removeprefix("models/") for item in client.models.list() if item.name], record)
-            else:
-                with OpenAI(max_retries=0) as client:
-                    names = _transport_request(lambda: [item.id for item in client.models.list()], record)
+            from google import genai
+            from google.genai import types
+            key = os.environ.get("GEMINI_API_KEY", "").strip()
+            if not key:
+                raise ValueError("GEMINI_API_KEY is required for Google model checks")
+            with genai.Client(api_key=key, http_options=types.HttpOptions(
+                api_version=GEMINI_API_VERSION, retry_options={"attempts": 1},
+                base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta").rstrip("/").removesuffix("/v1beta"),
+            )) as client:
+                names = _transport_request(lambda: [item.name.removeprefix("models/") for item in client.models.list() if item.name], record)
             record.update(listed_at=datetime.now(timezone.utc).isoformat(), available_model_ids=sorted(set(names)))
             listings[provider] = record
         listing = listings[provider]
-        requested = model.removeprefix("models/") if provider == "google" else model
+        requested = model.removeprefix("models/")
         if requested not in listing["available_model_ids"]:
             raise ValueError(f"Configured model ID {model!r} was not listed exactly by {provider}; aborting")
         checks[stage] = {**selected, "listed_at": listing["listed_at"], "model_listed": True,
@@ -433,27 +423,13 @@ def adjudication_messages(
     ]
 
 
-def _audit_http_hooks(record, provider):
+def _audit_http_hooks(record):
     def requested(request):
         record["transport"] = judge_transport()
         record["api_attempts"].append({"status_code": None})
         try:
             payload = json.loads(request.content)
-            settings = (
-                payload.get("generationConfig", {})
-                if provider == "google"
-                else {
-                    key: payload[key]
-                    for key in (
-                        "model",
-                        "response_format",
-                        "temperature",
-                        "seed",
-                        "reasoning_effort",
-                    )
-                    if key in payload
-                }
-            )
+            settings = payload.get("generationConfig", {})
             record["api_attempts"][-1]["request_settings"] = settings
         except (ValueError, TypeError, AttributeError):
             pass
@@ -577,8 +553,9 @@ def _gemini_completion(model, messages, record, hooks):
         api_key=key,
         http_options=types.HttpOptions(
             api_version=GEMINI_API_VERSION,
+            base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta").rstrip("/").removesuffix("/v1beta"),
             retry_options={"attempts": 1},
-            client_args={"event_hooks": hooks, **({"transport": http_transport("google", "audit.inventory", record)}
+            client_args={"event_hooks": hooks, **({"transport": http_transport("google", f"audit.{record['stage']}", record)}
                 if judge_transport() == "batch" else {})},
         ),
     ) as client:
@@ -594,40 +571,6 @@ def _gemini_completion(model, messages, record, hooks):
             record,
         )
     return _record_gemini_response(record, response, settings)
-
-
-def _openai_completion(model, messages, record, hooks):
-    settings = OPENAI_GENERATION_SETTINGS.copy()
-    with OpenAI(
-        max_retries=0, http_client=DefaultHttpxClient(event_hooks=hooks,
-            **({"transport": http_transport("openai", "audit.adjudication", record)} if judge_transport() == "batch" else {}))
-    ) as client:
-        record["generation_settings"] = settings.copy()
-        response = _transport_request(
-            lambda: client.chat.completions.create(
-                model=model, messages=messages, **settings
-            ),
-            record,
-        )
-    record.update(
-        response_id=response.id,
-        response_model=response.model,
-        system_fingerprint=getattr(response, "system_fingerprint", None),
-        usage=response.usage.model_dump() if response.usage is not None else None,
-    )
-    choices = response.choices or []
-    choice = choices[0] if len(choices) == 1 else None
-    finish_reason = getattr(choice, "finish_reason", None)
-    record.update(
-        finish_reason=finish_reason,
-        incomplete=choice is None or finish_reason not in {None, "stop"},
-        requested_reasoning_effort=settings.get("reasoning_effort"),
-        requested_temperature=settings.get("temperature"),
-        requested_max_output_tokens=settings.get(
-            "max_completion_tokens", settings.get("max_tokens")
-        ),
-    )
-    return getattr(getattr(choice, "message", None), "content", None)
 
 
 def _completion_value(content, record):
@@ -656,7 +599,7 @@ def _completion(
         "provider": provider,
         "requested_model": model,
         "response_model": None,
-        "api_version": GEMINI_API_VERSION if provider == "google" else None,
+        "api_version": GEMINI_API_VERSION,
         "generation_settings": None,
         "stage": "adjudication"
         if messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT
@@ -671,12 +614,9 @@ def _completion(
     record["effective_settings"] = audit_settings({record["stage"]: {"model": model, "provider": provider}})["stages"][record["stage"]]
     print(json.dumps({"stage": record["stage"], "model": model}), flush=True)
     started = time.perf_counter()
-    hooks = _audit_http_hooks(record, provider)
+    hooks = _audit_http_hooks(record)
     try:
-        if provider == "google":
-            content = _gemini_completion(model, messages, record, hooks)
-        else:
-            content = _openai_completion(model, messages, record, hooks)
+        content = _gemini_completion(model, messages, record, hooks)
         acceptance = response_acceptance(model, record.get("response_model"), record,
             output_cap=record.get("requested_max_output_tokens"))
         record.update(acceptance_policy_version=MODEL_ACCEPTANCE_POLICY,

@@ -8,7 +8,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
-from openai import AsyncAzureOpenAI, AsyncOpenAI, BadRequestError
+from google.genai import Client as GoogleClient
+from google.genai.errors import ClientError, ServerError
 import pytest
 
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording
@@ -114,6 +115,9 @@ def test_actor_tpt_uses_separate_known_call_denominators_and_preserves_missing_u
     assert result["tokens_per_turn"]["output_tokens"]["known_usage_mean"] == 50
     assert result["tokens_per_turn"]["input_tokens"]["mean"] is None
     assert result["turns_missing_usage"] == 2
+    assert result["arm_token_usage"]["coverage"] == "partial"
+    assert result["arm_token_usage"]["usage"]["total_tokens"] is None
+    assert result["arm_token_usage"]["known_usage_lower_bound"]["total_tokens"] == 700
 
 @pytest.mark.usefixtures('no_network')
 def test_actor_hard_cap_and_output_limit_rates_include_all_recorded_calls(run_pair):
@@ -173,9 +177,9 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
             {"status": "ungraded", "calls": 1, "usage": {"input_tokens": 20, "output_tokens": 5}, "usage_coverage": "complete",
                 "model_settings": {"returned_model": "gemini-3.6-flash-2026-10-01"}},
             {"status": "interrupted", "usage_coverage": "unknown"}]},
-        "dom_model": {"status": "complete", "usage_coverage": "complete", "calls": {"gpt-5.2": 2},
-            "usage": {"gpt-5.2": {"input_tokens": 60, "output_tokens": 15}}, "attempt_history": [
-            {"status": "failed", "calls": {"gpt-5.2": 1}, "usage": {"gpt-5.2": {"input_tokens": 10, "output_tokens": 2}}, "usage_coverage": "complete"}]}}}
+        "dom_model": {"status": "complete", "usage_coverage": "complete", "calls": {"gemini-3.5-flash-lite": 2},
+            "usage": {"gemini-3.5-flash-lite": {"input_tokens": 60, "output_tokens": 15}}, "attempt_history": [
+            {"status": "failed", "calls": {"gemini-3.5-flash-lite": 1}, "usage": {"gemini-3.5-flash-lite": {"input_tokens": 10, "output_tokens": 2}}, "usage_coverage": "complete"}]}}}
     write_json(root / "evaluation.json", evaluation)
     result = summarize(recording)
     stream = result["judge_usage_streams"]["paired_completion"]
@@ -184,7 +188,7 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     assert stream["calls"] is None and stream["known_calls"] == 2
     assert stream["unknown_attempts"] == 1 and stream["usage_coverage"] == "partial"
     assert {row["returned_model"] for row in stream["call_records"]} == {"gemini-3.6-flash-2026-10-01"}
-    auxiliary = result["judge_usage_streams"]["dom_model:gpt-5.2"]
+    auxiliary = result["judge_usage_streams"]["dom_model:gemini-3.5-flash-lite"]
     assert auxiliary["usage"]["input_tokens"] == 70 and auxiliary["usage"]["output_tokens"] == 17
     assert auxiliary["calls"] == 3 and auxiliary["usage_coverage"] == "complete"
     assert result["judge_usage"]["input_tokens"] == 50
@@ -239,32 +243,40 @@ def test_wire_attempts_and_provider_usage_without_changing_requests(monkeypatch,
     async def respond(request):
         requests.append(json.loads(request.content))
         if len(requests) == 1:
-            return httpx.Response(500, json={"error": {"message": "temporary", "type": "server_error"}}, headers={"retry-after-ms": "1"})
-        return httpx.Response(200, json={"id": "response-1", "object": "chat.completion", "created": 0,
-            "model": "resolved-gpt-5.2-2026", "choices": [{"index": 0, "finish_reason": "length", "message": {"role": "assistant", "content": "{}"}}],
-            "usage": {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30,
-                "prompt_tokens_details": {"cached_tokens": 8}, "completion_tokens_details": {"reasoning_tokens": 6}}})
+            return httpx.Response(500, json={"error": {"code": 500, "message": "temporary", "status": "INTERNAL"}})
+        return httpx.Response(200, json={"modelVersion": "gemini-3.5-flash-lite-001",
+            "candidates": [{"finishReason": "MAX_TOKENS", "content": {"role": "model", "parts": [{"text": "{}"}]}}],
+            "usageMetadata": {"promptTokenCount": 20, "candidatesTokenCount": 4, "thoughtsTokenCount": 6,
+                "totalTokenCount": 30, "cachedContentTokenCount": 8}})
     def sdk(**kwargs):
-        return AsyncOpenAI(http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs)
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", sdk)
-    client = wrapper.OpenAIClientWrapper(package, api_key="offline-test", model="gpt-5.2")
+        options = kwargs["http_options"]
+        transport = options.httpx_async_client
+        transport._transport = httpx.MockTransport(respond)
+        transport._mounts = {}
+        return GoogleClient(**kwargs)
+    monkeypatch.setattr(wrapper.genai, "Client", sdk)
+    client = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     async def exercise():
         try:
+            with pytest.raises(ServerError):
+                await client.create([{"role": "user", "content": "unchanged"}], json_output=True)
             await client.create([{"role": "user", "content": "unchanged"}], json_output=True)
         finally:
             await client.close()
     asyncio.run(exercise())
-    assert len(requests) == 2
-    assert requests[0] == requests[1] == {"model": "gpt-5.2", "messages": [{"role": "user", "content": "unchanged"}], "response_format": {"type": "json_object"}}
-    record, = client._call_records
-    assert record["configured_model"] == record["requested_model"] == "gpt-5.2"
-    assert record["returned_model"] == "resolved-gpt-5.2-2026"
+    assert len(requests) == 2 and requests[0] == requests[1]
+    assert requests[0]["contents"] == [{"role": "user", "parts": [{"text": "unchanged"}]}]
+    assert requests[0]["generationConfig"] == {"responseMimeType": "application/json", "mediaResolution": "MEDIA_RESOLUTION_HIGH"}
+    failed, record = client._call_records
+    assert failed["usage_reported"] is False and failed["error_type"] == "ServerError"
+    assert record["configured_model"] == record["requested_model"] == "gemini-3.5-flash-lite"
+    assert record["returned_model"] == "gemini-3.5-flash-lite-001"
     assert record["reasoning_effort"] is None and record["temperature"] is None and record["max_output_tokens"] is None
-    assert record["http_attempts"] == 2 and record["http_attempts_observed"] is True
+    assert record["http_attempts"] == failed["http_attempts"] == 1 and record["http_attempts_observed"] is True
     assert record["input_tokens"] == 20 and record["output_tokens"] == 10
     assert record["cached_input_tokens"] == 8 and record["reasoning_tokens"] == 6
     assert record["total_tokens"] == 30 and record["cache_write_input_tokens"] is None
-    assert record["output_limit_hit"] is True and record["finish_reason"] == "length"
+    assert record["output_limit_hit"] is True and record["finish_reason"] == "MAX_TOKENS"
     assert client.total_usage().prompt_tokens == 20 and client.total_usage().completion_tokens == 10
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
@@ -272,12 +284,14 @@ def test_wire_attempts_and_provider_usage_without_changing_requests(monkeypatch,
 def test_failed_provider_call_retains_wire_attempt_and_unknown_usage(monkeypatch, package):
     wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
     async def respond(request):
-        return httpx.Response(400, json={"error": {"message": "invalid request", "type": "invalid_request_error"}})
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", lambda **kwargs: AsyncOpenAI(http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs))
-    client = wrapper.OpenAIClientWrapper(package, api_key="offline-test", model="gpt-5.2")
+        return httpx.Response(400, json={"error": {"code": 400, "message": "invalid request", "status": "INVALID_ARGUMENT"}})
+    monkeypatch.setattr(wrapper.genai, "Client", lambda **kwargs: (
+        setattr(kwargs["http_options"].httpx_async_client, "_transport", httpx.MockTransport(respond)),
+        setattr(kwargs["http_options"].httpx_async_client, "_mounts", {}), GoogleClient(**kwargs))[-1])
+    client = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     async def exercise():
         try:
-            with pytest.raises(BadRequestError):
+            with pytest.raises(ClientError):
                 await client.create([{"role": "user", "content": "test"}])
         finally:
             await client.close()
@@ -285,7 +299,7 @@ def test_failed_provider_call_retains_wire_attempt_and_unknown_usage(monkeypatch
     record, = client._call_records
     assert record["http_attempts"] == 1
     assert record["usage_reported"] is False and record["returned_model"] is None
-    assert record["error_type"] == "BadRequestError"
+    assert record["error_type"] == "ClientError"
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
@@ -294,13 +308,13 @@ def test_missing_subsets_stay_unknown_and_stage_survives_timeout_task(monkeypatc
     graceful = importlib.import_module(f"w8bench.verifier.clients.retry")
     accounting = importlib.import_module(f"w8bench.verifier.{package}.runner")
     async def respond(request):
-        return httpx.Response(200, json={"id": "response-1", "object": "chat.completion", "created": 0,
-            "model": "gpt-5.2", "choices": [{"index": 0, "finish_reason": "stop",
-                "message": {"role": "assistant", "content": "{}"}}],
-            "usage": {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30}})
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", lambda **kwargs: AsyncOpenAI(
-        http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs))
-    endpoint = wrapper.OpenAIClientWrapper(package, api_key="offline-test", model="gpt-5.2")
+        return httpx.Response(200, json={"modelVersion": "gemini-3.5-flash-lite",
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [{"text": "{}"}]}}],
+            "usageMetadata": {"promptTokenCount": 20, "candidatesTokenCount": 10, "thoughtsTokenCount": 0, "totalTokenCount": 37}})
+    monkeypatch.setattr(wrapper.genai, "Client", lambda **kwargs: (
+        setattr(kwargs["http_options"].httpx_async_client, "_transport", httpx.MockTransport(respond)),
+        setattr(kwargs["http_options"].httpx_async_client, "_mounts", {}), GoogleClient(**kwargs))[-1])
+    endpoint = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     monkeypatch.setattr(endpoint, "count_tokens", lambda **kwargs: 0)
     client = graceful.GracefulRetryClient([endpoint], timeout=1, evidence_mode=package)
     accounting.instrument_client_calls(client)
@@ -315,14 +329,16 @@ def test_missing_subsets_stay_unknown_and_stage_survives_timeout_task(monkeypatc
     record, = endpoint._call_records
     assert record["stage"] == f"w8bench.verifier.{package}.rubric_agent._offline_scoring_stage"
     assert record["stage_call_path"] == [record["stage"]]
-    assert record["reasoning_tokens"] is None and record["cached_input_tokens"] is None
+    assert record["reasoning_tokens"] == 0 and record["cached_input_tokens"] is None
     assert record["cache_write_input_tokens"] is None
     assert endpoint.total_usage().reasoning_tokens == 0
     usage = accounting.usage_dict(client)
-    assert usage["reasoning_tokens"] is None and usage["cached_input_tokens"] is None
-    assert usage["total_tokens"] == 30
+    assert usage["reasoning_tokens"] == 0 and usage["cached_input_tokens"] is None
+    assert usage["total_tokens"] == 37
+    assert usage["unattributed_tokens"] == 7 and usage["token_components_reconcile"] is False
     assert usage["usage_known_calls"]["input_tokens"] == usage["usage_known_calls"]["output_tokens"] == 1
-    assert usage["usage_known_calls"]["reasoning_tokens"] == usage["usage_known_calls"]["cached_input_tokens"] == 0
+    assert usage["usage_known_calls"]["reasoning_tokens"] == 1
+    assert usage["usage_known_calls"]["cached_input_tokens"] == 0
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
@@ -331,15 +347,15 @@ def test_unreported_provider_usage_is_distinct_from_reported_zero(monkeypatch, p
     wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
     accounting = importlib.import_module(f"w8bench.verifier.{package}.runner")
     async def respond(request):
-        payload = {"id": "response-1", "object": "chat.completion", "created": 0,
-            "model": "gpt-5.2", "choices": [{"index": 0, "finish_reason": "stop",
-                "message": {"role": "assistant", "content": "{}"}}]}
+        payload = {"modelVersion": "gemini-3.5-flash-lite",
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [{"text": "{}"}]}}]}
         if reported_zero:
-            payload["usage"] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            payload["usageMetadata"] = {"promptTokenCount": 0, "candidatesTokenCount": 0, "thoughtsTokenCount": 0, "totalTokenCount": 0}
         return httpx.Response(200, json=payload)
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", lambda **kwargs: AsyncOpenAI(
-        http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs))
-    endpoint = wrapper.OpenAIClientWrapper(package, api_key="offline-test", model="gpt-5.2")
+    monkeypatch.setattr(wrapper.genai, "Client", lambda **kwargs: (
+        setattr(kwargs["http_options"].httpx_async_client, "_transport", httpx.MockTransport(respond)),
+        setattr(kwargs["http_options"].httpx_async_client, "_mounts", {}), GoogleClient(**kwargs))[-1])
+    endpoint = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     async def exercise():
         try:
             await endpoint.create([{"role": "user", "content": "offline"}])
@@ -353,8 +369,8 @@ def test_unreported_provider_usage_is_distinct_from_reported_zero(monkeypatch, p
     assert usage["total_tokens"] == expected
     assert usage["usage_known_calls"]["input_tokens"] == usage["usage_known_calls"]["output_tokens"] == int(reported_zero)
     assert usage["calls_without_reported_usage"] == int(not reported_zero)
-    assert endpoint._call_records[0]["input_tokens"] == expected
-    assert endpoint._call_records[0]["output_tokens"] == expected
+    assert endpoint._call_records[0].get("input_tokens") == expected
+    assert endpoint._call_records[0].get("output_tokens") == expected
     assert endpoint.total_usage().prompt_tokens == endpoint.total_usage().completion_tokens == 0
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
@@ -377,105 +393,105 @@ def test_combined_usage_preserves_missing_instead_of_zero():
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("provider", ["openai", "azure"])
-def test_chat_provider_payload_response_retry_usage_and_close(monkeypatch, package, provider):
-    wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
-    requests = []
-    transports = []
+@pytest.mark.parametrize("effort", ["medium", "low"])
+def test_chat_provider_payload_response_retry_usage_and_close(monkeypatch, package, effort):
+    wrapper = importlib.import_module("w8bench.verifier.clients.providers")
+    requests, transports = [], []
     async def respond(request):
         requests.append((str(request.url), json.loads(request.content)))
         if len(requests) == 1:
-            return httpx.Response(500, json={"error": {"message": "temporary", "type": "server_error"}},
-                headers={"retry-after-ms": "1"})
-        return httpx.Response(200, json={"id": "offline-chat", "object": "chat.completion", "created": 0,
-            "model": "resolved-gpt-5.2", "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
-                "role": "assistant", "content": "done", "tool_calls": [{"id": "call-1", "type": "function",
-                    "function": {"name": "inspect", "arguments": "{}"}}]}}],
-            "usage": {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30,
-                "prompt_tokens_details": {"cached_tokens": 8},
-                "completion_tokens_details": {"reasoning_tokens": 6}}})
+            return httpx.Response(500, json={"error": {"code": 500, "message": "temporary", "status": "INTERNAL"}})
+        return httpx.Response(200, json={"modelVersion": "gemini-3.5-flash-lite-001",
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [
+                {"text": "done"}, {"functionCall": {"name": "inspect", "args": {}}}]}}],
+            "usageMetadata": {"promptTokenCount": 20, "candidatesTokenCount": 4, "thoughtsTokenCount": 6,
+                "totalTokenCount": 30, "cachedContentTokenCount": 8}})
     def sdk(**kwargs):
-        transport = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        options = kwargs["http_options"]
+        transport = options.httpx_async_client
+        transport._transport = httpx.MockTransport(respond)
+        transport._mounts = {}
         transports.append(transport)
-        constructor = AsyncAzureOpenAI if provider == "azure" else AsyncOpenAI
-        return constructor(http_client=transport, **kwargs)
-    monkeypatch.setattr(wrapper, "AsyncAzureOpenAI" if provider == "azure" else "AsyncOpenAI", sdk)
-    options = {"api_key": "offline-test", "model": "gpt-5.2"}
-    if provider == "azure":
-        options.update(azure_endpoint="https://azure.example.test", api_version="2025-03-01-preview")
-    client = (wrapper.AzureOpenAIClientWrapper if provider == "azure" else wrapper.OpenAIClientWrapper)(package, **options)
+        return GoogleClient(**kwargs)
+    monkeypatch.setattr(wrapper.genai, "Client", sdk)
+    client = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     tools = [{"type": "function", "function": {"name": "inspect", "parameters": {"type": "object"}}}]
-    extra = {"temperature": 0.25, "reasoning_effort": "medium", "max_completion_tokens": 10000, "top_k": 4}
+    extra = {"temperature": 0.25, "reasoning_effort": effort, "max_output_tokens": 10000, "top_k": 4}
     async def exercise():
         try:
+            with pytest.raises(ServerError):
+                await client.create([{"role": "user", "content": "Inspect the page."}], tools=tools,
+                    json_output=True, extra_create_args=extra)
             return await client.create([{"role": "user", "content": "Inspect the page."}], tools=tools,
                 json_output=True, extra_create_args=extra)
         finally:
             await client.close()
     result = asyncio.run(exercise())
-    expected = {"model": "gpt-5.2", "messages": [{"role": "user", "content": "Inspect the page."}],
-        "response_format": {"type": "json_object"}, "tools": tools,
-        "temperature": 0.25, "reasoning_effort": "medium", "max_completion_tokens": 10000, "top_k": 4}
-    assert len(requests) == 2 and requests[0][1] == requests[1][1] == expected
-    if provider == "azure":
-        assert requests[0][0] == "https://azure.example.test/openai/deployments/gpt-5.2/chat/completions?api-version=2025-03-01-preview"
-    assert extra == {"temperature": 0.25, "reasoning_effort": "medium", "max_completion_tokens": 10000, "top_k": 4}
-    assert result.content == result.message.content == "done" and result.finish_reason == "tool_calls"
-    assert [(call.id, call.function.name, call.function.arguments) for call in result.tool_calls] == [("call-1", "inspect", "{}")]
+    assert len(requests) == 2 and requests[0] == requests[1]
+    payload = requests[0][1]
+    assert payload["contents"] == [{"role": "user", "parts": [{"text": "Inspect the page."}]}]
+    assert payload["generationConfig"] == {"mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json",
+        "temperature": .25, "thinkingConfig": {"thinkingLevel": effort.upper()}, "maxOutputTokens": 10000, "topK": 4}
+    assert payload["tools"] == [{"functionDeclarations": [{"name": "inspect", "parameters": {"type": "OBJECT"}}]}]
+    assert requests[0][0] == "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
+    assert extra == {"temperature": 0.25, "reasoning_effort": effort, "max_output_tokens": 10000, "top_k": 4}
+    assert result.content == "done" and result.finish_reason == "STOP"
+    assert result.tool_calls[0]["name"] == "inspect" and result.tool_calls[0]["args"] == {}
     assert (result.usage.prompt_tokens, result.usage.completion_tokens, result.usage.reasoning_tokens) == (20, 10, 6)
-    record, = client._call_records
-    assert record["configured_model"] == record["requested_model"] == "gpt-5.2"
-    assert record["returned_model"] == "resolved-gpt-5.2"
-    assert record["http_attempts"] == 2 and record["http_attempts_observed"] is True
+    failed, record = client._call_records
+    assert failed["error_type"] == "ServerError" and failed["usage_reported"] is False
+    assert record["configured_model"] == record["requested_model"] == "gemini-3.5-flash-lite"
+    assert record["returned_model"] == "gemini-3.5-flash-lite-001"
+    assert record["http_attempts"] == 1 and record["http_attempts_observed"] is True
     assert record["input_tokens"] == 20 and record["output_tokens"] == 10 and record["total_tokens"] == 30
     assert record["cached_input_tokens"] == 8 and record["reasoning_tokens"] == 6
-    assert record["reasoning_effort"] == "medium" and record["temperature"] == 0.25
+    assert record["reasoning_effort"] == effort.upper() and record["temperature"] == 0.25
     assert record["max_output_tokens"] == 10000 and record["output_limit_hit"] is False
-    assert record["finish_reason"] == "tool_calls" and record["error_type"] is None
+    assert record["finish_reason"] == "STOP" and record["error_type"] is None
     total = client.total_usage()
     assert (total.prompt_tokens, total.completion_tokens, total.reasoning_tokens) == (20, 10, 6)
     assert all(transport.is_closed for transport in transports)
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-def test_azure_chat_error_propagates_with_unknown_usage_and_closed_transport(monkeypatch, package):
-    wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
-    requests = []
-    transports = []
+def test_native_error_propagates_with_unknown_usage_and_closed_transport(monkeypatch, package):
+    wrapper = importlib.import_module("w8bench.verifier.clients.providers")
+    requests, transports = [], []
     async def respond(request):
         requests.append(json.loads(request.content))
-        return httpx.Response(400, json={"error": {"message": "invalid request", "type": "invalid_request_error"}})
+        return httpx.Response(400, json={"error": {"code": 400, "message": "invalid request", "status": "INVALID_ARGUMENT"}})
     def sdk(**kwargs):
-        transport = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        options = kwargs["http_options"]
+        transport = options.httpx_async_client
+        transport._transport = httpx.MockTransport(respond)
+        transport._mounts = {}
         transports.append(transport)
-        return AsyncAzureOpenAI(http_client=transport, **kwargs)
-    monkeypatch.setattr(wrapper, "AsyncAzureOpenAI", sdk)
-    client = wrapper.AzureOpenAIClientWrapper(package, api_key="offline-test", azure_deployment="gpt-5.2",
-        azure_endpoint="https://azure.example.test", api_version="2025-03-01-preview")
+        return GoogleClient(**kwargs)
+    monkeypatch.setattr(wrapper.genai, "Client", sdk)
+    client = wrapper.GeminiClientWrapper(package, api_key="offline-test", model="gemini-3.5-flash-lite")
     async def exercise():
         try:
-            with pytest.raises(BadRequestError, match="invalid request"):
+            with pytest.raises(ClientError, match="invalid request"):
                 await client.create([{"role": "user", "content": "Inspect."}])
         finally:
             await client.close()
     asyncio.run(exercise())
-    assert requests == [{"model": "gpt-5.2", "messages": [{"role": "user", "content": "Inspect."}]}]
+    assert requests == [{"contents": [{"role": "user", "parts": [{"text": "Inspect."}]}],
+        "generationConfig": {"mediaResolution": "MEDIA_RESOLUTION_HIGH"}}]
     record, = client._call_records
-    assert record["error_type"] == "BadRequestError" and record["http_attempts"] == 1
+    assert record["error_type"] == "ClientError" and record["http_attempts"] == 1
     assert record["usage_reported"] is False and record["returned_model"] is None
     assert "input_tokens" not in record and "output_tokens" not in record
     assert all(transport.is_closed for transport in transports)
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("config_name", ["openai", "google_gemini3_1_pro_preview.json"])
+@pytest.mark.parametrize("config_name", ["google_gemini3_5_flash_lite.json", "google_gemini3_1_pro_preview.json"])
 def test_pinned_client_config_metadata_preserves_sdk_defaults_and_wire_payload(monkeypatch, package, config_name):
-    from pathlib import Path
-    wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
-    factory = importlib.import_module(f"w8bench.verifier.clients.factory")
+    wrapper = importlib.import_module("w8bench.verifier.clients.providers")
+    factory = importlib.import_module("w8bench.verifier.clients.factory")
     common = importlib.import_module("w8bench.verifier.common")
-    configuration = ({"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-6.1-sol"}}
-        if config_name == "openai" else json.loads((Path(common.__file__).resolve().parents[2] / "config" / config_name).read_text()))
+    configuration = json.loads((Path(common.__file__).resolve().parents[2] / "config" / config_name).read_text())
     configuration["CHAT_COMPLETION_KWARGS_JSON"]["api_key"] = "offline-test"
     configuration["CHAT_COMPLETION_KWARGS_JSON"].update(model_capabilities={"function_calling": True, "json_output": True, "vision": True}, max_retries=5)
     minimal = json.loads(json.dumps(configuration))
@@ -484,19 +500,22 @@ def test_pinned_client_config_metadata_preserves_sdk_defaults_and_wire_payload(m
     sdk_options, requests = [], []
     async def respond(request):
         requests.append(json.loads(request.content))
-        return httpx.Response(200, json={"id": "offline-config", "object": "chat.completion", "created": 0,
-            "model": configuration["CHAT_COMPLETION_KWARGS_JSON"]["model"],
-            "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "done"}}]})
+        return httpx.Response(200, json={"modelVersion": configuration["CHAT_COMPLETION_KWARGS_JSON"]["model"],
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [{"text": "done"}]}}]})
     def sdk(**kwargs):
         sdk_options.append(dict(kwargs))
-        return AsyncOpenAI(http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs)
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", sdk)
+        options = kwargs["http_options"]
+        transport = options.httpx_async_client
+        transport._transport = httpx.MockTransport(respond)
+        transport._mounts = {}
+        return GoogleClient(**kwargs)
+    monkeypatch.setattr(wrapper.genai, "Client", sdk)
     async def exercise():
         results = []
         for value in (configuration, minimal):
             client = factory.create_client_from_config(value, evidence_mode=package)
             try:
-                assert client.client.max_retries == 2
+                assert client._http_options["retry_options"].attempts == 1
                 result = await client.create([{"role": "user", "content": "Inspect."}], json_output=True)
                 results.append((result.content, result.finish_reason, client.metadata, client._call_records))
             finally:
@@ -504,61 +523,55 @@ def test_pinned_client_config_metadata_preserves_sdk_defaults_and_wire_payload(m
         return results
     first, second = asyncio.run(exercise())
     assert first == second
-    expected_options = {"api_key": "offline-test"}
-    if configuration["CHAT_COMPLETION_PROVIDER"] == "google":
-        expected_options["base_url"] = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    assert sdk_options == [expected_options, expected_options]
-    expected = {"model": configuration["CHAT_COMPLETION_KWARGS_JSON"]["model"],
-        "messages": [{"role": "user", "content": "Inspect."}], "response_format": {"type": "json_object"}}
-    if configuration["CHAT_COMPLETION_PROVIDER"] == "google":
-        expected["reasoning_effort"] = "medium"
-        assert first[2]["provider"] == "google"
-        assert first[3][0]["reasoning_effort"] == "medium"
-    assert requests == [expected, expected]
+    assert [value["api_key"] for value in sdk_options] == ["offline-test", "offline-test"]
+    assert all(value["http_options"].retry_options.attempts == 1 for value in sdk_options)
+    assert requests[0] == requests[1]
+    assert requests[0]["contents"] == [{"role": "user", "parts": [{"text": "Inspect."}]}]
+    assert requests[0]["generationConfig"] == {"mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json",
+        "thinkingConfig": {"thinkingLevel": "MEDIUM"}}
+    assert first[2]["provider"] == "google" and first[3][0]["reasoning_effort"] == "MEDIUM"
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("model", ["gemini-3.1-pro-preview", "gemini-3.8-flash"])
+@pytest.mark.parametrize("model", ["gemini-3.1-pro-preview", "gemini-3.5-flash-lite"])
 def test_google_judge_wire_routing_settings_and_usage(monkeypatch, package, model):
-    wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
-    factory = importlib.import_module(f"w8bench.verifier.clients.factory")
-    graceful = importlib.import_module(f"w8bench.verifier.clients.retry")
+    wrapper = importlib.import_module("w8bench.verifier.clients.providers")
+    factory = importlib.import_module("w8bench.verifier.clients.factory")
+    graceful = importlib.import_module("w8bench.verifier.clients.retry")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-google-key")
-    monkeypatch.setenv("OPENAI_API_KEY", "offline-other-provider-key")
     requests = []
-
     async def respond(request):
-        requests.append((str(request.url), request.headers["authorization"], json.loads(request.content)))
-        return httpx.Response(200, json={"id": "google-offline", "object": "chat.completion", "created": 0,
-            "model": f"{model}-20261116", "choices": [{"index": 0, "finish_reason": "stop",
-                "message": {"role": "assistant", "content": "{}"}}],
-            "usage": {"prompt_tokens": 100, "completion_tokens": 30, "total_tokens": 130,
-                "prompt_tokens_details": {"cached_tokens": 40},
-                "completion_tokens_details": {"reasoning_tokens": 20}}})
-
-    monkeypatch.setattr(wrapper, "AsyncOpenAI", lambda **kwargs: AsyncOpenAI(
-        http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)), **kwargs))
+        requests.append((str(request.url), request.headers["x-goog-api-key"], json.loads(request.content)))
+        return httpx.Response(200, json={"modelVersion": f"{model}-001",
+            "candidates": [{"finishReason": "STOP", "content": {"role": "model", "parts": [{"text": "{}"}]}}],
+            "usageMetadata": {"promptTokenCount": 100, "candidatesTokenCount": 10, "thoughtsTokenCount": 20,
+                "totalTokenCount": 130, "cachedContentTokenCount": 40}})
+    monkeypatch.setattr(wrapper.genai, "Client", lambda **kwargs: (
+        setattr(kwargs["http_options"].httpx_async_client, "_transport", httpx.MockTransport(respond)),
+        setattr(kwargs["http_options"].httpx_async_client, "_mounts", {}), GoogleClient(**kwargs))[-1])
     endpoint = factory.create_client_from_config({"CHAT_COMPLETION_PROVIDER": "google",
         "CHAT_COMPLETION_KWARGS_JSON": {"model": model, "reasoning_effort": "medium"}}, evidence_mode=package)
     monkeypatch.setattr(endpoint, "count_tokens", lambda **kwargs: 0)
     client = graceful.GracefulRetryClient([endpoint], evidence_mode=package)
     messages = [{"role": "user", "content": [{"type": "text", "text": "Check the recorded state."},
         {"type": "image_url", "image_url": {"url": "data:image/png;base64,b2ZmbGluZQ==", "detail": "high"}}]}]
-
     async def exercise():
         try:
             return await client.create(messages, json_output=True, extra_create_args={"reasoning_effort": "medium"})
         finally:
             await client.close()
-
     result = asyncio.run(exercise())
-    assert requests == [("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        "Bearer offline-google-key", {"model": model, "messages": messages,
-            "response_format": {"type": "json_object"}, "reasoning_effort": "medium"})]
+    assert len(requests) == 1 and requests[0][0] == f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    assert requests[0][1] == "offline-google-key"
+    assert requests[0][2]["generationConfig"] == {"mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json",
+        "thinkingConfig": {"thinkingLevel": "MEDIUM"}}
+    parts = requests[0][2]["contents"][0]["parts"]
+    assert parts[0] == {"text": "Check the recorded state."}
+    assert len(parts) == (2 if package == "screenshot_verifier" else 1)
     record, = endpoint._call_records
     assert record["provider"] == "google" and record["configured_model"] == model
-    assert record["returned_model"] == f"{model}-20261116"
-    assert record["reasoning_effort"] == "medium" and record["max_output_tokens"] is None
+    assert record["returned_model"] == f"{model}-001"
+    assert record["reasoning_effort"] == "MEDIUM" and record["max_output_tokens"] is None
     assert record["input_tokens"] == 100 and record["cached_input_tokens"] == 40
     assert record["output_tokens"] == 30 and record["reasoning_tokens"] == 20
     assert record["total_tokens"] == 130 and record["http_attempts"] == 1
@@ -566,10 +579,9 @@ def test_google_judge_wire_routing_settings_and_usage(monkeypatch, package, mode
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-def test_google_judge_missing_key_never_uses_openai_credentials(monkeypatch, package):
-    factory = importlib.import_module(f"w8bench.verifier.clients.factory")
+def test_google_judge_requires_its_credential(monkeypatch, package):
+    factory = importlib.import_module("w8bench.verifier.clients.factory")
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    monkeypatch.setenv("OPENAI_API_KEY", "offline-other-provider-key")
     with pytest.raises(ValueError, match="GEMINI_API_KEY"):
         factory.create_client_from_config({"CHAT_COMPLETION_PROVIDER": "google",
             "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.1-pro-preview"}}, evidence_mode=package)
@@ -801,7 +813,7 @@ def test_actor_and_native_judge_standard_prices_match_requested_models(model, in
         "usage": {"input_tokens": input_tokens, "output_tokens": 1000000,
             "cached_input_tokens": 0, "cache_write_input_tokens": 0}}, {}, assumptions, sources)
     assert value == pytest.approx(expected)
-    assert "https://ai.google.dev/gemini-api/docs/pricing" in sources
+    assert "https://aistudio.google.com/docs/pricing" in sources
 
 @pytest.mark.parametrize("returned", ["gemini-3.8-flash", "gemini-3.8-flash-001", "gemini-3.8-flash-v2", "gemini-3.8-flash-2026-11-18"])
 def test_accepted_actor_model_versions_use_the_canonical_tariff(returned):

@@ -1,4 +1,30 @@
-SCORING_PROMPT_VERSION = "native-rubric-output-contract/v3"
+SCORING_PROMPT_VERSION = "native-rubric-output-contract/v4"
+
+EVIDENCE_ANALYSIS_GROUNDING_POLICY = """
+Compare each required claim with the actual screenshot facts. For criteria requiring reported
+results, distinguish the source fact from the final-answer claim and identify contradictions in
+dates, values, units, scope or calculations even when other parts are correct. A visited source or
+a populated row does not establish correctness. Process-only criteria require the specified
+execution, not an unrequested final-answer statement. State which required parts this image
+supports and which it cannot establish; do not infer support from other, unseen states.
+Preserve decisive source text, values and conflicting final claims in the summaries passed to
+later judges; do not replace them with a positive verdict. Every required string must be nonempty.
+Use "None." for discrepancies only when no mismatch was found; otherwise describe the conflict
+or missing support. Return actual JSON booleans, not the text true/false.
+""".strip()
+
+RESCORING_GROUNDING_POLICY = """
+Check each required part of the frozen criterion before awarding full credit; use its existing
+partial-credit rules for missing or incorrect parts. For reported results, compare final-answer
+claims with the quoted screenshot facts, including dates, values, units, scope and calculation
+inputs. Apply an exception for unavailable information only when its preconditions are evidenced.
+A claim of uncertainty does not override an explicit source answer. Process-only criteria require
+the specified actions, not an unrequested final-answer statement.
+Baseline scores, positive evidence analyses and other judges' conclusions are claims to check,
+not proof. Resolve contradictions in their underlying evidence independently; retain the source
+fact and conflicting final claim in the existing justification or reasoning field. Do not carry
+forward full credit or outcome success merely because earlier stages awarded it.
+""".strip()
 
 from pathlib import Path
 from ..error_taxonomy import (
@@ -827,9 +853,12 @@ $conditional_check
   "screenshot_evidence": "Detailed description of what is visible...",
   "criterion_analysis": "Analysis of how the evidence indicates success/partial/failure...",
   "discrepancies": "Any mismatches between agent claims and visual evidence...",
-  "environment_issues_confirmed": true/false$conditional_output
+  "environment_issues_confirmed": false
 }
 
+The example shows JSON structure, not a default verdict. Set each boolean from the evidence.
+For a conditional criterion, add condition_verification as a JSON boolean determined by the
+stated condition and observed evidence; do not infer its value from this example.
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
 
@@ -899,22 +928,11 @@ Some criteria evaluate the quality, correctness, or completeness of the agent's 
 **Output Format:**
 Output a JSON object with a single key "analyses" containing a list. The list must have exactly one entry per criterion above, in order.
 
-{
-  "analyses": [
-    {
-      "criterion_idx": <criterion number>,
-      "screenshot_evidence": "...",
-      "criterion_analysis": "...",
-      "discrepancies": "...",
-      "environment_issues_confirmed": true/false
-    },
-    ...one object per criterion...
-  ]
-}
+Use the actual criterion indices listed above and nonempty screenshot_evidence,
+criterion_analysis and discrepancies strings. Set environment_issues_confirmed to a JSON boolean.
+For CONDITIONAL criteria, also include the JSON boolean condition_verification in that entry.
 
-For CONDITIONAL criteria (marked above), also include "condition_verification": true/false in that entry.
-
-Example — 3 criteria (0, 1, 2) evaluated against ONE screenshot:
+Structure example for three criteria (0, 1, 2); use the actual listed indices and evidence:
 {
   "analyses": [
     {
@@ -2251,3 +2269,12 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
 }
 """
 )
+
+
+MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT = EVIDENCE_ANALYSIS_GROUNDING_POLICY + "\n\n" + MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT
+MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT = EVIDENCE_ANALYSIS_GROUNDING_POLICY + "\n\n" + MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT
+RUBRIC_REALITY_CHECK_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + RUBRIC_REALITY_CHECK_PROMPT
+MM_CRITERION_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_CRITERION_RESCORING_PROMPT
+MM_RUBRIC_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_RUBRIC_RESCORING_PROMPT
+OUTCOME_VERIFICATION_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + OUTCOME_VERIFICATION_PROMPT
+FIRST_POINT_OF_FAILURE_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + FIRST_POINT_OF_FAILURE_PROMPT

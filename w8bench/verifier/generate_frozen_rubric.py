@@ -90,7 +90,7 @@ def _rubric_agent(args: argparse.Namespace, clients: dict, calls: dict) -> MMRub
     calls[model] = instrument_client_calls(clients[model], receipt=True)
     return MMRubricAgent(config=MMRubricAgentConfig(
         action_client=clients[CANONICAL_RUBRIC_MODEL], judge_client=clients[CANONICAL_RUBRIC_MODEL],
-        action_definitions=FARA_ACTION_DEFINITIONS, majority_vote_instances=1, redo_eval=True))
+        action_definitions=FARA_ACTION_DEFINITIONS, majority_vote_instances=1, redo_eval=True, max_iters=5))
 
 
 def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_path: Path, receipt_path: Path, receipt: dict, workflow: dict, metrics_path: Path) -> None:

@@ -839,7 +839,7 @@ def test_runtime_fresh_configuration_reads_actor_and_audit_defaults_from_templat
     monkeypatch.setattr(browser_runtime, "unique_container_name", lambda base: base)
     (tmp_path / ".env.example").write_text("ACTOR_MODEL=actor-from-template\n"
         "EVIDENCE_AUDIT_MODEL=inventory-from-template\nEVIDENCE_ADJUDICATOR_MODEL=adjudicator-from-template\n"
-        "EVIDENCE_AUDIT_PROVIDER=openai\nEVIDENCE_ADJUDICATOR_PROVIDER=google\nGEMINI_API_KEY=\n"
+        "EVIDENCE_AUDIT_PROVIDER=google\nEVIDENCE_ADJUDICATOR_PROVIDER=google\nGEMINI_API_KEY=\n"
         "TASK_CATALOG_FILE=tasks.jsonl\n")
     path = tmp_path / "fresh.env"
     assert browser_runtime.configure(path, False) == 0
@@ -847,13 +847,13 @@ def test_runtime_fresh_configuration_reads_actor_and_audit_defaults_from_templat
     assert values["ACTOR_MODEL"] == "actor-from-template"
     assert values["EVIDENCE_AUDIT_MODEL"] == "inventory-from-template"
     assert values["EVIDENCE_ADJUDICATOR_MODEL"] == "adjudicator-from-template"
-    assert values["EVIDENCE_AUDIT_PROVIDER"] == "openai"
+    assert values["EVIDENCE_AUDIT_PROVIDER"] == "google"
     assert values["EVIDENCE_ADJUDICATOR_PROVIDER"] == "google"
     assert values["GEMINI_API_KEY"] == ""
     assert values["TASK_CATALOG_FILE"] == "tasks.jsonl"
     output = capsys.readouterr().out
-    assert "Set OPENAI_API_KEY and GEMINI_API_KEY credentials" in output
-    assert "Edit OPENAI_API_KEY and ACTOR_MODEL" not in output
+    assert "Set GEMINI_API_KEY credentials" in output
+    assert "Edit GEMINI_API_KEY and ACTOR_MODEL" not in output
 
 @pytest.mark.usefixtures("no_network")
 def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_path, monkeypatch, capsys):
@@ -865,9 +865,8 @@ def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_
         "EVIDENCE_AUDIT_MODEL=template-inventory\nEVIDENCE_ADJUDICATOR_MODEL=template-adjudicator\n"
         "TASK_CATALOG_FILE=tasks.jsonl\n")
     path = tmp_path / "existing.env"
-    expected = {"ACTOR_MODEL": "gemini-3.8-flash", "OPENAI_API_KEY": "fake-openai-test-value",
-        "GEMINI_API_KEY": "fake-google-test-value", "EVIDENCE_AUDIT_MODEL": "configured-inventory",
-        "EVIDENCE_ADJUDICATOR_MODEL": "configured-adjudicator", "EVIDENCE_AUDIT_PROVIDER": "openai",
+    expected = {"ACTOR_MODEL": "gemini-3.8-flash", "GEMINI_API_KEY": "fake-google-test-value", "EVIDENCE_AUDIT_MODEL": "configured-inventory",
+        "EVIDENCE_ADJUDICATOR_MODEL": "configured-adjudicator", "EVIDENCE_AUDIT_PROVIDER": "google",
         "EVIDENCE_ADJUDICATOR_PROVIDER": "google", "CONTAINER_NAME": "owned-browser",
         "TASK_CATALOG_FILE": "existing-tasks.jsonl"}
     path.write_text("".join(f"{key}={value}\n" for key, value in expected.items()))
@@ -875,7 +874,7 @@ def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_
     actual = browser_runtime.read_env(path)
     assert {key: actual[key] for key in expected} == expected
     output = capsys.readouterr().out
-    assert expected["OPENAI_API_KEY"] not in output and expected["GEMINI_API_KEY"] not in output
+    assert expected["GEMINI_API_KEY"] not in output
     assert path.stat().st_mode & 0o777 == 0o600
 
 @pytest.mark.usefixtures("no_network")

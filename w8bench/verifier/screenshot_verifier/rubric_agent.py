@@ -43,7 +43,7 @@ class MMRubricAgentConfig(AgentConfig):
     redo_eval: bool = False
     failure_analysis_only: bool = False
     rubric_score_threshold: float = 0.8
-    max_iters: int = 5
+    max_iters: int = 2
     validity_date: Optional[str] = None
     tools: Optional[List[str]] = None
     action_definitions: Optional[Dict[str, Set[str]]] = None
@@ -289,11 +289,10 @@ class MMRubricAgent(RubricAgent):
         criterion_info = f"**Criterion {criterion_idx}:** {criterion['criterion']}\n"
         criterion_info += f"**Description:** {criterion['description']}\n"
         criterion_info += f"**Max Points:** {criterion['max_points']}"
-        conditional_check, conditional_output = ("", "")
+        conditional_check = ""
         is_conditional = "condition" in criterion
         if is_conditional:
             conditional_check = f'\n\n5. **condition_verification**: This is a CONDITIONAL criterion that only applies if: "{criterion["condition"]}"\n   Based on what you see in the screenshot, verify whether this condition is actually met.\n   - Output true if the condition IS met (criterion should be evaluated)\n   - Output false if the condition is NOT met (criterion should be skipped)'
-            conditional_output = ',\n  "condition_verification": true/false'
         prompt = Template(
             self.prompts.MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT
         ).substitute(
@@ -303,7 +302,6 @@ class MMRubricAgent(RubricAgent):
             agent_predicted_output=predicted_output,
             criterion_info=criterion_info,
             conditional_check=conditional_check,
-            conditional_output=conditional_output,
         )
         return (self._image_messages(screenshot, prompt), is_conditional)
 
@@ -328,7 +326,12 @@ class MMRubricAgent(RubricAgent):
         messages.append(
             {
                 "role": "user",
-                "content": f"Error: {e}. Please ensure your output includes all required fields in the correct format.",
+                "content": (
+                    f"Error: {e}. Include nonempty screenshot_evidence, criterion_analysis and "
+                    "discrepancies strings, and boolean environment_issues_confirmed. Use 'None.' "
+                    "for discrepancies only when no mismatch was found. Include boolean "
+                    "condition_verification for a conditional criterion."
+                ),
             }
         )
 
@@ -424,7 +427,14 @@ class MMRubricAgent(RubricAgent):
         messages.append(
             {
                 "role": "user",
-                "content": f'Error: {e}. Please output a JSON object like {{"analyses": [...]}} where the "analyses" list has exactly {len(criterion_indices)} entries, one per criterion. Each entry must have screenshot_evidence, criterion_analysis, discrepancies, environment_issues_confirmed, and criterion_idx. You ARE given a screenshot image — analyze the attached image.',
+                "content": (
+                    f'Error: {e}. Return a JSON object with an "analyses" list containing exactly '
+                    f'{len(criterion_indices)} ordered entries for criterion indices {criterion_indices}. '
+                    'Each entry needs its criterion_idx, nonempty screenshot_evidence, criterion_analysis and discrepancies '
+                    "strings, and boolean environment_issues_confirmed. Use 'None.' for discrepancies "
+                    'only when no mismatch was found. Include boolean condition_verification for '
+                    'conditional criteria. Analyze the attached screenshot image.'
+                ),
             }
         )
 

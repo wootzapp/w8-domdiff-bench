@@ -43,7 +43,7 @@ class MMRubricAgentConfig(AgentConfig):
     redo_eval: bool = False
     failure_analysis_only: bool = False
     rubric_score_threshold: float = 0.8
-    max_iters: int = 5
+    max_iters: int = 2
     validity_date: Optional[str] = None
     tools: Optional[List[str]] = None
     action_definitions: Optional[Dict[str, Set[str]]] = None

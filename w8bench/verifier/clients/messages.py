@@ -95,40 +95,28 @@ class CreateResult:
 
 
 
-def message_to_openai_format(
-    message: LLMMessage, *, evidence_mode: str = "screenshot_verifier"
-) -> Dict[str, Any]:
-    """Convert an :class:`LLMMessage` to an OpenAI chat-completion dict."""
-    role = (
-        "system"
-        if isinstance(message, SystemMessage)
-        else "assistant"
-        if isinstance(message, AssistantMessage)
-        else "user"
-    )
-
-    if isinstance(message.content, list):
-        content_parts: List[Dict[str, Any]] = []
-        for item in message.content:
-            if evidence_mode == "screenshot_verifier" and isinstance(item, ImageObj):
-                b64 = item.to_base64()
-                content_parts.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{b64}"},
-                    }
-                )
-            elif evidence_mode == "screenshot_verifier" and isinstance(item, Image.Image):
-                b64 = ImageObj.from_pil(item).to_base64()
-                content_parts.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{b64}"},
-                    }
-                )
-            elif isinstance(item, str):
-                content_parts.append({"type": "text", "text": item})
-            elif isinstance(item, dict):
-                content_parts.append(item)
-        return {"role": role, "content": content_parts}
-    return {"role": role, "content": message.content}
+def message_to_gemini_format(message: LLMMessage, *, evidence_mode="screenshot_verifier") -> Dict[str, Any]:
+    """Convert a verifier message to native content parts."""
+    if isinstance(message, dict):
+        role = message.get("role", "user")
+        content = message.get("content", message.get("parts", ""))
+    else:
+        role = "system" if isinstance(message, SystemMessage) else "model" if isinstance(message, AssistantMessage) else "user"
+        content = message.content
+    parts = []
+    for item in content if isinstance(content, list) else [content]:
+        if isinstance(item, str):
+            parts.append({"text": item})
+        elif evidence_mode == "screenshot_verifier" and isinstance(item, (ImageObj, Image.Image)):
+            image = item if isinstance(item, ImageObj) else ImageObj.from_pil(item)
+            parts.append({"inline_data": {"mime_type": "image/png", "data": base64.b64decode(image.to_base64())}})
+        elif isinstance(item, dict):
+            if item.get("type") == "text":
+                parts.append({"text": item["text"]})
+            elif item.get("type") == "image_url" and evidence_mode == "screenshot_verifier":
+                url = item["image_url"]["url"]
+                header, data = url.split(",", 1)
+                parts.append({"inline_data": {"mime_type": header.split(":", 1)[1].split(";", 1)[0], "data": base64.b64decode(data)}})
+            elif "text" in item or "inline_data" in item or "inlineData" in item:
+                parts.append(item)
+    return {"role": "model" if role == "assistant" else role, "parts": parts}

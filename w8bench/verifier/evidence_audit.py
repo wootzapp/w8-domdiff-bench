@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import audit_evidence, audit_requests, audit_validation
+from .batch import _save, publication
 from .common import CanonicalRubric, canonical_sha256, load_canonical_rubric, load_json
 
 
-SCHEMA_VERSION = "automated-evidence-audit/v8"
+SCHEMA_VERSION = "automated-evidence-audit/v9"
 
 
 PROMPT_VERSION = "paired-capture-eligible-state-adjudication/v8"
@@ -212,17 +213,13 @@ def _checked_models(config, model_check, complete):
     return model_check
 
 
-def _completion_call(config, records, complete):
+def _completion_call(records, complete):
     return complete or (
         lambda selected_model, messages: audit_requests._completion(
             selected_model,
             messages,
             records=records,
-            provider=config[
-                "adjudication"
-                if messages[0]["content"] == audit_requests.ADJUDICATION_SYSTEM_PROMPT
-                else "inventory"
-            ]["provider"],
+            provider="google",
         )
     )
 
@@ -446,15 +443,9 @@ def _report_header(config, models, model_check, records, started_at, run_name):
 def _generation_settings(config, records, complete):
     return {
         stage: {
-            "requested": (
-                audit_requests.GEMINI_GENERATION_SETTINGS
-                if config[stage]["provider"] == "google"
-                else audit_requests.OPENAI_GENERATION_SETTINGS
-            ).copy(),
+            "requested": audit_requests.GEMINI_GENERATION_SETTINGS.copy(),
             "provider": config[stage]["provider"],
-            "api_version": audit_requests.GEMINI_API_VERSION
-            if config[stage]["provider"] == "google"
-            else None,
+            "api_version": audit_requests.GEMINI_API_VERSION,
             "actual": [
                 record["generation_settings"]
                 for record in records
@@ -578,6 +569,8 @@ def run_evidence_audit(
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]] | None = None,
     call_records: list[dict[str, Any]] | None = None,
     run_name: str | None = None,
+    inventory_only: bool = False,
+    inventory_path: str | Path | None = None,
 ) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc).isoformat()
     from w8bench.run_paths import resolve_run_name
@@ -593,22 +586,79 @@ def run_evidence_audit(
     inputs = _load_inputs(
         screenshot_dir, dom_dir, rubric_file, screenshot_result, dom_result
     )
-    records = call_records if call_records is not None else []
+    from w8bench.settings import audit_settings, require_same_settings
+
+    effective = audit_settings(config, rubric_hash=inputs.frozen.sha256)
+    evidence = _report_evidence(inputs, task_alias)
+    checkpoint_path = Path(inventory_path) if inventory_path is not None else None
+    if inventory_only and checkpoint_path is None:
+        raise ValueError("Inventory requires an inventory checkpoint path")
+    checkpoint = None
+    if checkpoint_path is not None and checkpoint_path.exists():
+        checkpoint = load_json(checkpoint_path)
+        if not isinstance(checkpoint, dict) or checkpoint.get("inventory_checkpoint_sha256") != canonical_sha256(
+                {key: value for key, value in checkpoint.items() if key != "inventory_checkpoint_sha256"}):
+            raise ValueError("Inventory checkpoint content hash differs")
+        expected = {"schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
+            "status": "awaiting_adjudication", "run_name": run_name,
+            "audit_model": model, "adjudicator_model": adjudicator_model,
+            "audit_provider": config["inventory"]["provider"],
+            "adjudicator_provider": config["adjudication"]["provider"], **evidence}
+        if any(checkpoint.get(key) != value for key, value in expected.items()):
+            raise ValueError("Inventory checkpoint task, evidence, model or eligibility binding differs")
+        require_same_settings(checkpoint.get("effective_settings"), effective, label="audit inventory checkpoint")
+        saved_stage = checkpoint.get("primary_auditor_output")
+        saved_calls = checkpoint.get("calls")
+        if (not isinstance(saved_stage, dict) or type(saved_stage.get("attempts")) is not int
+                or not 1 <= saved_stage["attempts"] <= 3 or not isinstance(saved_stage.get("invalid_attempts"), list)
+                or not isinstance(saved_stage.get("raw"), dict)
+                or not isinstance(saved_calls, list)
+                or any(not isinstance(record, dict) or record.get("stage") != "inventory" for record in saved_calls)
+                or any(key in checkpoint for key in ("metrics", "criteria", "adjudicator_output"))):
+            raise ValueError("Inventory checkpoint stage receipt is invalid")
+        decisions = audit_validation.validate_audit_response(saved_stage.get("raw"),
+            criteria=inputs.criteria, screenshot_sources=inputs.screen_sources, dom_sources=inputs.dom_sources,
+            screenshot_root=inputs.screenshot_root, dom_root=inputs.dom_root)
+        inventory = _StageJudgment(decisions, saved_stage["raw"], saved_stage["attempts"], saved_stage["invalid_attempts"])
+        if inventory_only:
+            return checkpoint
+    elif checkpoint_path is not None and not inventory_only:
+        raise ValueError("Adjudication requires an existing inventory checkpoint")
+    new_records = call_records if call_records is not None else []
     inventory_invalid, adjudication_invalid = [], []
-    model_check = _checked_models(config, model_check, complete)
-    call = _completion_call(config, records, complete)
-    inventory = _request_inventory(inputs, model, call, inventory_invalid)
+    selected = ({"inventory": config["inventory"]} if inventory_only else
+        {"adjudication": config["adjudication"]} if checkpoint is not None else config)
+    model_check = _checked_models(selected, model_check, complete)
+    call = _completion_call(new_records, complete)
+    if checkpoint is None:
+        inventory = _request_inventory(inputs, model, call, inventory_invalid)
+    if inventory_only:
+        report = _report_header(config, (model, adjudicator_model), model_check, new_records, started_at, run_name)
+        report.update(status="awaiting_adjudication", primary_auditor_output=_stage_output(inventory),
+            generation_settings=_generation_settings(config, new_records, complete), effective_settings=effective,
+            calls=new_records, **evidence)
+        if _fingerprints(inputs) != evidence["input_fingerprints"]:
+            raise ValueError("Audit evidence changed during inventory")
+        report["inventory_checkpoint_sha256"] = canonical_sha256(report)
+        with publication():
+            _save(checkpoint_path, report)
+        return report
     adjudication = _request_adjudication(
         inputs, adjudicator_model, inventory.decisions, call, adjudication_invalid
     )
+    records = [*checkpoint["calls"], *new_records] if checkpoint is not None else new_records
     rows = _criteria_rows(inputs, inventory, adjudication)
     report = _report_header(
         config, (model, adjudicator_model), model_check, records, started_at, run_name
     )
     report["generation_settings"] = _generation_settings(config, records, complete)
-    from w8bench.settings import audit_settings
-    report["effective_settings"] = audit_settings(config, rubric_hash=inputs.frozen.sha256)
+    report["effective_settings"] = effective
     report["calls"] = records
-    report.update(_report_evidence(inputs, task_alias))
+    if checkpoint is not None:
+        report["inventory_checkpoint_sha256"] = checkpoint["inventory_checkpoint_sha256"]
+        report["run_manifest"]["models"]["inventory"]["listing_time"] = checkpoint["run_manifest"]["models"]["inventory"]["listing_time"]
+    if _fingerprints(inputs) != evidence["input_fingerprints"]:
+        raise ValueError("Audit evidence changed during adjudication")
+    report.update(evidence)
     report.update(_report_decisions(inventory, adjudication, rows))
     return report

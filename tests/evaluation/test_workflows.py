@@ -216,9 +216,24 @@ def test_full_pipeline_freezes_inputs_grades_both_formats_and_resumes(full_evalu
     assert comparison.main(args) == 0
     output = next(tmp_path.rglob("evaluation.json"))
     value = json.loads(output.read_text())
+    assert value["status"] == "awaiting_adjudication"
+    inventory = output.parent / "audit_inventory.json"
+    inventory_before = inventory.read_bytes()
+    assert not (output.parent / "evidence_audit.json").exists()
+    assert [call["stage"] for call in value["stages"]["audit"]["calls"]] == ["inventory"]
+    assert comparison.main(args) == 0
+    assert inventory.read_bytes() == inventory_before
+    assert len(calls["audit"]) == 1
+    assert comparison.main([*args, "--stage", "adjudicate"]) == 0
+    value = json.loads(output.read_text())
     assert value["status"] == "complete"
     assert set(value["stages"]) == {"paired_completion", "screenshot_verifier", "dom_model", "audit"}
-    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 1
+    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 2
+    assert [call["stage"] for call in value["stages"]["audit"]["calls"]] == ["adjudication"]
+    assert inventory.read_bytes() == inventory_before
+    streams = summarize(inspect_recording(paths[mode]))["judge_usage_streams"]
+    assert streams["audit:inventory"]["calls"] == streams["audit:adjudication"]["calls"] == 1
+    assert streams["audit:inventory"]["usage"]["total_tokens"] == streams["audit:adjudication"]["usage"]["total_tokens"] == 20
     assert value["stages"]["paired_completion"]["usage"]["total_tokens"] == 70
     for name in ("screenshot_verifier", "dom_model"):
         assert value["stages"][name]["signals"]["frozen_full_score"] is True
@@ -231,7 +246,7 @@ def test_full_pipeline_freezes_inputs_grades_both_formats_and_resumes(full_evalu
     generation = json.loads((output.parent / "rubric_generation_metrics.json").read_text())
     assert generation["origin"] == "validated_import" and generation["rubric_generation_calls"] == 0
     assert comparison.main(args) == 0
-    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 1
+    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 2
     judge_result = output.parent / "dom_model" / "result.json"
     original = judge_result.read_bytes()
     judge_result.write_bytes(original + b" ")
@@ -393,15 +408,25 @@ def test_dom_initial_url_guard_does_not_block_primary_or_screenshot_judge(full_e
 @pytest.mark.usefixtures("no_network")
 def test_missing_audit_credential_does_not_block_primary_or_original_verifiers(full_evaluation, tmp_path, monkeypatch):
     paths, rubric, calls = full_evaluation
-    monkeypatch.delenv("OPENAI_API_KEY")
-    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]) == 1
-    evaluation = json.loads(next(tmp_path.rglob("evaluation.json")).read_text())
+    args = ["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]
+    assert comparison.main(args) == 0
+    output = next(tmp_path.rglob("evaluation.json"))
+    evaluation = json.loads(output.read_text())
     assert evaluation["stages"]["paired_completion"]["verdict"] == "success"
     assert evaluation["stages"]["screenshot_verifier"]["status"] == "complete"
     assert evaluation["stages"]["dom_model"]["status"] == "complete"
+    assert evaluation["stages"]["audit"]["status"] == "awaiting_adjudication"
+    inventory_before = (output.parent / "audit_inventory.json").read_bytes()
+    monkeypatch.delenv("GEMINI_API_KEY")
+    assert comparison.main([*args, "--stage", "adjudicate"]) == 1
+    evaluation = json.loads(output.read_text())
     assert evaluation["stages"]["audit"]["reason"] == "audit_configuration_failed"
-    assert "OpenAI credentials" in evaluation["stages"]["audit"]["error"]
-    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and calls["audit"] == []
+    assert "Google credentials" in evaluation["stages"]["audit"]["error"]
+    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 1
+    monkeypatch.setenv("GEMINI_API_KEY", "offline-adjudication-key")
+    assert comparison.main([*args, "--stage", "adjudicate"]) == 0
+    assert (output.parent / "audit_inventory.json").read_bytes() == inventory_before
+    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and len(calls["audit"]) == 2
 
 
 @pytest.mark.usefixtures("no_network")
@@ -710,7 +735,6 @@ def test_catalog_drafts_use_original_workflow_then_resume_without_calls(catalog_
 @pytest.mark.parametrize("fails", [False, True])
 def test_rubric_preparation_uses_google_and_restores_transport(catalog_case, monkeypatch, previous_transport, fails):
     from w8bench.verifier.batch import judge_transport
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     if previous_transport is None:
         monkeypatch.delenv("JUDGE_TRANSPORT", raising=False)
     else:
@@ -929,14 +953,14 @@ def test_batch_resume_does_not_resubmit_answered_or_submitted_items(tmp_path,mon
     body={'model':'gemini-3.5-flash-lite','messages':[{'role':'user','content':'Saved'}]}
     for _ in range(2):
         with batch.evaluation_scope(root,identity):
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='/v1/chat/completions',stage='dom.relevance')
+            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',stage='dom.relevance')
         jobs.poll();jobs.submit()
     assert len(batch_providers.batches.created)==1
     batch_providers.batches.finish(0)
     jobs.poll()
     with batch.evaluation_scope(root,identity):
         record={}
-        value=batch.request(body,provider='google',endpoint='/v1/chat/completions',stage='dom.relevance',record=record)
+        value=batch.request(body,provider='google',endpoint='generateContent',stage='dom.relevance',record=record)
     assert value['status_code']==200 and record['transport']=='batch'
     assert record['batch_job_id']=='batches/job_1'
     assert jobs.submit()==0 and len(batch_providers.batches.created)==1
@@ -949,37 +973,37 @@ def test_terminal_batch_keeps_partial_answers_and_retries_only_missing_items(tmp
     bodies=[{'model':'gemini-3.5-flash-lite','messages':[{'role':'user','content':text}]} for text in ('a','b')]
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
         for body in bodies:
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='/v1/chat/completions',stage='relevance')
+            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',stage='relevance')
     jobs.submit();rows=batch_providers.batches.created[0]['rows']
-    first=rows[0]['custom_id']
-    batch_providers.batches.finish(0,status=state,results=[{'custom_id':first,'response':{'status_code':200,'body':{'ok':True}}}])
+    first=rows[0]['key']
+    batch_providers.batches.finish(0,status=state,results=[{'key':first,'response':{'ok':True}}])
     jobs.poll()
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        values=[batch.request(body,provider='google',endpoint='/v1/chat/completions',stage='relevance') for body in bodies]
+        values=[batch.request(body,provider='google',endpoint='generateContent',stage='relevance') for body in bodies]
         assert sorted(v['status_code'] for v in values)==[200,503]
         failed_index=next(i for i,v in enumerate(values) if v['status_code']==503)
-        with pytest.raises(batch.BatchPending):batch.request(bodies[failed_index],provider='google',endpoint='/v1/chat/completions',stage='relevance')
+        with pytest.raises(batch.BatchPending):batch.request(bodies[failed_index],provider='google',endpoint='generateContent',stage='relevance')
     assert jobs.submit()==1
     assert len(batch_providers.batches.created[1]['rows'])==1
-    assert batch_providers.batches.created[1]['rows'][0]['body']==bodies[failed_index]
+    assert batch_providers.batches.created[1]['rows'][0]['request']==bodies[failed_index]
 
 
 def test_batch_partial_item_error_preserves_nonretryable_status(tmp_path,batch_providers):
     from w8bench.verifier import batch
     jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='validity')
-    jobs.submit();key=batch_providers.batches.created[0]['rows'][0]['custom_id']
-    batch_providers.batches.finish(0,results=[{'custom_id':key,'error':{'code':'invalid_request_error','message':'Invalid request'}}]);jobs.poll()
+        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='validity')
+    jobs.submit();key=batch_providers.batches.created[0]['rows'][0]['key']
+    batch_providers.batches.finish(0,results=[{'key':key,'error':{'code':3,'message':'Invalid request'}}]);jobs.poll()
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        assert batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='validity')['status_code']==400
+        assert batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='validity')['status_code']==400
 
 
 def test_uncertain_batch_creation_is_not_repeated(tmp_path,monkeypatch,batch_providers):
     from w8bench.verifier import batch
     jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='relevance')
+        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
     original=batch_providers.batches.create
     def accepted_then_disconnected(**kwargs):
         original(**kwargs)
@@ -996,12 +1020,12 @@ def test_batch_cancellation_refuses_late_writes(tmp_path,batch_providers):
     from w8bench.verifier import batch
     jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='relevance')
+        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
     jobs.submit();jobs.cancel();batch_providers.batches.finish(0)
     assert batch_providers.batches.cancelled==['batches/job_1']
     with pytest.raises(batch.BatchCancelled):jobs.poll()
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchCancelled):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='relevance')
+        with pytest.raises(batch.BatchCancelled):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
     assert not (tmp_path/'responses').exists()
 
 
@@ -1014,22 +1038,27 @@ def test_batch_rounds_preserve_dependencies_and_collect_ready_runs(run_pair,tmp_
     stages=['relevance','selected_state_analysis','global_rescore','inventory','adjudication']
     def evaluate(args,run,recording):
         for stage in stages:
-            provider='openai' if stage=='adjudication' else 'google'
-            model='gpt-6.1-sol' if provider=='openai' else 'gemini-3.1-pro-preview' if stage=='inventory' else 'gemini-3.5-flash-lite'
+            if stage == 'adjudication' and args.stage == 'evaluate':
+                return 0
+            provider='google'
+            model='gemini-4-argon' if stage=='adjudication' else 'gemini-3.1-pro-preview' if stage=='inventory' else 'gemini-3.5-flash-lite'
             batch.request({'model':model,'messages':[{'role':'user','content':stage}]},provider=provider,
-                endpoint='/v1/chat/completions',stage=stage)
+                endpoint='generateContent',stage=f'audit.{stage}' if stage in {'inventory', 'adjudication'} else stage)
         return 0
     monkeypatch.setattr(pipeline,'_evaluate_recording',evaluate)
     args=['--run',*[str(p) for p in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash','--execute']
     for index,stage in enumerate(stages):
-        assert pipeline.main(args)==75
+        selected_args = [*args, '--stage', 'adjudicate'] if stage == 'adjudication' else args
+        if stage == 'adjudication':
+            assert pipeline.main(args) == 0
+        assert pipeline.main(selected_args)==75
         created=batch_providers.batches.created[index]
         assert len(created['rows'])==2
-        assert all(row['body']['messages'][0]['content']==stage for row in created['rows'])
+        assert all(row['request']['messages'][0]['content']==stage for row in created['rows'])
         # Polling a running job never submits another copy or advances dependencies.
-        assert pipeline.main(args)==75 and len(batch_providers.batches.created)==index+1
+        assert pipeline.main(selected_args)==75 and len(batch_providers.batches.created)==index+1
         batch_providers.batches.finish(index)
-    assert pipeline.main(args)==0 and len(batch_providers.batches.created)==len(stages)
+    assert pipeline.main([*args, '--stage', 'adjudicate'])==0 and len(batch_providers.batches.created)==len(stages)
 
 
 def test_invalid_batch_answer_uses_existing_completion_refusal(completion_case,tmp_path,monkeypatch):
@@ -1062,8 +1091,9 @@ def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_
     args=['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash',
         '--judge-transport','normal','--compare-profiles','--execute']
     assert pipeline.main(args)==0
+    assert pipeline.main([*args,'--stage','adjudicate'])==0
     assert len(calls['primary'])==2  # One shared grade per independent recording.
-    assert len(calls['scorers'])==8 and len(calls['audit'])==4
+    assert len(calls['scorers'])==8 and len(calls['audit'])==8
     report=json.loads(next(tmp_path.rglob('profile_comparison.json')).read_text())
     assert len(report['rows'])==4 and all(row['agreement']==1 for row in report['rows'])
     assert all(subset['agreement'] is None for row in report['rows'] for subset in row['screenshot_only_subsets'].values())
@@ -1073,7 +1103,7 @@ def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_
         expected='gemini-3.1-pro-preview' if profile=='pro' else 'gemini-3.5-flash-lite'
         assert value['effective_settings']['stages']['dom_model']['models']==[expected,expected]
     assert pipeline.main(args)==0
-    assert len(calls['primary'])==2 and len(calls['scorers'])==8 and len(calls['audit'])==4
+    assert len(calls['primary'])==2 and len(calls['scorers'])==8 and len(calls['audit'])==8
     assert next(tmp_path.rglob('profile_comparison_2.json')).is_file()
 
 
@@ -1131,7 +1161,7 @@ def test_invalid_batch_inventory_response_uses_original_validation_budget(pair_f
         'screenshot_root':pair['screenshot'],'dom_root':pair['dom']}
     body={'model':'gemini-3.1-pro-preview','messages':[{'role':'user','content':'Audit the evidence.'}]}
     def call(model,messages):
-        return batch.request({**body,'messages':messages},provider='google',endpoint='/v1/chat/completions',stage='audit.inventory')['body']
+        return batch.request({**body,'messages':messages},provider='google',endpoint='generateContent',stage='audit.inventory')['body']
     with batch.evaluation_scope(tmp_path/'queue',{'run':'r'}):
         with pytest.raises(batch.BatchPending):audit._request_validated_audit(model=body['model'],messages=body['messages'],complete=call,**options)
     first=next((tmp_path/'queue/requests').glob('*.json'));item=json.loads(first.read_text())
@@ -1164,12 +1194,12 @@ def test_pending_batch_cost_records_keep_known_and_unknown_items(tmp_path,batch_
     with batch.evaluation_scope(tmp_path,identity):
         for text in ('state 1','state 2'):
             with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite','input':text},
-                provider='google',endpoint='/v1/chat/completions',stage='dom_model.relevance')
+                provider='google',endpoint='generateContent',stage='dom_model.relevance')
     jobs.submit()
     created=batch_providers.batches.created[0]
-    answered=created['rows'][0]['custom_id']
-    jobs._answer(answered,{'job_id':created['id']},200,{'model':'gemini-3.5-flash-lite',
-        'usage':{'prompt_tokens':1000,'completion_tokens':100}})
+    answered=created['rows'][0]['key']
+    jobs._answer(answered,{'job_id':created['id']},200,{'modelVersion':'gemini-3.5-flash-lite',
+        'usageMetadata':{'promptTokenCount':1000,'candidatesTokenCount':100,'thoughtsTokenCount':0,'totalTokenCount':1100}})
     records=jobs.records(identity,'dom_model.','1')
     assert len(records)==2 and {r['status'] for r in records}=={'answered','submitted'}
     stream={'calls':2,'call_records':records,'usage_coverage':'partial'}
@@ -1183,7 +1213,7 @@ def test_rejected_batch_creation_can_resume_without_an_accepted_job(tmp_path,mon
     from w8bench.verifier import batch
     jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
     with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='/v1/chat/completions',stage='relevance')
+        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
     original=batch_providers.batches.create
     class Rejected(Exception):status_code=429
     monkeypatch.setattr(batch_providers.batches,'create',lambda **kwargs:(_ for _ in ()).throw(Rejected()))
@@ -1266,6 +1296,8 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
     paths, rubric, _ = full_evaluation
     assert comparison.main(['--run', str(paths['dom']), '--rubric', str(rubric),
         '--judge-model', 'gemini-3.6-flash', '--compare-profiles', '--execute']) == 0
+    assert comparison.main(['--run', str(paths['dom']), '--rubric', str(rubric),
+        '--judge-model', 'gemini-3.6-flash', '--compare-profiles', '--stage', 'adjudicate', '--execute']) == 0
     for file in tmp_path.rglob('evaluation.json'):
         profile = 'pro' if '/profiles/pro/' in str(file) else 'primary'
         evaluation = json.loads(file.read_text())

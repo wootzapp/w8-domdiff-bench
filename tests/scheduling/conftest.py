@@ -54,9 +54,9 @@ def effective_settings_batch(tmp_path, monkeypatch):
 
     monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-4-argon")
     monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "google")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "openai")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
     config_root = tmp_path / "settings"
     shutil.copytree(settings.ROOT / "config", config_root / "config")
     shutil.copytree(settings.ROOT / "protocol", config_root / "protocol")

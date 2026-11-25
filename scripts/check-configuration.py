@@ -17,7 +17,7 @@ from w8bench.settings import actor_settings
 from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
-assert all(os.environ.get(k, '').strip() for k in ('OPENAI_API_KEY', 'GEMINI_API_KEY')), 'Missing credential'
+assert os.environ.get('GEMINI_API_KEY', '').strip(), 'Missing credential'
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor model'
 assert judge_transport() == 'batch', 'Unexpected judge transport'
 assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
@@ -26,7 +26,7 @@ media = actor_settings({})['media_resolution']
 assert media == 'HIGH', 'Unexpected actor media resolution'
 audit = resolve_audit_config()
 assert audit['inventory'] == {'model': 'gemini-3.1-pro-preview', 'provider': 'google'}
-assert audit['adjudication'] == {'model': 'gpt-6.1-sol', 'provider': 'openai'}
+assert audit['adjudication'] == {'model': 'gemini-4-argon', 'provider': 'google'}
 settings = parse_args(['--output-dir', 'recordings'])
 assert settings.max_output_tokens == 10000 and settings.max_steps == 200
 assert MAX_TASK_MEMORY_CHARS == 8000

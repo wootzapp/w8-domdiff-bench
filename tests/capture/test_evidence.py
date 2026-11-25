@@ -48,7 +48,7 @@ def test_create_datapoint_normalizes_actions(tmp_path):
     from w8bench.verifier.dom_model.models import Trajectory
 
     traj_dir = make_trajectory_dir(tmp_path, n_actions=3, screenshots=False)
-    traj = Trajectory(traj_dir, gpt_solver=True)
+    traj = Trajectory(traj_dir)
 
     task_data = {
         "id": "sample_traj",
@@ -77,7 +77,7 @@ def test_dom_datapoint_defaults_missing_initial_url(tmp_path):
     from w8bench.verifier.dom_model.models import Trajectory
 
     traj_dir = make_trajectory_dir(tmp_path, n_actions=1, screenshots=False)
-    traj = Trajectory(traj_dir, gpt_solver=True)
+    traj = Trajectory(traj_dir)
 
     dp = create_datapoint({"id": "x", "question": "noop"}, traj)
     assert dp.task.environment_config["init_url"] == ""
@@ -275,7 +275,7 @@ def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
     from w8bench.verifier.screenshot_verifier.models import Trajectory
 
     traj_dir = make_trajectory_dir(tmp_path, n_actions=3, screenshots=True)
-    traj = Trajectory(traj_dir, gpt_solver=True)
+    traj = Trajectory(traj_dir)
 
     task_data = {
         "id": "sample_traj",
@@ -326,7 +326,7 @@ def test_screenshot_datapoint_defaults_missing_initial_url(tmp_path):
     from w8bench.verifier.screenshot_verifier.models import Trajectory
 
     traj_dir = make_trajectory_dir(tmp_path, n_actions=1, screenshots=True)
-    traj = Trajectory(traj_dir, gpt_solver=True)
+    traj = Trajectory(traj_dir)
 
     dp = create_datapoint({"id": "x", "question": "noop"}, traj)
     assert dp.task.environment_config["init_url"] == ""

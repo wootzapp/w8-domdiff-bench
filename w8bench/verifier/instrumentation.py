@@ -4,6 +4,8 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
+from w8bench.usage import known_token_component
+
 
 def _stage_path() -> list[str]:
     stack = []
@@ -105,22 +107,42 @@ def usage_dict(client: Any) -> dict[str, Any]:
         completion += int(getattr(usage, "completion_tokens", 0))
         records.extend(getattr(inner, "_call_records", []))
     if records:
-        inputs = [record["input_tokens"] for record in records if record.get("input_tokens") is not None]
-        outputs = [record["output_tokens"] for record in records if record.get("output_tokens") is not None]
+        inputs = [value for record in records if (value := known_token_component(record.get("input_tokens"))) is not None]
+        outputs = [value for record in records if (value := known_token_component(record.get("output_tokens"))) is not None]
         prompt = sum(inputs) if inputs else None
         completion = sum(outputs) if outputs else None
-    writes = [record["cache_write_input_tokens"] for record in records if record.get("cache_write_input_tokens") is not None]
-    reads = [record["cached_input_tokens"] for record in records if record.get("cached_input_tokens") is not None]
-    thinking = [record["reasoning_tokens"] for record in records if record.get("reasoning_tokens") is not None]
+    totals = []
+    residuals = []
+    reconciled = []
+    for record in records:
+        inputs, outputs, total = (known_token_component(record.get(key))
+            for key in ("input_tokens", "output_tokens", "total_tokens"))
+        invalid_total = record.get("total_tokens") is not None and total is None
+        if record.get("total_tokens") is None and inputs is not None and outputs is not None:
+            total = inputs + outputs
+        if total is not None:
+            totals.append(total)
+        difference = total - inputs - outputs if all(value is not None for value in (inputs, outputs, total)) else None
+        reconciled.append(False if invalid_total else difference == 0 if difference is not None else None)
+        if difference is not None and difference >= 0:
+            residuals.append(difference)
+    writes = [value for record in records if (value := known_token_component(record.get("cache_write_input_tokens"))) is not None]
+    reads = [value for record in records if (value := known_token_component(record.get("cached_input_tokens"))) is not None]
+    thinking = [value for record in records if (value := known_token_component(record.get("reasoning_tokens"))) is not None]
     return {
         "prompt_tokens": prompt, "input_tokens": prompt,
         "completion_tokens": completion, "output_tokens": completion,
         "cached_input_tokens": sum(reads) if reads else None,
         "cache_write_input_tokens": sum(writes) if writes else None,
         "reasoning_tokens": sum(thinking) if thinking else None,
-        "total_tokens": (prompt or 0) + (completion or 0) if prompt is not None or completion is not None else None,
-        "usage_known_calls": {key: sum(record.get("usage_fields_reported", {}).get(key, False) for record in records)
-            for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")},
+        "total_tokens": sum(totals) if totals else None if records else prompt + completion,
+        "unattributed_tokens": sum(residuals) if residuals else None if records else 0,
+        "token_components_reconcile": (False if False in reconciled else None if None in reconciled
+            else True),
+        "usage_known_calls": {key: sum(bool(record.get("usage_fields_reported", {}).get(key, False))
+            and known_token_component(record.get(key)) is not None for record in records)
+            for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")}
+            | {"total_tokens": len(totals), "unattributed_tokens": len(residuals)},
         "cached_input_usage_reported_calls": len(reads), "reasoning_usage_reported_calls": len(thinking),
         "calls_without_reported_usage": sum(not record.get("usage_reported", False) for record in records),
         "cache_write_usage_reported_calls": len(writes),

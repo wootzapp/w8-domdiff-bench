@@ -222,16 +222,15 @@ def validate_endpoint_configs(path: str | Path) -> dict[str, Any]:
         if not isinstance(payload, dict):
             raise ValueError(f"Endpoint config must be an object: {source}")
         provider = str(payload.get("CHAT_COMPLETION_PROVIDER") or "").casefold()
-        if provider not in {"openai", "google"}:
-            raise ValueError(f"Only OpenAI and Google endpoint configs are allowed: {source}")
+        if provider != "google":
+            raise ValueError(f"Only Google endpoint configs are allowed: {source}")
         keys = " ".join(_walk_keys(payload)).casefold()
         if any(fragment in keys for fragment in ("api_key", "token", "secret", "password")):
             raise ValueError(f"Endpoint config appears to contain credentials: {source}")
         kwargs = payload.get("CHAT_COMPLETION_KWARGS_JSON")
         if not isinstance(kwargs, dict) or not isinstance(kwargs.get("model"), str):
             raise ValueError(f"Endpoint config has no model: {source}")
-        expected_provider = "google" if kwargs["model"].startswith("gemini-") else "openai"
-        if provider != expected_provider:
+        if not kwargs["model"].startswith("gemini-"):
             raise ValueError(f"Endpoint provider does not match model: {source}")
         models.add(kwargs["model"])
         receipts.append({"path": os.path.relpath(source, Path(__file__).resolve().parents[2]),

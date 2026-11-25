@@ -31,7 +31,6 @@ def offline_model_access(monkeypatch):
     monkeypatch.setenv("JUDGE_TRANSPORT", "normal")
     monkeypatch.setenv("NATIVE_JUDGE_PROFILE", "primary")
     monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
-    monkeypatch.setenv("OPENAI_API_KEY", "offline-test-key")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test-key")
     monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(Path(__file__).resolve().parents[1] / ".runtime" / "tiktoken_cache"))
     original = socket.socket.connect
@@ -47,9 +46,9 @@ def offline_model_access(monkeypatch):
 @pytest.fixture(autouse=True)
 def audit_test_configuration(monkeypatch):
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-4-argon")
     monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "google")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "openai")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
 
 
 RUBRIC = {
@@ -459,7 +458,7 @@ def _row(*, screen_loss=False, dom_loss=False, screen_caught=True, dom_caught=Tr
 def _audit(task_id, rows):
     return {"task_id": task_id, "criteria": rows, "metrics": calculate_metrics(rows),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
-            "audit_model": "gemini-3.1-pro-preview", "adjudicator_model": "gpt-6.1-sol"}
+            "audit_model": "gemini-3.1-pro-preview", "adjudicator_model": "gemini-4-argon"}
 
 
 def _paired_capture_context(pair, *, dom_gaps=(), screenshot_gaps=(), navigation=()):

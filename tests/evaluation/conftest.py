@@ -11,7 +11,7 @@ from unittest.mock import Mock
 from w8bench.verifier import completion
 from w8bench.verifier import completion, package_manifests
 from w8bench.verifier import generate_frozen_rubric as generator
-from w8bench.verifier.audit_requests import _request_validated_audit
+from w8bench.verifier.audit_requests import ADJUDICATION_SYSTEM_PROMPT, _request_validated_audit
 from w8bench.verifier.common import canonical_sha256
 from w8bench.verifier.dom_model.states import DomModelState
 from w8bench.verifier.evidence_audit import run_evidence_audit
@@ -220,7 +220,8 @@ def _run(pair, complete):
 
 
 def _complete(inventory, adjudication):
-    return lambda model, messages: deepcopy(inventory if model.startswith("gemini-") else adjudication)
+    return lambda model, messages: deepcopy(adjudication if messages[0]["content"] ==
+        ADJUDICATION_SYSTEM_PROMPT else inventory)
 
 
 def _fake_google(monkeypatch, text='{"ok":true}'):
@@ -231,7 +232,7 @@ def _fake_google(monkeypatch, text='{"ok":true}'):
     types.HttpOptions = lambda **k: k
     usage = SimpleNamespace(prompt_token_count=10, candidates_token_count=3, thoughts_token_count=2, cached_content_token_count=4,
                             model_dump=lambda: {"prompt_token_count": 10, "candidates_token_count": 3, "thoughts_token_count": 2, "cached_content_token_count": 4})
-    generate = Mock(side_effect=lambda **kwargs: SimpleNamespace(text=text, response_id="gemini-id",
+    generate = Mock(side_effect=lambda **kwargs: SimpleNamespace(text=text.pop(0) if isinstance(text, list) else text, response_id="gemini-id",
         model_version=kwargs["model"] + "-001", usage_metadata=usage))
     client = Mock()
     client.__enter__ = Mock(return_value=SimpleNamespace(models=SimpleNamespace(generate_content=generate)))
@@ -322,44 +323,35 @@ def batch_providers():
             key = f"files/input_{len(self.data) + 1}"
             self.data[key] = Path(file).read_bytes()
             return SimpleNamespace(name=key)
-        def create(self, *, file, purpose):
-            result = self.upload(file=file.name, config={})
-            return SimpleNamespace(id=result.name)
         def download(self, *, file):
             return self.data[file]
-        def content(self, key):
-            return SimpleNamespace(content=self.data[key])
     files = Files()
     class Batches:
         def __init__(self):
             self.created, self.jobs, self.cancelled = [], {}, []
         def create(self, **kwargs):
             key = f"batches/job_{len(self.created) + 1}"
-            source = kwargs.get("src", kwargs.get("input_file_id"))
+            source = kwargs["src"]
             rows = [json.loads(line) for line in files.data[source].decode().splitlines()]
             self.created.append({"id": key, "kwargs": kwargs, "rows": rows})
-            self.jobs[key] = {"id": key, "status": "in_progress", "state": "JOB_STATE_RUNNING"}
+            self.jobs[key] = {"name": key, "state": "JOB_STATE_RUNNING"}
             return SimpleNamespace(id=key, name=key)
-        def retrieve(self, key):
-            return Dump(self.jobs[key])
         def get(self, *, name):
-            return self.retrieve(name)
-        def cancel(self, key=None, *, name=None):
-            self.cancelled.append(key or name)
+            return Dump(self.jobs[name])
+        def cancel(self, *, name):
+            self.cancelled.append(name)
         def finish(self, number, *, status="completed", results=None):
             created = self.created[number]
             key = f"files/output_{number + 1}"
             if results is None:
                 results = []
                 for row in created['rows']:
-                    ident = row.get('key', row.get('custom_id'))
+                    ident = row['key']
                     body = {"model": "gemini-3.5-flash-lite", "value": ident}
-                    results.append({"key": ident, "response": body} if 'key' in row else
-                        {"custom_id": ident, "response": {"status_code": 200, "body": body}})
+                    results.append({"key": ident, "response": body})
             files.data[key] = b''.join((json.dumps(row) + '\n').encode() for row in results)
-            native = 'src' in created['kwargs']
-            self.jobs[created['id']] = ({"state": {"completed": "JOB_STATE_SUCCEEDED", "expired": "JOB_STATE_EXPIRED", "failed": "JOB_STATE_FAILED"}[status],
-                "dest": {"file_name": key}} if native else {"status": status, "output_file_id": key})
+            self.jobs[created['id']] = {"state": {"completed": "JOB_STATE_SUCCEEDED", "expired": "JOB_STATE_EXPIRED", "failed": "JOB_STATE_FAILED"}[status],
+                "dest": {"file_name": key}}
     batches = Batches()
     client = SimpleNamespace(files=files, batches=batches)
-    return SimpleNamespace(clients={(p,n):client for p in ('google','openai') for n in (False,True)}, files=files, batches=batches)
+    return SimpleNamespace(clients={'google':client}, files=files, batches=batches)
