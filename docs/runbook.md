@@ -10,8 +10,8 @@ DOM/screenshot evidence. Use the [README](../README.md) for the project overview
 
 ## Requirements
 
-Use 64-bit Linux or WSL 2, Git, Python 3.10 or higher, network access, and Google
-and OpenAI keys for paid model calls. Install Cairo with `sudo apt install libcairo2`.
+Use 64-bit Linux or WSL 2, Git, Python 3.10 or higher, network access, and a Google
+API key for paid model calls. Install Cairo with `sudo apt install libcairo2`.
 Recording also requires Docker Engine with Compose and Buildx, `rsync`, about
 32 GiB RAM and 200 GiB free disk space for Chromium. Keep the build on a Linux
 filesystem; `/mnt/c` is slower and can cause filesystem compatibility problems.
@@ -160,18 +160,16 @@ take precedence over `.env`, and conflicting actor models are rejected.
 
 ```text
 GEMINI_API_KEY=your-google-api-key
-OPENAI_API_KEY=your-openai-api-key
 ACTOR_MODEL=gemini-3.8-flash
 JUDGE_TRANSPORT=batch
 NATIVE_JUDGE_PROFILE=primary
 EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview
-EVIDENCE_ADJUDICATOR_MODEL=gpt-6.1-sol
+EVIDENCE_ADJUDICATOR_MODEL=gemini-4-argon
 TASK_CATALOG_FILE=data/tasks.jsonl
 ```
 
 Models and judge endpoints are listed in the [datacard](datacard.md#judge-delivery)
-and `config/`. Google serves actors, rubrics, completion, native verifiers and
-inventory; OpenAI serves audit adjudication.
+and `config/`. Model stages use Google's GenerateContent API in normal or Batch mode.
 
 | Setting | Purpose |
 | --- | --- |
@@ -180,7 +178,7 @@ inventory; OpenAI serves audit adjudication.
 | `CDP_HOST_PORT`, `NOVNC_HOST_PORT`, `VNC_HOST_PORT` | Browser-control and viewing ports |
 | `CHROMIUM_HEADLESS` | Display mode |
 | `CHROMIUM_RESET_PROFILE` | `1` clears browser history, cookies and storage at startup; host recordings are separate |
-| `GEMINI_BASE_URL`, `OPENAI_BASE_URL` | Actor/normal completion and adjudication endpoints; Batch completion uses Google's default endpoint |
+| `GEMINI_BASE_URL` | Actor and normal completion endpoint |
 | `W8_RUN_NAME` | Default recording name |
 
 Configure creates isolated service names and free ports, preferring CDP 49335,
@@ -387,7 +385,7 @@ Inspect the smoke plan offline:
   --output-dir .runtime/judge_batch_smoke
 ```
 
-Submit **five tiny requests: four Google and one OpenAI**,
+Submit **five tiny Google requests**,
 covering both native profiles, inventory, completion and adjudication:
 
 ```bash
@@ -429,8 +427,10 @@ export BENCH_PILOT_RUN
   --output "reports/$BENCH_PILOT_RUN"
 ```
 
-Each task/trial records both arms before evaluation; formats are paired only
-within a run. The ledger contains all eight attempts. Per-run artifacts record
+Each task/trial records both arms before completion, native verification and
+inventory; formats are paired only within a run. Batch polling uses the
+[ledger evaluator](#controls-and-outputs), and loss decisions use
+[final adjudication](#final-adjudication). The ledger contains all eight attempts. Per-run artifacts record
 isolation, capture integrity, returned IDs, rubric bindings, grades, coverage
 and costs. The pilot allows up to
 1,600 final-attempt responses, another 1,600 for technical reruns and 9,600 transport
@@ -463,8 +463,9 @@ Set `BENCH_COLLECTION_RUN` to the printed name and execute its ledger:
 The ledger retains all `80 × k` rows and attempts, alternates arm order and continues
 after individual errors. Reconcile every row and evaluation coverage. The response
 budget is 16,000 × k for final attempts plus the same for technical reruns, with up
-to 96,000 × k transport attempts. Every final recording gets full evaluation with
-frozen rubrics; evidence/retries determine judge work and receipts determine usage.
+to 96,000 × k transport attempts. Every final recording gets completion, native
+verification and inventory with frozen rubrics. The [final adjudication command](#final-adjudication)
+uses saved inventories; evidence and retries determine judge work.
 
 ### Resume a recording
 
@@ -536,8 +537,9 @@ then execute or resume grading:
 ```
 
 Without `--execute`, this makes no calls or writes. Completed bound stages are
-reused; ungraded stages can retry with prior costs retained. Resume the launcher
-afterward to reconcile ledger status. Keep evidence, settings and receipts intact.
+reused; ungraded stages can retry with prior costs retained. The ledger evaluator
+reconciles bound stage receipts without repeating actors. Keep evidence, settings
+and receipts intact.
 
 Primary `completion.json` uses paired screenshots/DOM. Optional
 `--judge-evidence-policy actor_native` writes `completion_actor_native.json` separately.
@@ -547,9 +549,10 @@ refusals and exhausted judgments stay ungraded; native ID mismatches are diagnos
 
 ### Controls and outputs
 
-Standalone judging returns **75** while Batch work is pending. A launcher exit 0
-can still mean `judge_exit_code: 75`, `evaluation_outcome: batch_pending`,
-`grade_completed: false`; inspect the ledger.
+The default `--stage evaluate` runs completion, both native verifiers and
+inventory. It returns **75** while Batch work is pending and **0** when the
+inventory is ready with `evaluation_outcome: awaiting_adjudication`. The launcher
+uses this stage. A launcher exit 0 can still contain pending judge rows.
 
 Set `BENCH_EVALUATION_RUN` to the saved pilot/collection name and preview selection:
 
@@ -563,14 +566,14 @@ Evaluate or poll:
 
 ```bash
 .venv/bin/python scripts/evaluate-ledger.py \
-  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --execute
+  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage evaluate --execute
 ```
 
 The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order and Batch
 queue groups. Repeat it until complete; polling does not resubmit pending/answered
 items, but can submit dependent stages and budgeted repairs. Preserve group order
-and the first recording; errors/cancellation stop further groups. Reconcile the
-launcher ledger afterward, then aggregate. `--judge-transport normal` requires a
+and the first recording; errors/cancellation stop further groups. The command
+reconciles the ledger from bound receipts. `--judge-transport normal` requires a
 separate evaluation with matching settings; it cannot resume Batch results.
 
 Preview and execute the Flash-Lite/Pro comparison on the saved pilot recordings:
@@ -588,6 +591,27 @@ Preview and execute the Flash-Lite/Pro comparison on the saved pilot recordings:
 and union/intersection, losses, costs and quality coverage; see [profile rules](evaluation-protocol.md#batch-judging).
 Completion is shared; native verifiers/audits repeat, actors/rubrics do not.
 Primary and Pro results never mix in primary aggregation.
+
+### Final adjudication
+
+Run final adjudication after all scheduled actors and technical reruns finish.
+The command checks the saved inventories before dispatch. It sends adjudication requests
+only; saved completion, native-verifier and inventory results are reused.
+
+```bash
+: "${BENCH_EVALUATION_RUN:?Set the saved pilot or collection run name}"
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage adjudicate
+
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage adjudicate --execute
+```
+
+Repeat the same command while it returns 75. `--compare-profiles` adjudicates
+both profiles' inventories and refreshes their comparison. Final loss values
+appear only after accepted adjudication; pending or unavailable audits have no
+loss rate. Queued requests must finish in their matching stage before the other
+stage starts.
 
 Cancel a queue using a finalized recording and its matching rubric:
 
@@ -646,6 +670,7 @@ is required unless an explicit `--allow-nonfresh` comparison is requested.
 | --- | --- |
 | Schedule, attempts, outcomes, logs and recording paths | `recordings/<run>/ledger.jsonl` |
 | Actor turns, input/output tokens, cache/reasoning subsets and limit hits | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `result.json` |
+| Arm comparison tokens: actor plus matching native verifier | Per-run `arm_token_usage` and arm/category summaries; actor-only `token_usage` and `tokens_per_turn` remain separate |
 | Transport failures, durations, parser stage and usage coverage | Per-turn transport receipts and raw responses |
 | Paired artifacts, timing, hashes and capture gaps | `manifest.json`, `steps/step_*/capture.json`; see [recording files](recordings.md#run-level-artifacts) |
 | Completion, native scores, validity, both audit directions and coverage | Ledger-linked `evaluation.json` and stage files, including `completion.json` and `evidence_audit.json` |
@@ -657,6 +682,11 @@ costs. Unknown usage is not zero; cache/reasoning are subsets and per-turn means
 use known-call denominators. Report both losses per run (four per task/trial) with
 coverage. Preserve receipts; see [metrics](evaluation-protocol.md#measurements),
 [pass@k](evaluation-protocol.md#repeated-trial-results) and [pricing](../w8bench/verifier/run_metrics.py).
+Arm token comparison includes DOM actors plus DOM verification, or screenshot
+actors plus screenshot verification. Both native formats still run for the
+same-run audit. The opposite verifier and all other evaluation streams remain
+visible as overhead, with all cost streams retained for full-experiment accounting; see the
+[token accounting contract](evaluation-protocol.md#token-accounting).
 USD figures are estimates, not invoices.
 
 ## View a remote browser

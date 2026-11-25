@@ -28,6 +28,8 @@ permitted differences are defined in the
 | Completion | The independent verdict on frozen task criteria, separate from the actor's claimed outcome and recorder status. |
 | Evidence loss | Criterion-required support preserved by one format but absent or disconnected in the other, assessed within the same recording using shared context. Absence from both formats is not directional loss. |
 | Profile | A native-judge model assignment with isolated evaluation outputs, such as `primary` or `pro`; it is not an actor arm. |
+| Inventory | Preliminary evidence findings and usage saved with source, rubric and model bindings for one recording. |
+| Adjudication | Final evidence-loss decisions from the saved inventory and that recording's paired evidence. |
 
 ## Components
 
@@ -70,8 +72,10 @@ flowchart TD
     I --> E
     G -->|Terminate| J[Finalize run]
     J --> K[Run partner arm with a fresh profile]
-    K --> L[Grade both runs independently]
-    L --> M[Update ledger and compare results]
+    K --> L[Completion, native verification and inventory]
+    L --> M[Save inventory and update ledger]
+    M -->|All actors finished| N[Final adjudication]
+    N --> O[Compare results]
 ```
 
 The schedule contains one row per task, arm and trial. The two arms of each
@@ -187,6 +191,12 @@ weight; exhausted scoring is ungraded with null scores and a reason. Native
 model-ID mismatches and DOM citation checks are separate diagnostics. Completion
 and audit responses require matching returned IDs and complete output. All failed
 attempt usage remains in receipts; ungraded audits have no pooled loss rate.
+
+All model requests use Google's GenerateContent API. Native validation operations
+allow an initial answer and one correction; a batched evidence fallback gives
+each individual criterion/state operation the same two-attempt budget. Rubric
+preparation and audit validation have their own budgets in the
+[datacard](datacard.md#judge-delivery).
 
 Available states retain their source IDs and remain in their own verifier even
 when the other format is missing. Directional audit decisions use only complete,

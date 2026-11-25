@@ -13,7 +13,10 @@ technical outcomes and grading coverage.
 Evaluation measures completion, model turns, token usage, tokens per model turn
 and evidence loss. Completion uses common paired evidence. Each recording's evidence
 loss compares only its own screenshots with its DOM; the two driving arms
-remain separate. Actor usage and judge usage are accounted for separately.
+remain separate. Arm token comparison includes the actor and its matching native
+verifier: DOM plus DOM verification, or screenshots plus screenshot verification.
+Actor-only usage and tokens per turn remain separate. All evaluation usage and
+cost streams remain visible for full-experiment accounting.
 
 ## Documentation
 
@@ -47,9 +50,12 @@ Chromium and overlay checkouts bound by
 
 The [pilot](docs/runbook.md#record-the-pilot) uses `task_26`, `task_02`, `task_19`
 and `task_25`, both arms, one trial each.
-Actor calls and rubric preparation use normal transport; judging defaults to
+Model requests use Google's GenerateContent API. Actor calls and rubric preparation
+use normal transport; judging defaults to
 Batch. Pending judging returns 75; repeat the same evaluation command to poll.
-The [judging instructions](docs/runbook.md#controls-and-outputs) cover profiles,
+Evaluation uses `--stage evaluate` for completion, native verification and
+inventory, then `--stage adjudicate` for final audit decisions from saved
+inventories. The [judging instructions](docs/runbook.md#controls-and-outputs) cover profiles,
 queue cancellation and uncertain submission receipts.
 
 ## Outputs

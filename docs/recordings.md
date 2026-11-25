@@ -274,7 +274,7 @@ native score fields remain null after scoring exhaustion. DOM citation diagnosti
 live in `citation_checks` and `dom_model_evidence_audit.citation_checks` in the
 native result. The controller copies them directly into the evaluation stage;
 normalization and audit inputs do not consume them. Audit receipts use
-`automated-evidence-audit/v8` and
+`automated-evidence-audit/v9` and
 `paired-capture-eligible-state-adjudication/v8`; an ungraded audit supplies no loss
 rate. See the [effective settings contract](evaluation-protocol.md#effective-settings-contract)
 for the settings compared across resumes, arms and trials.
@@ -294,6 +294,35 @@ Evaluation roots are relative to the selected recording: let `B` be
 | Profile-bound copy of primary completion | Each profile's `paired_completion.json` |
 | Batch queue | `B/batch_jobs/`, selected from the first recording passed to one evaluation command |
 | Profile comparison | `B/profile_comparison.json`, with a numeric collision suffix when needed |
+
+Each profile evaluation root also contains `audit_inventory.json`. Its content
+hash, source/native/rubric fingerprints, accepted inventory response and usage
+bind it to the recorded evidence. The audit stage references this file through
+`inventory.result` and `inventory.result_sha256`. `awaiting_adjudication` is a
+completed inventory with no directional-loss values. Final adjudication validates
+and reuses the checkpoint; inventory calls stay in accounting once.
+
+Judge usage includes provider totals, `unattributed_tokens` and
+`token_components_reconcile`. Reporting records aggregate discrepancies against
+per-call receipts in `usage_accounting`; unreconciled costs remain partial.
+
+Per-run summaries keep actor-only `token_usage` and `tokens_per_turn` alongside
+`arm_token_usage`, which follows the
+[token accounting contract](evaluation-protocol.md#token-accounting).
+
+| `arm_token_usage` field | Meaning |
+| --- | --- |
+| `policy` | `actor-plus-matching-verifier/v1`. |
+| `matching_verifier` | `dom_model` for the DOM arm; `screenshot_verifier` for the screenshot arm. |
+| `actor_usage`, `matching_verifier_usage` | Separate component totals underlying this view; coverage governs the exact combined values. |
+| `usage` | Exact actor-plus-matching-verifier usage components, or null where required coverage is incomplete. |
+| `known_usage_lower_bound`, `coverage` | Accounted usage and its completeness, without treating missing usage as zero. |
+| `matching_verifier_status` | Status of the included verifier. |
+| `included_streams`, `excluded_judge_streams` | Which streams enter this view and which remain evaluation overhead. |
+
+The opposite-format verifier still runs and retains its receipts. Completion,
+both verifiers, inventory, adjudication and rubric preparation remain visible in
+their own usage/cost streams for full-experiment accounting.
 
 The two profiles preserve the same source hashes and validity date. Model
 assignments belong in the [datacard](datacard.md#judge-delivery); invocation and

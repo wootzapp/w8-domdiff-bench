@@ -141,9 +141,15 @@ independent completion.
 | --- | --- |
 | Model turn | A received actor response, including rejected proposals, parsing failures and termination. |
 | Failed transport attempt | Separate from turns; retains duration/status and reported usage, with missing usage unknown. |
-| Tokens per turn | Actor input/output are reported separately over received responses with known respective usage. Cached input and thinking are subsets. |
+| Arm comparison tokens | Actor plus its matching native verifier: DOM arm plus DOM verifier; screenshot arm plus screenshot verifier. Both verifiers still run on each recording for the audit. |
+| Actor-only tokens per turn | Actor input/output are reported separately over received responses with known respective usage. Cached input and thinking are subsets. |
 | Stall advisory | Exact duplicate activation, two-action cycle or recent-stall matches are private, advisory-only and symmetric. They neither reject nor stop a run. The first match contributes one count. |
 | Costs | Actor, prior technical attempts and each judge stream stay separate; incomplete usage does not establish zero spend. |
+
+The [token accounting contract](evaluation-protocol.md#token-accounting) keeps
+the opposite-format verifier, completion, inventory, adjudication and rubric
+preparation visible as evaluation overhead. All cost streams remain visible for
+full-experiment accounting.
 
 ## Browser recovery
 
@@ -212,6 +218,13 @@ actors with usable evidence remain auditable. All stages use the same frozen
 weighted rubric; native side-effect penalties stay separate from frozen-criterion
 full-score checks.
 
+The launcher runs completion, native verification and inventory through
+`--stage evaluate`. A valid inventory leaves the evaluation
+`awaiting_adjudication`; `--stage adjudicate` consumes it for final loss decisions.
+Inventory and adjudication share one frozen settings contract. Batch requests
+and validation attempts retain their usage across the stage boundary.
+See the [evaluation stages](evaluation-protocol.md#evaluation-stages).
+
 Each native verifier receives every available state in its own format, preserving
 state IDs and full action history across gaps. Navigation-flagged states remain
 in both verifiers. Directional audit decisions use only same-ID states with
@@ -224,7 +237,7 @@ The native input adaptation preserves top-five selection, scoring, penalties and
 citation rules; contiguous states follow the same loader contract. Task-only
 validity uses the run's frozen UTC date. DOM citation checks diagnose state IDs
 and extractable exact quotes without changing scores or audit feedback. The
-native JSON contract is `native-rubric-output-contract/v3`.
+native JSON contract is `native-rubric-output-contract/v4`.
 
 Completion, inventory and adjudication reject missing/mismatched returned model
 IDs and incomplete responses. Native model mismatches are recorded as diagnostics.
@@ -245,9 +258,10 @@ auxiliary scores, directional loss and coverage.
 | Native Pro comparison profile, all stages | `gemini-3.1-pro-preview` | Batch | Medium | Unset |
 | Paired completion and optional actor-native grade | `gemini-3.6-flash` | Batch | Medium | 10,000 |
 | Audit inventory | `gemini-3.1-pro-preview` | Batch | Unset | Unset |
-| Audit adjudication | `gpt-6.1-sol` | Batch | Unset | Unset |
+| Audit adjudication | `gemini-4-argon` | Batch | Unset | Unset |
 
-`JUDGE_TRANSPORT` selects `batch` by default or `normal` for judging. Actors,
+All model stages use Google's GenerateContent API. `JUDGE_TRANSPORT` selects
+`batch` by default or `normal` for judging. Actors,
 actor preflight and rubric preparation stay normal. Native stages retain the
 115,000-token input guard. Judge image requests specify high detail. Temperature
 is omitted in the listed configurations.
@@ -267,9 +281,13 @@ only subsets and their union/intersection, directional-loss differences,
 usage/cost and judgment-quality counts. These subsets are judge-defined, not
 human accuracy labels. Profiles are isolated in output and primary aggregation.
 
-Completion allows one request per grading attempt; inventory and adjudication
-allow three validation attempts each. Native repairs and endpoint retries retain
-their receipts. Audit receipts identify `automated-evidence-audit/v8` and
+Completion allows one request per grading attempt. Native verifier operations,
+including both validity stages, allow two validation attempts total: the initial
+answer and one correction. A batched evidence-analysis failure falls back to
+individual criterion/state operations, each with that same two-attempt budget.
+Rubric generation and dependency checking allow five attempts per operation;
+inventory and adjudication allow three. Native repairs and endpoint retries retain
+their receipts. Audit receipts identify `automated-evidence-audit/v9` and
 `paired-capture-eligible-state-adjudication/v8`. Authentication refresh consumes
 the endpoint attempt budget. Effective settings bind profile, transport and
 output policy for resume and comparison.

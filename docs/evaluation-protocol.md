@@ -152,7 +152,7 @@ Missing passive artifacts are identified as unavailable rather than substituted.
 The judge is explicitly selected as `--judge-model gemini-3.6-flash`; it never derives
 from the actor. Model grading uses medium reasoning, a 10,000-token output budget
 and no action tools. Completion has one request per grading attempt and no
-automatic response-repair loop. `--execute` enables full evaluation;
+automatic response-repair loop. `--execute` enables the selected evaluation stage;
 without it, the command performs a read-only preflight.
 
 Each criterion receives `success`, `failure` or `uncertain`, a reason and existing
@@ -183,6 +183,30 @@ text plus interactive references, or screenshots. It writes
 `completion_actor_native.json` and leaves the primary grade intact. It does not
 replay the actor's complete prompt or memory. Primary success comparisons continue
 to use `completion.json`; evidence policies and grading controls cannot be mixed.
+
+## Evaluation stages
+
+`--stage evaluate` runs common completion, both native verifiers and Gemini
+inventory. The launcher uses this stage for each recorded task pair. Inventory
+is saved in `audit_inventory.json`, bound to the rubric, recording evidence,
+native results, eligibility, model and request settings. It contains no final
+loss values. Completed evaluation work has status `awaiting_adjudication` and
+returns exit 0; pending Batch work returns 75.
+
+`--stage adjudicate` validates the saved inventory and executes final adjudication.
+The ledger command requires every scheduled actor and technical rerun to have
+finished. Final adjudication never starts missing completion, native or inventory
+work. Unavailable recordings or native judgments retain their coverage reasons
+and remain outside loss denominators. Completed eligible audits provide the final
+loss values. The selected execution stage does not change effective model or
+request settings.
+
+Completion checks every required reported fact against the supplied observations,
+including calculations, dates, units and scope. A visited source or a populated
+row does not establish a correct final answer. Native analyses retain decisive
+facts and contradictions in summaries; rescoring checks those facts rather than
+treating a positive baseline as evidence. DOM grounding validators require explicit
+status lines and state citations.
 
 ## Measurements
 
@@ -226,8 +250,16 @@ stage, retains all attempt usage and permits the batch to continue. Rubric draft
 generation similarly records an ungraded task, continues other tasks and reports
 a partial catalog with a nonzero exit status.
 
+Each native verifier operation allows two validation attempts total: an initial
+answer and one correction. This includes action scoring, relevance, selected-state
+analysis, global stages and both validity stages. An exhausted batched evidence
+analysis enters individual criterion/state fallback operations, each with its own
+two-attempt budget. This is not a two-call cap for the full verifier run. Rubric
+preparation retains five attempts for generation and dependency checking;
+inventory and adjudication retain three validation attempts each.
+
 Native prompts identify their JSON output contract as
-`native-rubric-output-contract/v3`. Unmet conditional criteria remain in
+`native-rubric-output-contract/v4`. Unmet conditional criteria remain in
 response order and are excluded from score totals. DOM `citation_checks` record
 supplied state identity and exact quoted-text checks without changing accepted
 analyses, requests, scores or audit feedback. Diagnostic records bypass score
@@ -240,7 +272,7 @@ Inventory and adjudication each have three validation attempts. Their returned
 IDs and completion status use the shared acceptance policy. Failed/refused
 attempts keep usage and error receipts; ungraded results have no evidence-loss
 rate and cannot enter pooled loss denominators. Audit schema
-`automated-evidence-audit/v8` and prompt
+`automated-evidence-audit/v9` and prompt
 `paired-capture-eligible-state-adjudication/v8` identify this contract. Judge repair
 calls, ungraded stages, citation diagnostics and unknown usage are reported
 separately.
@@ -254,9 +286,36 @@ separately.
 | Transport attempts | Each actor generation HTTP attempt, its duration, status and reported usage, separately from received responses. Input-preflight attempts are recorded separately and are not model turns. | Per-turn `transport_attempts.jsonl`; raw failed response and parser receipts. |
 | Technical attempt cost | Earlier technical attempts retained separately from final-attempt success/turn/token metrics. | Ledger `attempts`, `technical_attempts`, `cost_streams["technical_attempts:actor"]`. |
 | Actor usage | Returned input/output totals, plus cached-input and reasoning subsets. | Provider response and decision `usage`. |
+| Arm comparison usage | Actor plus the native verifier matching the actor arm, with exact values or labelled known-usage lower bounds. | Per-run `arm_token_usage`, arm/category summaries. |
 | Tokens per model turn | Input and output separately over received actor responses. Each component uses its own known-response denominator when usage is missing; its exact mean is unavailable until coverage is complete. Failed transports are separate. | Per-run `tokens_per_turn`, arm/category distributions. |
 | Judge usage | Paired/actor-native completion, each verifier and audit inventory/adjudication, separate from actor usage. Rubric preparation is a separate once-per-task stream, not charged again as trial work. | Completion/evaluation receipts and named usage streams. |
 | Timing | Decision-call latency, action delivery duration and recorder capture durations. | Decision `latency_seconds`, action `duration_seconds`, state `capture`. |
+
+### Token accounting
+
+`arm_token_usage` uses policy `actor-plus-matching-verifier/v1`:
+
+| Actor arm | Included in arm token comparison |
+|---|---|
+| DOM | Actor usage plus `dom_model` verifier usage. |
+| Screenshot | Actor usage plus `screenshot_verifier` usage. |
+
+Both native verifiers run on every recording for the same-run evidence audit.
+The opposite-format verifier, completion grades, inventory, adjudication and
+rubric preparation remain visible as evaluation overhead. All cost streams remain
+visible for full-experiment accounting. They are excluded only from the arm token comparison. Actor-only
+`token_usage` and `tokens_per_turn` remain separate; judge calls do not enter the
+actor-turn denominator.
+
+Exact usage components stay null when required usage is missing or pending.
+`known_usage_lower_bound`, `coverage` and `matching_verifier_status` disclose what
+has been accounted for. Provider totals are preserved even when input/output
+components do not reconcile; unattributed tokens are not assigned to reasoning
+or cache. Included and excluded stream identities remain recorded. Arm/category
+summaries report complete/attempted run counts and distributions under the same
+coverage contract.
+Token coverage and monetary cost coverage are independent: a provider-reported
+total can be complete while its billing components remain partly unattributed.
 
 The [datacard](datacard.md#shared-controls) is the settings reference. Cached
 input is a subset of input tokens; reasoning is a subset of output tokens.
@@ -265,6 +324,15 @@ are not provider itemization. Passive recording consumes no model tokens; judge
 requests using that evidence have separate usage. Actor cost includes received
 responses and any reported failed-transport usage; the response-only
 token-per-turn denominator is not extended by those transport attempts.
+
+Judge accounting preserves provider-reported `total_tokens`. Per-call receipts
+are authoritative when a saved aggregate differs. `unattributed_tokens` records
+any nonnegative difference from known input and output components without
+assigning it to reasoning or cache. `token_components_reconcile` and
+`usage_accounting` disclose unknown or conflicting totals. Unreconciled judge
+cost has partial coverage and a null `estimated_usd`; the known-component
+estimate remains separate. Actor usage and tokens per turn use actor responses
+only; `arm_token_usage` is the distinct actor-plus-matching-verifier view.
 
 Decisions record `response_status`, `incomplete_details`, `returned_model`,
 `reasoning` and `output_limit_hit`. The limit flag is true when the provider reports
@@ -302,7 +370,7 @@ recordings. Paired-only counts do not replace the full scheduled denominator.
 
 Interrupted or partial recordings retain known decision usage as lower bounds.
 `cost_coverage`, `tokens_complete`, `turns_complete` and `turns_missing_usage`
-identify gaps. Exact all-attempt means/medians are null when coverage is incomplete;
+identify gaps. Exact actor-only all-attempt means/medians are null when coverage is incomplete;
 `mean_tokens_all_attempts_lower_bound` and `mean_turns_all_attempts_lower_bound`
 use known totals divided by all scheduled attempts. A startup failure with no
 request is a known-zero actor cost; an unknown interrupted request is not.
@@ -408,10 +476,10 @@ and runs without loss values, including per-run receipts and per-arm counts. It
 does not infer accuracy from agreement alone. Missing/ungraded profile judgments
 remain unavailable rather than disagreements or zero loss.
 
-Google Chat results accept snake_case and camelCase finish-reason and token
-fields. Native audit response validation retains all supported usage fields;
-unrecognized usage metadata is preserved in receipt diagnostics and excluded
-from SDK validation. Original provider responses remain unchanged.
+All model stages use Google's GenerateContent API, with normal or Batch delivery.
+Receipts preserve provider usage metadata and normalized token accounting,
+including separately reported candidate and thought tokens. Original provider
+responses remain unchanged.
 
 Costs use the recorded delivery mode and keep actor spending separate. Batch
 rates apply to actual batch items, including repeated paid attempts. Missing
