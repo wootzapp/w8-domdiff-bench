@@ -10,6 +10,11 @@ and complex difficulty. Both arms use the same actor settings and frozen task
 criteria. A ledger records paired alternating order, fresh-browser attempts,
 technical outcomes and grading coverage.
 
+The [published dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/paired-capture)
+contains the catalog, frozen rubrics, recordings, trajectories and evaluations.
+Download the catalog and rubrics through the [runbook](docs/runbook.md#get-the-benchmark-and-install-python)
+before recording or running the offline checks.
+
 Evaluation measures completion, model turns, token usage, tokens per model turn
 and evidence loss. Completion uses common paired evidence. Each recording's evidence
 loss compares only its own screenshots with its DOM; the two driving arms
@@ -64,7 +69,8 @@ queue cancellation and uncertain submission receipts.
 | --- | --- |
 | `recordings/<collection>/ledger.jsonl` | Scheduled tasks, arms, trials, attempts and execution/evaluation outcomes. |
 | `recordings/<collection>/trial_NNNN/<arm>/<task>/` | Decisions, paired states, browser receipts and actor outcome. |
-| `recording.parent.parent / "evaluations"` | Bound verifier inputs, common completion, profile-specific verifier and audit results, and Batch receipts. |
+| `recording.parent.parent / "evaluations"` | Bound verifier inputs, common completion and profile-specific verifier and audit results. |
+| `recordings/<collection>/evaluations/batch_jobs/` | Shared judge requests, job receipts and imported responses; evaluation receipts retain the owning queue. |
 | `reports/<collection>/` | Offline aggregation, paired comparisons, metrics, costs and coverage. |
 
 The [recording guide](docs/recordings.md) defines exact paths, including technical
