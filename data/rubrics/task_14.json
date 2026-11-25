@@ -1,0 +1,53 @@
+{
+  "task_id": "task_14",
+  "instruction": "Use OpenStreetMap Wiki documentation to explain access, foot, bicycle, motor_vehicle, permissive, private, destination and conditional restrictions. Compare four fictional tag sets without assuming any country-specific highway defaults: A, access=no with foot=yes; B, motor_vehicle=destination with bicycle=yes; C, access=private with foot=yes and bicycle=permissive; D, access=private with foot=yes and foot:conditional=no @ (22:00-06:00). For each set state the explicit permission for a pedestrian, a cyclist riding and a private motorcar; assess D at 12:00 and 23:00. Mark unspecified permissions rather than guessing them. Explain which more-specific tag overrides which general tag, how destination differs from private and permissive, and why a mapped gate does not by itself establish legal access. Follow the separate key/value, conditional-restriction and gate documentation and cite the pages used. Finish with a minimal proposed tag set for a private lane whose owner permits walking and cycling but not public motorcar use. Give the proposal as answer text only; do not edit the map.\n\nStopping condition: Stop when a cited permission matrix covers all four sets and both times for D, explains precedence and missing defaults, distinguishes the access values and physical barriers, and gives the final text-only tagging proposal.\n\nConstraints:\n- Only use the browser actions available to you. Do not open API endpoints, raw data files, view-source pages or downloads, and do not use external programs.\n- Do not sign in or create accounts. Do not provide anyone's private personal information; use only task-supplied fictional values if an interaction requests personal details.\n- Remain read-only: do not purchase, reserve, apply, post, send messages, contact people or change external records.\n- Navigation, search, filtering, sorting and read-only form or calculator interactions are allowed.\n- Do not bypass authentication, paywalls, CAPTCHAs or access challenges. Dismiss optional prompts without creating an account or supplying personal information.\n- Support the answer with observed page evidence and source URLs. For values that can change, report what the site shows during the run. Preserve the requested dates, units and scope; report unavailable information explicitly instead of inventing it.",
+  "start_url": "https://wiki.openstreetmap.org/wiki/Key:access",
+  "catalog_sha256": "1b21a93282a438f638b70dabc427b6d6cda48b196af7ab46425b8241785cbf67",
+  "precomputed_rubric": {
+    "items": [
+      {
+        "criterion": "Evaluate permissions for tag sets A, B, and C",
+        "description": "Evaluate permissions for a pedestrian, a cyclist riding and a private motorcar in tag sets A, B and C. Apply applicable explicit general tags and more-specific overrides; mark a permission unspecified only when neither defines it, without assuming country-specific highway defaults. Full credit for a correct matrix (A: foot=yes, bicycle=no, motorcar=no; B: bicycle=yes, motorcar=destination, foot unspecified; C: foot=yes, bicycle=permissive, motorcar=private). Partial credit if one or two sets or inherited/unspecified permissions are incorrect.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Evaluate conditional permissions for tag set D at specified times",
+        "description": "Assess the permissions for set D specifically at 12:00 and 23:00. Full credit if the agent correctly states that a pedestrian is allowed at 12:00 but restricted at 23:00 due to the conditional tag, while noting other modes fall back to access=private. Partial credit if the agent analyzes the conditional logic correctly for only one of the times, or fails to properly apply the base access=private restriction to other modes.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Explain tag precedence and access value differences",
+        "description": "Explain how specific tags override general tags (e.g., foot=yes overrides access=no) and differentiate between 'destination', 'private', and 'permissive' access values based on OSM Wiki definitions. Full credit if both the precedence hierarchy and all three value definitions are accurately explained. Partial credit if only the precedence or only the value definitions are explained, or if the definitions lack clarity.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Explain the legal access limitation of mapped physical gates",
+        "description": "Explain why mapping a physical gate (barrier=gate) does not inherently establish legal access rules. Full credit if the agent clarifies that a physical barrier implies an obstacle but explicit legal access tags (like access=*) are required to define who is permitted to pass. Partial credit for a vague explanation that does not clearly distinguish between physical routing barriers and legal access rights.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Propose a minimal tag set for the private lane scenario",
+        "description": "Provide a text-only minimal proposed tag set for a private lane where walking and cycling are permitted but public motorcars are not. Full credit for a minimal, logically consistent set expressing that policy using documented tag meanings; accept equivalent supported representations. Partial credit if the set is unnecessarily redundant or fails to express the stated policy. Do not infer a mandatory tag value solely from the ordinary wording that the owner permits access.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Cite required OSM Wiki pages",
+        "description": "Cite the relevant OpenStreetMap Wiki source URLs used for key/value definitions, conditional restrictions and gates. Full credit if the supporting sources for these required concepts are identified by URL. Partial credit if required source citations are missing.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      }
+    ]
+  },
+  "rubric_approval_sha256": "1d3ebbc7b43565eb18b0560803c9837b7ad017b16a339bbcc668eb3f3c5cdaa2"
+}
