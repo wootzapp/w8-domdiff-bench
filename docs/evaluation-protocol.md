@@ -191,7 +191,7 @@ inventory. The launcher uses this stage for each recorded task pair. Inventory
 is saved in `audit_inventory.json`, bound to the rubric, recording evidence,
 native results, eligibility, model and request settings. It contains no final
 loss values. Completed evaluation work has status `awaiting_adjudication` and
-returns exit 0; pending Batch work returns 75.
+returns exit 0.
 
 `--stage adjudicate` validates the saved inventory and executes final adjudication.
 The ledger command requires every scheduled actor and technical rerun to have
@@ -252,7 +252,7 @@ a partial catalog with a nonzero exit status.
 
 Each native verifier operation allows two validation attempts total: an initial
 answer and one correction. This includes action scoring, relevance, selected-state
-analysis, global stages and both validity stages. An exhausted batched evidence
+analysis, global stages and both validity stages. An exhausted grouped evidence
 analysis enters individual criterion/state fallback operations, each with its own
 two-attempt budget. This is not a two-call cap for the full verifier run. Rubric
 preparation retains five attempts for generation and dependency checking;
@@ -424,47 +424,19 @@ through recorded runs and independent grades. Sequential capture, page changes,
 grounding differences and judge uncertainty remain relevant when interpreting
 results.
 
-## Batch judging
+## Judge delivery and profiles
 
-Judges use `JUDGE_TRANSPORT=batch` by default; `normal` sends the same request
-bodies synchronously. Actor requests and countTokens preflight, plus rubric
-preparation, stay normal. Both native pipelines use `gemini-3.5-flash-lite` for
-every stage. The isolated `pro` comparison profile uses `gemini-3.1-pro-preview`.
-Completion and audit assignments are listed in the [datacard](datacard.md#judge-delivery).
+Judges send direct requests through Google's GenerateContent API. Both native
+pipelines use `gemini-3.5-flash-lite` for every stage. The isolated `pro` comparison
+profile uses `gemini-3.1-pro-preview`. Completion and audit assignments are listed
+in the [datacard](datacard.md#judge-delivery). Actor requests, countTokens preflight
+and rubric preparation also use direct requests.
 
-The controller collects ready requests across selected recordings, preserving
-all evidence-selection and validation dependencies. Submission, provider job
-identity and item responses are durable. The standalone evaluator and synthetic
-smoke command return 75 for pending work; repeat the same command to poll it and
-advance ready stages. The task launcher can return 0 after recording while its
-ledger still has `judge_exit_code=75`, `evaluation_outcome=batch_pending` and
-`grade_completed=false`. Its exit status does not establish completed judging.
-Scheduled collections use one Batch queue at
-`recordings/<collection>/evaluations/batch_jobs/`. Evaluation receipts bind each
-recording and profile to the saved queue, with a relative path for relocation.
-Resume resolves that owner before polling or submission. The launcher and
-ledger evaluator preserve queue groups across trials and technical attempts;
-direct selections with conflicting owners are refused. An unavailable bound
-queue is an error and does not authorize resubmission.
-Replaying a saved answer does not make another provider call. Invalid answers
-and failed items enter the existing validation/transport retry budgets, with
-distinct attempt IDs. Expiration keeps completed items and retries only
-unanswered work. No acceptance, citation, scoring, penalty or voting rule
-depends on transport.
-
-Creation acknowledgement can be uncertain because provider batch creation is not
-idempotent. Such a receipt blocks automatic resubmission until its job ID is
-reconciled. Cancellation records a terminal marker before cancelling known jobs;
-late results cannot be published. Its scope is the entire shared Batch queue
-bound to the selected recording, including other recordings/profiles using it.
-It returns 130 and is terminal for that queue, rather than a pause/resume
-action. Unknown job IDs require provider reconciliation. There is no CLI switch
-that clears a cancellation or identifies an unacknowledged job automatically.
-Batch job files are split at provider file/request limits without dropping or
-truncating items. A single request that exceeds a provider's batch file limit is
-refused rather than altered; the operator can select normal transport in a
-separate evaluation with matching settings. Neither transport enlarges a model's
-input context or changes the 115,000-token native input guard.
+The controller preserves evidence-selection, stage and validation dependencies.
+Completed bound stages are reused on resume. Invalid answers enter the existing
+validation budgets; endpoint retries retain their attempts and usage. Interrupted
+stages can resume with earlier usage kept in accounting. Neither input context
+nor the 115,000-token native input guard depends on delivery.
 
 Primary and Pro outputs have separate profile roots, bound to the same recording
 and rubric. Common completion is shared because native results cannot affect it.
@@ -478,12 +450,12 @@ and runs without loss values, including per-run receipts and per-arm counts. It
 does not infer accuracy from agreement alone. Missing/ungraded profile judgments
 remain unavailable rather than disagreements or zero loss.
 
-All model stages use Google's GenerateContent API, with normal or Batch delivery.
+All model stages use Google's GenerateContent API through direct requests.
 Receipts preserve provider usage metadata and normalized token accounting,
 including separately reported candidate and thought tokens. Original provider
 responses remain unchanged.
 
-Costs use the recorded delivery mode and keep actor spending separate. Batch
-rates apply to actual batch items, including repeated paid attempts. Missing
-item usage prevents an exact total; known spending remains a labelled lower
-bound. Pricing is defined in [run_metrics.py](../w8bench/verifier/run_metrics.py).
+Costs use standard request rates and keep actor spending separate. Every paid
+attempt stays in its stage's usage and cost stream. Missing usage prevents an
+exact total; known spending remains a labelled lower bound. Pricing is defined
+in [run_metrics.py](../w8bench/verifier/run_metrics.py).

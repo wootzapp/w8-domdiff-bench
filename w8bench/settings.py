@@ -5,7 +5,6 @@ import hashlib
 import importlib
 import json
 import os
-from .verifier.batch import judge_transport, POLICY_VERSION as BATCH_POLICY_VERSION
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -165,7 +164,7 @@ def completion_settings(recording, *, rubric_hash, judge_model, base_url, eviden
         "route": "models/{model}:generateContent", "base_url": base_url, "reasoning_effort": "medium", "temperature": None,
         "max_output_tokens": 10000, "media_resolution": "HIGH", "max_attempts": 1, "evidence_policy": evidence_policy,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
-        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+        "transport": "normal",
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY})
 
 
@@ -181,7 +180,7 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
         "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"), "reasoning_effort": "medium",
         "temperature": None, "max_output_tokens": 10000, "media_resolution": "HIGH", "max_attempts": 1,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
-        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+        "transport": "normal",
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY,
         "evidence_policy": evidence_policy}}
     native_model = native_judge_model()
@@ -190,7 +189,7 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
             "endpoints": {model: endpoints.get(model, []) for model in (native_model,)},
             "prompt_sha256": _native_prompts(mode), "schema_version": "finite-earned-points/v2",
             "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
-            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+            "transport": "normal",
             "scoring_controls": CANONICAL_SETTINGS, "input_token_limit": 115000, "validation_attempts": 2,
             "max_output_tokens": None, "temperature": None, "dom_state_char_budget": 350000 if mode == "dom_model" else None,
             "evidence_policy": mode}
@@ -207,7 +206,7 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
             "generation_settings": GEMINI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if stage == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
-            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+            "transport": "normal",
             "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY, "validation_attempts": 3, "evidence_policy": "eligible_same_run_paired"}
     stages["rubric_preparation"] = {"models": [CANONICAL_RUBRIC_MODEL], "endpoints": endpoints.get(CANONICAL_RUBRIC_MODEL, []),
         "prompt_sha256": _native_prompts("screenshot_verifier"), "schema_version": "frozen-rubric/v1",
@@ -248,7 +247,7 @@ def native_stage_settings(args, mode, *, rubric_hash):
         "models": models, "endpoints": {model: endpoints.get(model, []) for model in models},
         "prompt_sha256": _native_prompts(mode), "schema_version_policy": "finite-earned-points/v2",
         "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
-        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+        "transport": "normal",
         "scoring_controls": controls, "validation_attempts": 2, "input_token_limit": 115000,
         "evidence_policy": mode, "browser_source": browser_source_version()})
 
@@ -273,7 +272,7 @@ def audit_settings(config, *, rubric_hash=None):
             "generation_settings": GEMINI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if name == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
-            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
+            "transport": "normal",
             "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY, "validation_attempts": 3,
             "evidence_policy": "eligible_same_run_paired"}
     return normalized_settings({"schema_version": SETTINGS_VERSION, "rubric_sha256": rubric_hash,

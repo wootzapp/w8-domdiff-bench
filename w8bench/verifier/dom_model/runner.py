@@ -324,13 +324,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s - %(message)s")
-    from ..batch import BatchPending, BatchCancelled
-    try:
-        print(json.dumps(run(parse_args(argv)), ensure_ascii=False, indent=2, default=str))
-    except BatchPending:
-        raise SystemExit(75)
-    except BatchCancelled:
-        raise SystemExit(130)
+    print(json.dumps(run(parse_args(argv)), ensure_ascii=False, indent=2, default=str))
 
 
 

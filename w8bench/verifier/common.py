@@ -283,12 +283,10 @@ def load_env_file(path: str | Path) -> None:
 
 
 def write_json(path: str | Path, value: object) -> Path:
-    from .batch import publication
-    with publication():
-        destination = Path(path)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8", errors="backslashreplace")
-        return destination
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8", errors="backslashreplace")
+    return destination
 
 
 

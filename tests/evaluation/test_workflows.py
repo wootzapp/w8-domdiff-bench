@@ -731,17 +731,10 @@ def test_catalog_drafts_use_original_workflow_then_resume_without_calls(catalog_
     assert not catalog_case["frozen"].exists()
 
 
-@pytest.mark.parametrize("previous_transport", [None, "normal", "batch"])
 @pytest.mark.parametrize("fails", [False, True])
-def test_rubric_preparation_uses_google_and_restores_transport(catalog_case, monkeypatch, previous_transport, fails):
-    from w8bench.verifier.batch import judge_transport
-    if previous_transport is None:
-        monkeypatch.delenv("JUDGE_TRANSPORT", raising=False)
-    else:
-        monkeypatch.setenv("JUDGE_TRANSPORT", previous_transport)
+def test_rubric_preparation_uses_google(catalog_case, monkeypatch, fails):
     original = generator.GracefulRetryClient.from_path
     def client(*args, **kwargs):
-        assert judge_transport() == "normal"
         assert kwargs["eval_model"] == "gemini-3.1-pro-preview"
         if fails:
             raise ValueError("synthetic client failure")
@@ -756,7 +749,6 @@ def test_rubric_preparation_uses_google_and_restores_transport(catalog_case, mon
         receipt = json.loads((catalog_case["drafts"] / "task_01.metrics.json").read_text())
         assert receipt["effective_settings"]["transport"] == "normal"
         assert receipt["effective_settings"]["models"] == ["gemini-3.1-pro-preview"]
-    assert os.environ.get("JUDGE_TRANSPORT") == previous_transport
 
 
 def test_rubric_preparation_requires_google_credentials_before_writing(catalog_case, monkeypatch):
@@ -946,150 +938,11 @@ def test_native_ungraded_blocks_audit_and_excludes_loss_rates(
                           "audited_runs": 0, "attempted_runs": 1}
 
 
-def test_batch_resume_does_not_resubmit_answered_or_submitted_items(tmp_path,monkeypatch,batch_providers):
-    from w8bench.verifier import batch
-    root=tmp_path/'queue';jobs=batch.BatchJobs(root,clients=batch_providers.clients)
-    identity={'task':'t','arm':'dom','trial':1,'recording':'hash','profile':'primary'}
-    body={'model':'gemini-3.5-flash-lite','messages':[{'role':'user','content':'Saved'}]}
-    for _ in range(2):
-        with batch.evaluation_scope(root,identity):
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',stage='dom.relevance')
-        jobs.poll();jobs.submit()
-    assert len(batch_providers.batches.created)==1
-    batch_providers.batches.finish(0)
-    jobs.poll()
-    with batch.evaluation_scope(root,identity):
-        record={}
-        value=batch.request(body,provider='google',endpoint='generateContent',stage='dom.relevance',record=record)
-    assert value['status_code']==200 and record['transport']=='batch'
-    assert record['batch_job_id']=='batches/job_1'
-    assert jobs.submit()==0 and len(batch_providers.batches.created)==1
-
-
-@pytest.mark.parametrize('state',['expired','failed'])
-def test_terminal_batch_keeps_partial_answers_and_retries_only_missing_items(tmp_path,monkeypatch,batch_providers,state):
-    from w8bench.verifier import batch
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    bodies=[{'model':'gemini-3.5-flash-lite','messages':[{'role':'user','content':text}]} for text in ('a','b')]
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        for body in bodies:
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',stage='relevance')
-    jobs.submit();rows=batch_providers.batches.created[0]['rows']
-    first=rows[0]['key']
-    batch_providers.batches.finish(0,status=state,results=[{'key':first,'response':{'ok':True}}])
-    jobs.poll()
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        values=[batch.request(body,provider='google',endpoint='generateContent',stage='relevance') for body in bodies]
-        assert sorted(v['status_code'] for v in values)==[200,503]
-        failed_index=next(i for i,v in enumerate(values) if v['status_code']==503)
-        with pytest.raises(batch.BatchPending):batch.request(bodies[failed_index],provider='google',endpoint='generateContent',stage='relevance')
-    assert jobs.submit()==1
-    assert len(batch_providers.batches.created[1]['rows'])==1
-    assert batch_providers.batches.created[1]['rows'][0]['request']==bodies[failed_index]
-
-
-def test_batch_partial_item_error_preserves_nonretryable_status(tmp_path,batch_providers):
-    from w8bench.verifier import batch
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='validity')
-    jobs.submit();key=batch_providers.batches.created[0]['rows'][0]['key']
-    batch_providers.batches.finish(0,results=[{'key':key,'error':{'code':3,'message':'Invalid request'}}]);jobs.poll()
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        assert batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='validity')['status_code']==400
-
-
-def test_uncertain_batch_creation_is_not_repeated(tmp_path,monkeypatch,batch_providers):
-    from w8bench.verifier import batch
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
-    original=batch_providers.batches.create
-    def accepted_then_disconnected(**kwargs):
-        original(**kwargs)
-        raise ConnectionError('Submission acknowledgement lost')
-    monkeypatch.setattr(batch_providers.batches,'create',accepted_then_disconnected)
-    with pytest.raises(ConnectionError):jobs.submit()
-    assert len(batch_providers.batches.created)==1
-    with pytest.raises(RuntimeError,match='reconciliation'):jobs.poll()
-    with pytest.raises(RuntimeError,match='uncertain'):jobs.submit()
-    assert len(batch_providers.batches.created)==1
-
-
-def test_batch_cancellation_refuses_late_writes(tmp_path,batch_providers):
-    from w8bench.verifier import batch
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
-    jobs.submit();jobs.cancel();batch_providers.batches.finish(0)
-    assert batch_providers.batches.cancelled==['batches/job_1']
-    with pytest.raises(batch.BatchCancelled):jobs.poll()
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchCancelled):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
-    assert not (tmp_path/'responses').exists()
-
-
-def test_batch_rounds_preserve_dependencies_and_collect_ready_runs(run_pair,tmp_path,monkeypatch,batch_providers):
-    from w8bench.verifier import batch,run_comparison as pipeline
-    paths,*_=run_pair
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    monkeypatch.setattr(pipeline,'BatchJobs',lambda root, **kwargs:batch.BatchJobs(root,clients=batch_providers.clients, **kwargs))
-    rubric=tmp_path/'criteria.json';rubric.write_text(json.dumps({'task_id':'task_01'}))
-    stages=['relevance','selected_state_analysis','global_rescore','inventory','adjudication']
-    def evaluate(args,run,recording):
-        for stage in stages:
-            if stage == 'adjudication' and args.stage == 'evaluate':
-                return 0
-            provider='google'
-            model='gemini-4-argon' if stage=='adjudication' else 'gemini-3.1-pro-preview' if stage=='inventory' else 'gemini-3.5-flash-lite'
-            batch.request({'model':model,'messages':[{'role':'user','content':stage}]},provider=provider,
-                endpoint='generateContent',stage=f'audit.{stage}' if stage in {'inventory', 'adjudication'} else stage)
-        return 0
-    monkeypatch.setattr(pipeline,'_evaluate_recording',evaluate)
-    args=['--run',*[str(p) for p in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash','--execute']
-    for index,stage in enumerate(stages):
-        selected_args = [*args, '--stage', 'adjudicate'] if stage == 'adjudication' else args
-        if stage == 'adjudication':
-            assert pipeline.main(args) == 0
-        assert pipeline.main(selected_args)==75
-        created=batch_providers.batches.created[index]
-        assert len(created['rows'])==2
-        assert all(row['request']['messages'][0]['content']==stage for row in created['rows'])
-        # Polling a running job never submits another copy or advances dependencies.
-        assert pipeline.main(selected_args)==75 and len(batch_providers.batches.created)==index+1
-        batch_providers.batches.finish(index)
-    assert pipeline.main([*args, '--stage', 'adjudicate'])==0 and len(batch_providers.batches.created)==len(stages)
-
-
-def test_invalid_batch_answer_uses_existing_completion_refusal(completion_case,tmp_path,monkeypatch):
-    from w8bench.verifier import batch
-    case=completion_case
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    identity={'run':'r','profile':'primary'}
-    args=dict(judge_model='gemini-3.6-flash',execute=True)
-    with batch.evaluation_scope(tmp_path/'queue',identity):
-        with pytest.raises(batch.BatchPending):asyncio.run(completion.grade_run(case.run,case.rubric_path,**args))
-    item=json.loads(next((tmp_path/'queue/requests').glob('*.json')).read_text())
-    batch._save(tmp_path/'queue/responses'/f"{item['id']}.json",{'job_id':'job','status_code':200,'body':{
-        'modelVersion':'wrong-model','usageMetadata':{'promptTokenCount':7,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':9},
-        'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{"criteria":[]}'}]}}]}})
-    with batch.evaluation_scope(tmp_path/'queue',identity):
-        grade=asyncio.run(completion.grade_run(case.run,case.rubric_path,**args))
-    assert grade['method']==grade['verdict']=='ungraded'
-    assert grade['usage']['input_tokens']==7 and grade['usage']['output_tokens']==2
-    assert grade['transport']=='batch' and grade['refusal_reason']
-    # A new grading attempt has its own ID; it never re-submits the answered item.
-    with batch.evaluation_scope(tmp_path/'queue',identity):
-        monkeypatch.setenv('W8_JUDGE_STAGE_ATTEMPT','2')
-        with pytest.raises(batch.BatchPending):asyncio.run(completion.grade_run(case.run,case.rubric_path,**args))
-    assert len(list((tmp_path/'queue/requests').glob('*.json')))==2
-
-
 def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_evaluation,tmp_path,monkeypatch):
     from w8bench.verifier import run_comparison as pipeline
     paths,rubric,calls=full_evaluation
     args=['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash',
-        '--judge-transport','normal','--compare-profiles','--execute']
+        '--compare-profiles','--execute']
     assert pipeline.main(args)==0
     assert pipeline.main([*args,'--stage','adjudicate'])==0
     assert len(calls['primary'])==2  # One shared grade per independent recording.
@@ -1107,195 +960,32 @@ def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_
     assert next(tmp_path.rglob('profile_comparison_2.json')).is_file()
 
 
-def test_batch_preflight_is_read_only_for_each_profile(full_evaluation,tmp_path):
+def test_preflight_is_read_only_for_each_profile(full_evaluation,tmp_path):
     from w8bench.verifier import run_comparison as pipeline
     paths,rubric,calls=full_evaluation
     assert pipeline.main(['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),
-        '--judge-model','gemini-3.6-flash','--compare-profiles','--judge-transport','batch'])==0
-    assert not list(tmp_path.rglob('batch_jobs')) and not list(tmp_path.rglob('evaluation.json'))
+        '--judge-model','gemini-3.6-flash','--compare-profiles'])==0
+    assert not list(tmp_path.rglob('evaluation.json'))
     assert all(not value for value in calls.values())
 
 
-def test_batch_transport_and_profile_are_bound_but_actor_is_unchanged(run_pair,monkeypatch):
+def test_native_profile_is_bound_but_actor_is_unchanged(run_pair,monkeypatch):
     from w8bench.settings import evaluation_settings,require_same_settings
-    from w8bench.verifier import batch
     paths,*_=run_pair;recording=inspect_recording(paths['dom'])
-    monkeypatch.setenv('JUDGE_TRANSPORT','normal')
-    normal=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
     current=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
-    assert normal['actor']==current['actor']
     assert current['stages']['rubric_preparation']['transport']=='normal'
     for name in ('completion','screenshot_verifier','dom_model','inventory','adjudication'):
-        assert current['stages'][name]['transport']=='batch'
-    with pytest.raises(ValueError,match='transport'):require_same_settings(normal,current)
+        assert current['stages'][name]['transport']=='normal'
     monkeypatch.setenv('NATIVE_JUDGE_PROFILE','pro')
     pro=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
     assert pro['actor']==current['actor']
     assert pro['stages']['completion']==current['stages']['completion']
     assert pro['stages']['inventory']==current['stages']['inventory']
     with pytest.raises(ValueError,match='models|judge_profile'):require_same_settings(current,pro)
-    monkeypatch.delenv('JUDGE_TRANSPORT')
-    assert batch.judge_transport()=='batch'
-
-
-def test_cancelled_batch_blocks_native_and_completion_result_publication(tmp_path,monkeypatch):
-    from w8bench.verifier import batch,common
-    from w8bench.verifier.screenshot_verifier.runner import _write_result
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    root=tmp_path/'queue'
-    with batch.evaluation_scope(root,{'run':'r'}):
-        batch.BatchJobs(root).cancel()
-        with pytest.raises(batch.BatchCancelled):common.write_json(tmp_path/'grade.json',{'verdict':'success'})
-        with pytest.raises(batch.BatchCancelled):_write_result({'score':1},tmp_path/'native')
-    assert not (tmp_path/'grade.json').exists() and not (tmp_path/'native/result.json').exists()
-
-
-def test_invalid_batch_inventory_response_uses_original_validation_budget(pair_factory,tmp_path):
-    from tests.evaluation.conftest import _responses
-    from w8bench.verifier import batch,audit_requests as audit
-    pair=pair_factory()
-    inventory,_=_responses()
-    options={'criteria':[{'criterion_index':i} for i in range(2)],
-        'screenshot_sources':{'screenshot0.png','screenshot1.png'},'dom_sources':{'dom_model0.txt','dom_model1.txt'},
-        'screenshot_root':pair['screenshot'],'dom_root':pair['dom']}
-    body={'model':'gemini-3.1-pro-preview','messages':[{'role':'user','content':'Audit the evidence.'}]}
-    def call(model,messages):
-        return batch.request({**body,'messages':messages},provider='google',endpoint='generateContent',stage='audit.inventory')['body']
-    with batch.evaluation_scope(tmp_path/'queue',{'run':'r'}):
-        with pytest.raises(batch.BatchPending):audit._request_validated_audit(model=body['model'],messages=body['messages'],complete=call,**options)
-    first=next((tmp_path/'queue/requests').glob('*.json'));item=json.loads(first.read_text())
-    batch._save(tmp_path/'queue/responses'/first.name,{'job_id':'j1','status_code':200,'body':{'criteria':[]}})
-    with batch.evaluation_scope(tmp_path/'queue',{'run':'r'}):
-        with pytest.raises(batch.BatchPending):audit._request_validated_audit(model=body['model'],messages=body['messages'],complete=call,**options)
-    second=next(path for path in (tmp_path/'queue/requests').glob('*.json') if path!=first)
-    batch._save(tmp_path/'queue/responses'/second.name,{'job_id':'j2','status_code':200,'body':inventory})
-    with batch.evaluation_scope(tmp_path/'queue',{'run':'r'}):
-        rows,raw,attempts=audit._request_validated_audit(model=body['model'],messages=body['messages'],complete=call,**options)
-    assert attempts==2 and len(rows)==2 and len(list((tmp_path/'queue/requests').glob('*.json')))==2
-
-
-def test_shared_completion_is_queued_once_across_native_profiles(tmp_path,batch_providers):
-    from w8bench.verifier import batch
-    body={'contents':[{'role':'user','parts':[{'text':'same paired recording'}]}]}
-    for profile in ('primary','pro'):
-        with batch.evaluation_scope(tmp_path,{'recording':'r','profile':profile}):
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',model='gemini-3.6-flash',stage='completion.paired')
-    assert len(list((tmp_path/'requests').glob('*.json')))==1
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    assert jobs.submit()==1 and len(batch_providers.batches.created[0]['rows'])==1
-
-
-def test_pending_batch_cost_records_keep_known_and_unknown_items(tmp_path,batch_providers):
-    from w8bench.verifier import batch
-    from w8bench.verifier.run_metrics import _price_stream
-    identity={'recording':'r','profile':'primary'}
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    with batch.evaluation_scope(tmp_path,identity):
-        for text in ('state 1','state 2'):
-            with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite','input':text},
-                provider='google',endpoint='generateContent',stage='dom_model.relevance')
-    jobs.submit()
-    created=batch_providers.batches.created[0]
-    answered=created['rows'][0]['key']
-    jobs._answer(answered,{'job_id':created['id']},200,{'modelVersion':'gemini-3.5-flash-lite',
-        'usageMetadata':{'promptTokenCount':1000,'candidatesTokenCount':100,'thoughtsTokenCount':0,'totalTokenCount':1100}})
-    records=jobs.records(identity,'dom_model.','1')
-    assert len(records)==2 and {r['status'] for r in records}=={'answered','submitted'}
-    stream={'calls':2,'call_records':records,'usage_coverage':'partial'}
-    _price_stream(stream)
-    assert stream['cost']['estimated_usd'] is None
-    assert stream['cost']['known_usage_estimate_usd']==pytest.approx((.30*1000+2.5*100)/2_000_000)
-    assert not jobs.records({**identity,'profile':'pro'},'dom_model.','1')
-
-
-def test_rejected_batch_creation_can_resume_without_an_accepted_job(tmp_path,monkeypatch,batch_providers):
-    from w8bench.verifier import batch
-    jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
-    with batch.evaluation_scope(tmp_path,{'run':'r'}):
-        with pytest.raises(batch.BatchPending):batch.request({'model':'gemini-3.5-flash-lite'},provider='google',endpoint='generateContent',stage='relevance')
-    original=batch_providers.batches.create
-    class Rejected(Exception):status_code=429
-    monkeypatch.setattr(batch_providers.batches,'create',lambda **kwargs:(_ for _ in ()).throw(Rejected()))
-    with pytest.raises(Rejected):jobs.submit()
-    assert not batch_providers.batches.created
-    assert json.loads(next((tmp_path/'jobs').glob('*.json')).read_text())['status']=='creation_rejected'
-    monkeypatch.setattr(batch_providers.batches,'create',original)
-    jobs.poll();assert jobs.submit()==1
-    assert len(batch_providers.batches.created)==1
-
-
-@pytest.mark.parametrize('complete_usage', [False, True])
-def test_answered_google_batch_usage_survives_before_stage_consumption(tmp_path, monkeypatch, batch_providers, complete_usage):
-    from w8bench.verifier import batch
-    from w8bench.verifier.run_metrics import _price_call
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    identity = {'recording':'r','profile':'common'}
-    body = {'contents':[{'role':'user','parts':[{'text':'result'}]}]}
-    with batch.evaluation_scope(tmp_path, identity):
-        with pytest.raises(batch.BatchPending):
-            batch.request(body, provider='google', endpoint='generateContent', model='gemini-3.6-flash', stage='completion.paired')
-    jobs = batch.BatchJobs(tmp_path, clients=batch_providers.clients)
-    assert jobs.submit() == 1
-    item = batch_providers.batches.created[0]['rows'][0]
-    usage = {'promptTokenCount':10, 'candidatesTokenCount':3}
-    if complete_usage:
-        usage.update(thoughtsTokenCount=2,totalTokenCount=15,cachedContentTokenCount=2)
-    batch_providers.batches.finish(0, results=[{'key':item['key'],'response':{
-        'modelVersion':'gemini-3.6-flash-001','usageMetadata':usage,
-        'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{}'}]}}]}}])
-    jobs.poll()
-    records = jobs.records(identity, 'completion.', '1')
-    assert len(records) == 1 and records[0]['status'] == 'answered'
-    assert records[0]['returned_model'] == 'gemini-3.6-flash-001'
-    assert records[0]['usage']['prompt_tokens'] == 10
-    assert records[0]['usage']['completion_tokens'] == (5 if complete_usage else None)
-    amount = _price_call(records[0], {}, set(), set())
-    if complete_usage:
-        assert amount == pytest.approx(.00001245)
-    else:
-        assert amount is None
-
-
-def test_pending_completion_keeps_its_attempt_identity_on_resume(full_evaluation, tmp_path, monkeypatch, batch_providers):
-    from w8bench.verifier import batch
-    paths, rubric, _ = full_evaluation
-    monkeypatch.setattr(comparison, 'BatchJobs', lambda root, **kwargs: batch.BatchJobs(root, clients=batch_providers.clients, **kwargs))
-    args = ['--run', str(paths['dom']), '--rubric', str(rubric), '--judge-model',
-        'gemini-3.6-flash', '--judge-transport', 'batch', '--execute']
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    assert comparison.main(args) == 75
-    jobs = len(batch_providers.batches.created)
-    requests = {p.name for p in tmp_path.rglob('requests/*.json')}
-    evaluation = json.loads(next(tmp_path.rglob('evaluation.json')).read_text())
-    assert evaluation['stages']['paired_completion']['status'] == 'batch_pending'
-    owner = Path(evaluation['batch_queue_context']['root'])
-    assert batch.BatchJobs(tmp_path/'different_queue', recordings=[paths['dom']]).root == owner
-    assert (paths['dom']/evaluation['batch_queue_context']['relative_root']).resolve() == owner
-    assert comparison.main(args) == 75
-    assert len(batch_providers.batches.created) == jobs
-    assert {p.name for p in tmp_path.rglob('requests/*.json')} == requests
-    assert evaluation['stages']['paired_completion']['attempt_history'] == []
-    item = batch_providers.batches.created[0]['rows'][0]
-    batch_providers.batches.finish(0, results=[{'key': item['key'], 'response': {
-        'modelVersion': 'gemini-3.6-flash',
-        'candidates': [{'finishReason':'STOP', 'content':{'parts':[{'text':json.dumps({'criteria': [
-            {'id':'done','verdict':'success','reason':'Recorded result','states':[1]}]})}]}}],
-        'usageMetadata': {'promptTokenCount':50,'candidatesTokenCount':20,'thoughtsTokenCount':0,'totalTokenCount':70}}}])
-    assert comparison.main(args) == 0
-    assert comparison.main(args) == 0
-    assert len(batch_providers.batches.created) == jobs
-
-
-@pytest.mark.parametrize('status', ['running', 'interrupted', 'batch_pending'])
-def test_unfinished_batch_stage_keeps_its_attempt_namespace(monkeypatch, status):
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    history = [{'status': 'ungraded', 'usage': {'input_tokens': 4}}]
-    assert comparison._attempt_history({'status': status, 'attempt_history': history}) == history
 
 
 def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tmp_path):
-    from w8bench.verifier import batch
+    from w8bench.verifier.compare_results import compare_profiles
     paths, rubric, _ = full_evaluation
     assert comparison.main(['--run', str(paths['dom']), '--rubric', str(rubric),
         '--judge-model', 'gemini-3.6-flash', '--compare-profiles', '--execute']) == 0
@@ -1320,7 +1010,7 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
             'dom_model': {'coverage': 'PARTIAL' if index in indices else 'COMPLETE'},
             'dom_model_evidence_loss': index in indices} for index in range(3)]
         audit_file.write_text(json.dumps(audit))
-    report = batch.compare_profiles([paths['dom']], tmp_path / 'separate_subsets.json')
+    report = compare_profiles([paths['dom']], tmp_path / 'separate_subsets.json')
     for row in report['rows']:
         subsets = row['screenshot_only_subsets']
         assert subsets['primary']['criterion_indices'] == [0, 1]
@@ -1341,7 +1031,7 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
     value['stages']['dom_model']['status'] = 'ungraded'
     value['stages']['audit'].update(status='blocked', reason='verifier_results_unavailable')
     pro_file.write_text(json.dumps(value))
-    report = batch.compare_profiles([paths['dom']], tmp_path / 'missing_audit.json')
+    report = compare_profiles([paths['dom']], tmp_path / 'missing_audit.json')
     assert report['profile_quality']['pro']['ungraded_native_results'] == 1
     assert report['profile_quality']['pro']['audits_blocked_by_unavailable_native'] == 1
     assert report['profile_quality']['pro']['runs_without_loss_values'] == 1

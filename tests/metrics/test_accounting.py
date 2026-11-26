@@ -22,10 +22,9 @@ from w8bench.verifier.run_metrics import summarize
 
 
 @pytest.mark.parametrize('metadata', ['configured', 'prior_settings', 'stage_settings', 'unknown'])
-@pytest.mark.parametrize('transport', ['normal', 'batch'])
-def test_completion_attempt_history_prices_only_the_recorded_model(tmp_path, metadata, transport):
+def test_completion_attempt_history_prices_only_the_recorded_model(tmp_path, metadata):
     from w8bench.verifier.run_metrics import _append_attempt_history, _price_call
-    prior = {'calls':1,'usage':{'input_tokens':1000,'output_tokens':1000},'transport':transport,
+    prior = {'calls':1,'usage':{'input_tokens':1000,'output_tokens':1000},'transport':'normal',
         'usage_coverage':'complete','status':'ungraded'}
     stage = {'attempt_history':[prior]}
     if metadata == 'configured':
@@ -43,7 +42,7 @@ def test_completion_attempt_history_prices_only_the_recorded_model(tmp_path, met
         assert call['model'] is None and amount is None
     else:
         assert call['model'] == 'gemini-3.6-flash'
-        assert amount == pytest.approx(.0045 if transport == 'normal' else .00225)
+        assert amount == pytest.approx(.0045)
 
 
 def _verifier_usage_recording(tmp_path):

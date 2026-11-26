@@ -811,8 +811,7 @@ def test_audit_refusals_consume_the_stage_budget_without_losing_usage(monkeypatc
 @pytest.mark.parametrize('stage', ['action_scoring', 'task_validity', 'trajectory_validity', 'relevance',
     'selected_state_analysis', 'conditional_disambiguation', 'reality_check', 'criterion_rescore',
     'global_rescore', 'side_effects', 'outcome', 'failure_analysis'])
-def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeypatch, mode, stage, json_output):
-    from w8bench.verifier import batch
+def test_native_wire_body_for_every_stage(tmp_path, monkeypatch, mode, stage, json_output):
     from w8bench.verifier.clients.providers import GeminiClientWrapper
     messages = [{'role':'system', 'content': f'Judge {stage}; preserve the frozen rubric.'},
         {'role':'user', 'content':[{'type':'text', 'text':'Frozen criterion: report Saved.\nState 1: Saved.'}]}]
@@ -824,12 +823,14 @@ def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeyp
     normal = []
     def answer(wire):
         assert wire.url.path == '/v1beta/models/gemini-3.5-flash-lite:generateContent'
+        transmitted = b''.join(wire.stream)
+        assert transmitted == wire.content
+        assert len(transmitted) == int(wire.headers['Content-Length'])
         normal.append(json.loads(wire.content))
         return httpx.Response(200,json={'modelVersion':'gemini-3.5-flash-lite',
             'candidates':[{'finishReason':'STOP','content':{'role':'model','parts':[{'text':'{"ok":true}'}]}}],
             'usageMetadata':{'promptTokenCount':7,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':9}},request=wire)
-    async def create(transport):
-        monkeypatch.setenv('JUDGE_TRANSPORT',transport)
+    async def create():
         client=GeminiClientWrapper(mode,model='gemini-3.5-flash-lite',reasoning_effort='medium',
             api_key='offline-key',provider='google',http_options={'httpx_async_client':httpx.AsyncClient(transport=httpx.MockTransport(answer))})
         client._logical_stage.set((stage,))
@@ -837,37 +838,18 @@ def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeyp
             return await client.create(messages,json_output=json_output)
         finally:
             await client.close()
-    asyncio.run(create('normal'))
-    with batch.evaluation_scope(tmp_path, {'recording':'r','profile':'primary'}):
-        with pytest.raises(batch.BatchPending):
-            asyncio.run(create('batch'))
-    saved=json.loads(next((tmp_path/'requests').glob('*.json')).read_text())
-    assert saved['body']==normal[0]
-    thinking = saved['body']['generationConfig']['thinkingConfig']
+    asyncio.run(create())
+    payload = normal[0]
+    thinking = payload['generationConfig']['thinkingConfig']
     assert thinking.get('thinkingLevel', thinking.get('thinking_level'))=='MEDIUM'
-    assert saved['body']['generationConfig'].get('responseMimeType')==('application/json' if json_output else None)
-    assert 'max_tokens' not in saved['body'] and 'max_output_tokens' not in saved['body']
-    assert len(normal)==1 and saved['stage']==f'{mode}.{stage}'
-
-
-def test_completion_batch_body_is_the_normal_payload(completion_case, tmp_path, monkeypatch):
-    from w8bench.verifier import batch
-    case=completion_case
-    criteria, ids=completion._completion_criteria(case.rubric)
-    expected=completion._judge_payload(case.run,case.recording,criteria,'paired')
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    with batch.evaluation_scope(tmp_path/'jobs', {'recording':'completion'}):
-        with pytest.raises(batch.BatchPending):
-            asyncio.run(completion.grade_run(case.run,case.rubric_path,judge_model='gemini-3.6-flash',execute=True))
-    saved=json.loads(next((tmp_path/'jobs/requests').glob('*.json')).read_text())
-    assert saved['body']==expected and saved['endpoint']=='generateContent' and saved['provider']=='google'
-    assert not (case.run/'completion.json').exists() and not case.requests
+    assert payload['generationConfig'].get('responseMimeType')==('application/json' if json_output else None)
+    assert 'max_tokens' not in payload and 'max_output_tokens' not in payload
+    assert len(normal)==1
 
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
-def test_completion_wire_body_matches_queued_generate_content(tmp_path, monkeypatch):
+def test_completion_wire_body_uses_generate_content(tmp_path, monkeypatch):
     from w8bench.task_recorder import runner
-    from w8bench.verifier import batch
     image = tmp_path/'screenshot.png'
     PILImage.new('RGB', (2, 2), 'white').save(image)
     (tmp_path/'dom_model.txt').write_text('Visible result')
@@ -890,66 +872,37 @@ def test_completion_wire_body_matches_queued_generate_content(tmp_path, monkeypa
     grade = {}
     asyncio.run(completion._judge_completion(grade, *args))
     assert grade['verdict'] == 'success' and len(wires) == 1
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    with batch.evaluation_scope(tmp_path/'queue', {'recording':'wire-check'}):
-        with pytest.raises(batch.BatchPending):
-            asyncio.run(completion._judge_completion({}, *args))
-    saved = json.loads(next((tmp_path/'queue/requests').glob('*.json')).read_text())
-    assert saved['model'] == 'gemini-3.6-flash' and saved['body'] == wires[0]
     assert 'model' not in wires[0]
     assert any('inlineData' in part for part in wires[0]['contents'][0]['parts'])
 
 
-def test_completion_refuses_unbound_batch_endpoint_before_dispatch(completion_case, monkeypatch):
-    from w8bench.verifier import batch
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    monkeypatch.setattr(batch, 'request', lambda *args, **kwargs: pytest.fail('must not dispatch'))
-    with pytest.raises(ValueError, match='custom completion endpoints use normal transport'):
-        asyncio.run(completion.grade_run(completion_case.run, completion_case.rubric_path,
-            judge_model='gemini-3.6-flash', base_url='https://gateway.example.test/v1beta', execute=True))
-    assert not completion_case.requests
-
-
-def test_exact_completion_needs_no_batch_endpoint(completion_case, monkeypatch):
+def test_exact_completion_needs_no_endpoint(completion_case, monkeypatch):
     case = completion_case
     rubric = {**case.rubric, 'expected_answer':case.recording['final']['final_answer']}
     case.rubric_path.write_text(json.dumps(rubric))
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
     grade = asyncio.run(completion.grade_run(case.run, case.rubric_path, judge_model='gemini-3.6-flash',
         base_url='https://gateway.example.test/v1beta', execute=True))
     assert grade['method'] == 'exact_final_answer' and grade['judge_calls'] == 0
     assert not case.requests
 
 
-@pytest.mark.parametrize('transport', ['normal', 'batch'])
 @pytest.mark.parametrize('usage,expected_output', [
     ({'promptTokenCount':7, 'candidatesTokenCount':2, 'thoughtsTokenCount':3,
         'totalTokenCount':12, 'cachedContentTokenCount':2}, 5),
     ({'promptTokenCount':7, 'candidatesTokenCount':2, 'totalTokenCount':9}, 2),
     ({'promptTokenCount':7, 'candidatesTokenCount':2}, None), ({}, None)])
-def test_google_completion_usage_is_identical_across_transports(completion_case, monkeypatch, transport, usage, expected_output):
-    from w8bench.verifier import batch, completion
+def test_google_completion_usage_is_recorded(completion_case, monkeypatch, usage, expected_output):
+    from w8bench.verifier import completion
     from tests.conftest import judge_response
     from w8bench.task_recorder.runner import ModelClient
     case = completion_case
     native = {'modelVersion':'gemini-3.6-flash', 'responseId':'google-completion',
         'candidates':[{'finishReason':'STOP', 'content':{'parts':[
             {'text':judge_response(('success','success'))['output_text']}]}}], 'usageMetadata':usage}
-    monkeypatch.setenv('JUDGE_TRANSPORT', transport)
-    if transport == 'batch':
-        def request(body, **kwargs):
-            assert kwargs['provider'] == 'google' and kwargs['endpoint'] == 'generateContent'
-            assert body['generationConfig']['maxOutputTokens'] == 10000
-            assert body['generationConfig']['thinkingConfig'] == {'thinkingLevel':'MEDIUM'}
-            assert body['generationConfig']['mediaResolution'] == 'MEDIA_RESOLUTION_HIGH'
-            assert body['generationConfig']['responseJsonSchema'] == completion.GRADE_SCHEMA
-            return {'body':native, 'status_code':200}
-        monkeypatch.setattr(batch, 'request', request)
-    else:
-        case.responses.append(ModelClient._gemini_response(native))
+    case.responses.append(ModelClient._gemini_response(native))
     grade = asyncio.run(completion.grade_run(case.run, case.rubric_path,
         judge_model='gemini-3.6-flash', api_key='offline', execute=True))
-    assert grade['verdict'] == 'success' and grade['transport'] == transport
+    assert grade['verdict'] == 'success' and grade['transport'] == 'normal'
     assert grade['usage']['input_tokens'] == usage.get('promptTokenCount')
     assert grade['usage']['output_tokens'] == expected_output
     assert grade['usage']['input_tokens_details']['cached_tokens'] == usage.get('cachedContentTokenCount')
@@ -962,8 +915,7 @@ def test_google_completion_usage_is_identical_across_transports(completion_case,
 
 @pytest.mark.parametrize('provider,stage,model', [('google','inventory','gemini-3.1-pro-preview'),
     ('google','adjudication','gemini-4-argon')])
-def test_audit_batch_wire_body_matches_normal(tmp_path,monkeypatch,provider,stage,model):
-    from w8bench.verifier import batch
+def test_audit_wire_body_uses_generate_content(tmp_path,monkeypatch,provider,stage,model):
     from google.genai import types
     from w8bench.verifier import audit_requests as audit
     captured=[]
@@ -979,20 +931,14 @@ def test_audit_batch_wire_body_matches_normal(tmp_path,monkeypatch,provider,stag
     original=genai.Client
     def constructor(**kwargs):
         options=kwargs['http_options']
-        options.client_args={**(options.client_args or {}),'transport':
-            (batch.http_transport(provider,f'audit.{stage}',record) if batch.judge_transport()=='batch' else httpx.MockTransport(answer))}
+        options.client_args={**(options.client_args or {}),'transport':httpx.MockTransport(answer)}
         return original(**kwargs)
     monkeypatch.setattr(genai,'Client',constructor)
-    monkeypatch.setenv('JUDGE_TRANSPORT','normal')
     record={'api_attempts':[]}
     assert audit._completion(model,messages,records=[])=={'ok':True}
-    expected=captured[0]
-    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    with batch.evaluation_scope(tmp_path,{'recording':'audit'}):
-        with pytest.raises(batch.BatchPending):
-            audit._completion(model,messages,records=[])
-    saved=json.loads(next((tmp_path/'requests').glob('*.json')).read_text())
-    assert saved['body']==expected and len(captured)==1
+    assert len(captured)==1
+    assert captured[0]['generationConfig']['mediaResolution']=='MEDIA_RESOLUTION_HIGH'
+    assert any('inlineData' in part for part in captured[0]['contents'][0]['parts'])
 
 
 @pytest.mark.parametrize('profile,model',[('primary','gemini-3.5-flash-lite'),('pro','gemini-3.1-pro-preview')])
@@ -1007,73 +953,6 @@ def test_native_named_profiles_pin_all_stages(monkeypatch,profile,model):
         parsed=module.parse_args(args)
         assert parsed.action_model==parsed.judge_model==model
         with pytest.raises(SystemExit):module.parse_args(args+['--judge-model','gemini-3.8-flash'])
-
-
-@pytest.mark.usefixtures('inline_sdk_header_initialization')
-@pytest.mark.parametrize('model,output,expected_cost', [
-    ('gemini-3.5-flash-lite', 5, 0.0001708), ('gemini-3.1-pro-preview', 9, 0.001151)])
-def test_google_batch_native_usage_is_valid_and_priced(tmp_path, monkeypatch, model, output, expected_cost):
-    from w8bench.verifier import batch
-    from w8bench.verifier.clients.providers import GeminiClientWrapper
-    from w8bench.verifier.run_metrics import _price_stream
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    async def create():
-        client = GeminiClientWrapper('dom_model', model=model, provider='google', api_key='offline',
-            http_options={'httpx_async_client':httpx.AsyncClient(transport=httpx.MockTransport(lambda wire: pytest.fail('network dispatch')))})
-        try:
-            result = await client.create([{'role': 'user', 'content': 'Return ok.'}], json_output=True)
-            return result, client._call_records[-1]
-        finally:
-            await client.close()
-    with batch.evaluation_scope(tmp_path, {'smoke': model}):
-        with pytest.raises(batch.BatchPending): asyncio.run(create())
-    request = json.loads(next((tmp_path / 'requests').glob('*.json')).read_text())
-    raw = {'modelVersion': model,
-        'candidates': [{'finishReason': 'STOP', 'content': {'role': 'model', 'parts': [{'text': '{"ok":true}'}]}}],
-        'usageMetadata': {'promptTokenCount': 1097, 'candidatesTokenCount': output, 'thoughtsTokenCount': 0, 'totalTokenCount': 1097 + output}}
-    batch._save(tmp_path / 'responses' / (request['id'] + '.json'),
-        {'job_id': 'batches/saved', 'status_code': 200, 'body': raw})
-    with batch.evaluation_scope(tmp_path, {'smoke': model}):
-        result, record = asyncio.run(create())
-    assert json.loads(result.content) == {'ok': True}
-    assert result.finish_reason == record['finish_reason'] == 'STOP'
-    assert record['input_tokens'] == result.usage.prompt_tokens == 1097
-    assert record['output_tokens'] == result.usage.completion_tokens == output
-    assert record['total_tokens'] == 1097 + output
-    assert record['cached_input_tokens'] is None and record['reasoning_tokens'] == 0
-    stream = {'model': model, 'calls': 1, 'call_records': record['batch_items'], 'usage_coverage': 'complete'}
-    _price_stream(stream)
-    assert stream['cost']['estimated_usd'] == pytest.approx(expected_cost)
-    assert json.loads((tmp_path / 'responses' / (request['id'] + '.json')).read_text())['body'] == raw
-
-
-def test_native_batch_inventory_ignores_unknown_usage_without_losing_components(tmp_path, monkeypatch):
-    from copy import deepcopy
-    from w8bench.verifier import batch
-    from w8bench.verifier.audit_requests import _record_gemini_response
-    from w8bench.verifier.run_metrics import _price_stream
-    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
-    raw = {'modelVersion': 'gemini-3.1-pro-preview', 'responseId': 'saved',
-        'candidates': [{'finishReason': 'STOP', 'content': {'parts': [{'text': '{"ok":true}'}]}}],
-        'usageMetadata': {'promptTokenCount': 1097, 'candidatesTokenCount': 3, 'thoughtsTokenCount': 2,
-            'totalTokenCount': 1102, 'cachedContentTokenCount': 20, 'serviceTier': 'SERVICE_TIER_STANDARD',
-            'promptTokensDetails': [{'modality': 'IMAGE', 'tokenCount': 1089}]}}
-    original = deepcopy(raw); body = {'contents': [{'parts': [{'text': 'ok'}]}]}
-    with batch.evaluation_scope(tmp_path, {'smoke': 'inventory'}):
-        with pytest.raises(batch.BatchPending): batch.request(body, provider='google', endpoint='generateContent', stage='audit.inventory')
-    request = json.loads(next((tmp_path / 'requests').glob('*.json')).read_text())
-    batch._save(tmp_path / 'responses' / (request['id'] + '.json'), {'job_id': 'batches/saved', 'status_code': 200, 'body': raw})
-    with batch.evaluation_scope(tmp_path, {'smoke': 'inventory'}):
-        record = {}; result = batch.request(body, provider='google', endpoint='generateContent', stage='audit.inventory', record=record)
-    assert json.loads(_record_gemini_response(record, result['body'], {})) == {'ok': True}
-    assert record['usage']['prompt_tokens'] == 1097 and record['usage']['completion_tokens'] == 5
-    assert record['usage']['reasoning_tokens'] == 2 and record['usage']['cached_input_tokens'] == 20
-    assert record['provider_usage']['prompt_tokens_details'][0]['token_count'] == 1089
-    assert record['ignored_usage_fields'] == {'serviceTier': 'SERVICE_TIER_STANDARD'}
-    stream = {'model': 'gemini-3.1-pro-preview', 'calls': 1, 'call_records': record['batch_items'], 'usage_coverage': 'complete'}
-    _price_stream(stream)
-    assert stream['cost']['estimated_usd'] == pytest.approx((1077 + 20 * .1 + 5 * 6) / 1e6)
-    assert raw == original == result['body']
 
 
 @pytest.mark.parametrize('metadata', [

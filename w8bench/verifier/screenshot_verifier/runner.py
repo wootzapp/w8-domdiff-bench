@@ -184,10 +184,8 @@ def _result_receipts(task_data, frozen, preflight, agent, action_client, judge_c
 def _write_result(result, output):
     output_dir = Path(output).resolve()
     output_path = output_dir / "result.json"
-    from ..batch import publication
-    with publication():
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8", errors="backslashreplace")
     result["result_path"] = os.path.relpath(output_path, Path(__file__).resolve().parents[3])
     return result
 
@@ -238,13 +236,7 @@ def main(argv: list[str] | None = None) -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     )
-    from ..batch import BatchPending, BatchCancelled
-    try:
-        print(json.dumps(run(parse_args(argv)), indent=2, default=str))
-    except BatchPending:
-        raise SystemExit(75)
-    except BatchCancelled:
-        raise SystemExit(130)
+    print(json.dumps(run(parse_args(argv)), indent=2, default=str))
 
 
 

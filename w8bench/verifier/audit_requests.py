@@ -16,7 +16,6 @@ import httpx
 from w8bench.model_identity import MODEL_ACCEPTANCE_POLICY, ModelResponseRefusal, response_acceptance
 from w8bench.usage import known_token_component
 
-from .batch import judge_transport, http_transport
 from .audit_evidence import ordered_audit_screenshots, ordered_dom_states, verifier_action_history
 from .audit_validation import CITATION_KEYS, validate_audit_response, validate_adjudication_response
 
@@ -425,7 +424,7 @@ def adjudication_messages(
 
 def _audit_http_hooks(record):
     def requested(request):
-        record["transport"] = judge_transport()
+        record["transport"] = "normal"
         record["api_attempts"].append({"status_code": None})
         try:
             payload = json.loads(request.content)
@@ -555,8 +554,7 @@ def _gemini_completion(model, messages, record, hooks):
             api_version=GEMINI_API_VERSION,
             base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta").rstrip("/").removesuffix("/v1beta"),
             retry_options={"attempts": 1},
-            client_args={"event_hooks": hooks, **({"transport": http_transport("google", f"audit.{record['stage']}", record)}
-                if judge_transport() == "batch" else {})},
+            client_args={"event_hooks": hooks},
         ),
     ) as client:
         record["generation_settings"] = settings.copy()

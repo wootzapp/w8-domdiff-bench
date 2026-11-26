@@ -279,7 +279,7 @@ normalization and audit inputs do not consume them. Audit receipts use
 rate. See the [effective settings contract](evaluation-protocol.md#effective-settings-contract)
 for the settings compared across resumes, arms and trials.
 
-## Judge profiles and batch receipts
+## Judge profiles and call receipts
 
 Evaluation roots are relative to the selected recording: let `B` be
 `recording_path.parent.parent / "evaluations"`. For a batch recording beneath
@@ -292,8 +292,7 @@ Evaluation roots are relative to the selected recording: let `B` be
 | Pro native evaluation | `B/profiles/pro/<run-name>/<arm>/<task-id>/<recording-hash>/` |
 | Shared primary completion | `B/common/<run-name>/<arm>/<task-id>/<recording-hash>/completion.json` |
 | Profile-bound copy of primary completion | Each profile's `paired_completion.json` |
-| Batch queue | `recordings/<collection>/evaluations/batch_jobs/` for a scheduled collection; evaluation receipts retain the owner of submitted work |
-| Profile comparison | Beside the owning queue, in `profile_comparison.json`, with a numeric collision suffix when needed |
+| Profile comparison | `B/profile_comparison.json`, with a numeric collision suffix when needed |
 
 Each profile evaluation root also contains `audit_inventory.json`. Its content
 hash, source/native/rubric fingerprints, accepted inventory response and usage
@@ -328,23 +327,9 @@ The two profiles preserve the same source hashes and validity date. Model
 assignments belong in the [datacard](datacard.md#judge-delivery); invocation and
 resume commands belong in the [runbook](runbook.md#controls-and-outputs).
 
-The Batch queue contains unchanged request bodies, deterministic item IDs, input
-JSONL files, provider job receipts and raw item responses. Functional submission
-and completion timestamps stay inside receipts. Requests identify task, driving
-arm, trial, recording hash, rubric source hash, profile, stage and attempt.
-Each `evaluation.json` stores `batch_queue_context`, including an identity and a
-relative path to its owning queue. Resume resolves this binding before polling
-or submission. The launcher and ledger evaluator group recordings by the saved
-owner; a direct selection containing different owners is refused. Missing or
-conflicting owners are refused rather than creating another copy. See the
-[evaluation protocol](evaluation-protocol.md#batch-judging) for pending and
-cancellation behavior.
-Calls record `transport`, `batch_request_id`, `batch_job_id` and individual
-`batch_items` for cost coverage.
-
-Pending jobs are resumable. A cancellation applies to the entire selected shared
-queue, including recordings and profiles using it, and is terminal for that
-queue; late results cannot be imported. A submission whose acknowledgement is
-uncertain blocks automatic resubmission until its actual provider job ID is
-reconciled. The [evaluation protocol](evaluation-protocol.md#batch-judging)
-defines these rules.
+Model call receipts identify task, driving arm, trial, recording hash, rubric
+source hash, profile, stage and attempt. They retain configured and returned
+models, request settings, provider usage, validation status and transport.
+Functional call and interruption timestamps stay inside records. Direct requests
+record `transport: normal`. The [evaluation protocol](evaluation-protocol.md#judge-delivery-and-profiles)
+defines stage reuse and accounting.

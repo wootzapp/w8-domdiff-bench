@@ -1,4 +1,4 @@
-"""Evaluate finalized ledger recordings while preserving their Batch queues."""
+"""Evaluate finalized ledger recordings using their own paired evidence."""
 
 import argparse
 import hashlib
@@ -16,7 +16,7 @@ parser.add_argument("--compare-profiles", action="store_true",
 parser.add_argument("--stage", choices=("evaluate", "adjudicate"), default="evaluate",
     help="evaluate completion, native evidence and inventory, or adjudicate saved inventory")
 parser.add_argument("--execute", action="store_true",
-    help="authorize judging or poll submitted work; otherwise check inputs only")
+    help="authorize judging; otherwise check inputs only")
 args = parser.parse_args()
 rows = [json.loads(line) for line in args.ledger.read_text().splitlines() if line.strip()]
 if args.stage == "adjudicate" and any(not row.get("completed")
@@ -79,43 +79,24 @@ if args.stage == "adjudicate":
         sys.exit(0)
 if not runs:
     parser.error("no finalized recordings available for judging")
-groups = {}
-from w8bench.verifier.batch import BatchJobs
-for run in runs:
-    queue = BatchJobs(Path(run).resolve().parent.parent / "evaluations" / "batch_jobs",
-                      recordings=[run]).root
-    groups.setdefault(str(queue), []).append(run)
-pending = False
-deferred = False
-for queue, selected_runs in groups.items():
-    command = [sys.executable, "-m", "w8bench.verifier.run_comparison", "--run", *selected_runs,
-        "--rubric", str(args.rubric_dir), "--judge-model", "gemini-3.6-flash",
-        "--judge-transport", "batch", "--stage", args.stage]
-    if args.compare_profiles:
-        command.append("--compare-profiles")
-    if args.execute:
-        command.append("--execute")
-    result = subprocess.run(command, check=False)
-    if args.execute:
-        from w8bench.task_recorder.task_cli import _execute_batch_judge, task_transition_lock, RUNTIME_ROOT
-        from w8bench.task_recorder.recorder_support import write_json_lines, utc_now
-        with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
-            rows = [json.loads(line) for line in args.ledger.read_text().splitlines() if line.strip()]
-            selected_rows = [row for row in rows if row["recording"] in selected_runs]
-            _execute_batch_judge(args, selected_rows, reconcile_only=True)
-            if result.returncode == 130:
-                for row in selected_rows:
-                    row.update(evaluation_outcome="cancelled", grade_outcome="ungraded",
-                        judge_exit_code=130, grade_completed=True, judge_ended_at=utc_now())
-            write_json_lines(args.ledger, rows)
-    if result.returncode not in (0, 75):
-        audit_deferred = (args.execute and result.returncode == 1
-            and any(row.get("evaluation_reason") == "audit_configuration_failed" for row in selected_rows)
-            and all(row.get("evaluation_outcome") == "complete"
-                or row.get("evaluation_reason") == "audit_configuration_failed" for row in selected_rows))
-        if not audit_deferred:
-            sys.exit(result.returncode)
-        deferred = True
-    pending = pending or result.returncode == 75
-    print(json.dumps({"queue": queue, "exit_code": result.returncode}))
-sys.exit(75 if pending else 1 if deferred else 0)
+command = [sys.executable, "-m", "w8bench.verifier.run_comparison", "--run", *runs,
+    "--rubric", str(args.rubric_dir), "--judge-model", "gemini-3.6-flash", "--stage", args.stage]
+if args.compare_profiles:
+    command.append("--compare-profiles")
+if args.execute:
+    command.append("--execute")
+result = subprocess.run(command, check=False)
+if args.execute:
+    from w8bench.task_recorder.task_cli import _execute_batch_judge, task_transition_lock, RUNTIME_ROOT
+    from w8bench.task_recorder.recorder_support import write_json_lines, utc_now
+    with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
+        rows = [json.loads(line) for line in args.ledger.read_text().splitlines() if line.strip()]
+        selected_rows = [row for row in rows if row["recording"] in runs]
+        _execute_batch_judge(args, selected_rows, reconcile_only=True)
+        if result.returncode == 130:
+            for row in selected_rows:
+                row.update(evaluation_outcome="interrupted", grade_outcome="ungraded",
+                    judge_exit_code=130, grade_completed=False, judge_ended_at=utc_now())
+        write_json_lines(args.ledger, rows)
+print(json.dumps({"stage": args.stage, "recordings": len(runs), "exit_code": result.returncode}))
+sys.exit(result.returncode)

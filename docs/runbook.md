@@ -173,7 +173,6 @@ take precedence over `.env`, and conflicting actor models are rejected.
 ```text
 GEMINI_API_KEY=your-google-api-key
 ACTOR_MODEL=gemini-3.8-flash
-JUDGE_TRANSPORT=batch
 NATIVE_JUDGE_PROFILE=primary
 EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview
 EVIDENCE_ADJUDICATOR_MODEL=gemini-4-argon
@@ -181,7 +180,7 @@ TASK_CATALOG_URL=https://huggingface.co/datasets/WootzappLab/browser-agent-tasks
 ```
 
 Models and judge endpoints are listed in the [datacard](datacard.md#judge-delivery)
-and `config/`. Model stages use Google's GenerateContent API in normal or Batch mode.
+and `config/`. Model stages use Google's GenerateContent API through direct requests.
 
 | Setting | Purpose |
 | --- | --- |
@@ -237,7 +236,7 @@ Set `BENCH_TRIALS` to any positive integer and inspect the schedule:
 
 ```bash
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
-./scripts/run-task --trials "$BENCH_TRIALS" \
+./scripts/run-task --trials "$BENCH_TRIALS" --catalog-file data/tasks.jsonl \
   --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection \
   --judge-model gemini-3.6-flash --dry-run
@@ -393,34 +392,6 @@ Review accuracy, ID, completeness and HIGH in
 `internal/screenshot_text_calibration/check_NNNN/result.json`; fixture accuracy does
 not guarantee general legibility. All three diagnostics use **14 nominal requests**, before retries.
 
-### Check Batch transport
-
-Set `JUDGE_TRANSPORT=batch` and `NATIVE_JUDGE_PROFILE=primary` before scheduling.
-Actor/preflight/rubric transport stays normal. Judging can take hours to days;
-exit **75** means pending. Repeat the same command and paths to poll existing jobs.
-Inspect the smoke plan offline:
-
-```bash
-.venv/bin/python -m w8bench.verifier.batch smoke \
-  --output-dir .runtime/judge_batch_smoke
-```
-
-Submit **five tiny Google requests**,
-covering both native profiles, inventory, completion and adjudication:
-
-```bash
-.venv/bin/python -m w8bench.verifier.batch smoke \
-  --output-dir .runtime/judge_batch_smoke --execute || [ "$?" -eq 75 ]
-```
-
-Results in `.runtime/judge_batch_smoke/smoke.json` include job IDs, model IDs,
-JSON validation and usage. To cancel the smoke queue:
-
-```bash
-.venv/bin/python -m w8bench.verifier.batch smoke \
-  --output-dir .runtime/judge_batch_smoke --cancel --execute
-```
-
 ### Record the pilot
 
 Use task_26 (easy), task_02 (medium), task_19 (hard) and task_25 (complex), both
@@ -428,7 +399,7 @@ arms, one trial each. Plan first:
 
 ```bash
 ./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
-  --rubric-dir data/rubrics \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
 ```
@@ -448,8 +419,8 @@ export BENCH_PILOT_RUN
 ```
 
 Each task/trial records both arms before completion, native verification and
-inventory; formats are paired only within a run. Batch polling uses the
-[ledger evaluator](#controls-and-outputs), and loss decisions use
+inventory; formats are paired only within a run. The
+[ledger evaluator](#controls-and-outputs) resumes evaluation, and loss decisions use
 [final adjudication](#final-adjudication). The ledger contains eight scheduled rows,
 with technical rerun attempts nested in each row. Per-run artifacts record
 isolation, capture integrity, returned IDs, rubric bindings, grades, coverage
@@ -466,7 +437,7 @@ Use any positive `BENCH_TRIALS`; omit task selectors for all 40 tasks:
 ```bash
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
-  --rubric-dir data/rubrics \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection --dry-run
 ```
@@ -570,15 +541,9 @@ refusals and exhausted judgments stay ungraded; native ID mismatches are diagnos
 ### Controls and outputs
 
 The default `--stage evaluate` runs completion, both native verifiers and
-inventory. It returns **75** while Batch work is pending and **0** when the
-inventory is ready with `evaluation_outcome: awaiting_adjudication`. The launcher
-uses this stage. A launcher exit 0 can still contain pending judge rows.
-
-Batch queue ownership is bound in evaluation receipts. The launcher and ledger
-evaluator retain that owner across trials, technical attempts and profiles.
-Collections use `recordings/<collection>/evaluations/batch_jobs/`; independent
-queues are evaluated separately. Missing or ambiguous saved ownership is refused
-before submission.
+inventory through direct requests. It returns **0** when inventory is ready with
+`evaluation_outcome: awaiting_adjudication`. The launcher uses this stage.
+Evaluation failures retain their status and usage in the ledger.
 
 Set `BENCH_EVALUATION_RUN` to the saved pilot/collection name and preview selection:
 
@@ -588,20 +553,16 @@ Set `BENCH_EVALUATION_RUN` to the saved pilot/collection name and preview select
   --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl"
 ```
 
-Evaluate or poll:
+Evaluate:
 
 ```bash
 .venv/bin/python scripts/evaluate-ledger.py \
   --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage evaluate --execute
 ```
 
-The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order.
-Within a matching queue, repeat the evaluation command until complete;
-polling does not resubmit pending/answered items, but can submit dependent stages
-and budgeted repairs. Saved queues retain their requests and imported answers;
-errors/cancellation stop further groups. The command
-reconciles the ledger from bound receipts. `--judge-transport normal` requires a
-separate evaluation with matching settings; it cannot resume Batch results.
+The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order and
+reconciles bound stage receipts. Completed stages are reused without repeating
+actors; failed stages retain earlier usage when retried.
 
 Preview and execute the Flash-Lite/Pro comparison on the saved pilot recordings:
 
@@ -615,7 +576,7 @@ Preview and execute the Flash-Lite/Pro comparison on the saved pilot recordings:
 ```
 
 `profile_comparison.json` reports agreement, both audits' screenshot-only subsets
-and union/intersection, losses, costs and quality coverage; see [profile rules](evaluation-protocol.md#batch-judging).
+and union/intersection, losses, costs and quality coverage; see [profile rules](evaluation-protocol.md#judge-delivery-and-profiles).
 Completion is shared; native verifiers/audits repeat, actors/rubrics do not.
 Primary and Pro results never mix in primary aggregation.
 
@@ -634,49 +595,9 @@ only; saved completion, native-verifier and inventory results are reused.
   --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage adjudicate --execute
 ```
 
-Repeat the same command while it returns 75. `--compare-profiles` adjudicates
-both profiles' inventories and refreshes their comparison. Final loss values
-appear only after accepted adjudication; pending or unavailable audits have no
-loss rate. Queued requests must finish in their matching stage before the other
-stage starts.
-
-Cancel a queue using a finalized recording and its matching rubric:
-
-```bash
-: "${BENCH_RECORDING:?Set a finalized recording path}"
-: "${BENCH_TASK_ID:?Set its task_XX catalog identity}"
-.venv/bin/python -m w8bench.verifier.run_comparison \
-  --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
-  --judge-model gemini-3.6-flash --judge-transport batch --cancel --execute
-```
-
-Cancellation returns **130** and affects the entire saved shared queue, including
-other recordings and profiles using that queue.
-It records cancellation before contacting providers and refuses late imports.
-Preserve cancellation and submission receipts; do not erase them to force continuation.
-
-### Batch job reconciliation
-
-If submission acknowledgement is lost, inspect its receipt:
-
-```bash
-: "${BENCH_BATCH_RECEIPT:?Set the submission_uncertain jobs/job_NNNNNN.json path}"
-export BENCH_BATCH_RECEIPT
-.venv/bin/python - <<'PY'
-import json, os
-from pathlib import Path
-receipt = json.loads(Path(os.environ['BENCH_BATCH_RECEIPT']).read_text())
-assert receipt['status'] == 'submission_uncertain' and not receipt.get('job_id')
-fields = ('provider', 'endpoint', 'model', 'stage', 'input_file_id', 'input_sha256', 'job_id')
-print(json.dumps({key: receipt.get(key) for key in fields}, indent=2))
-PY
-```
-
-Match the provider job to `input_file_id`, model and request input, then enter its
-ID in that receipt's `job_id`, leaving all other fields—including
-`submission_uncertain`—intact. Repeat the original command; polling verifies the
-provider input before continuing. There is no reconciliation flag. If the job
-cannot be identified, stop and retain the receipt; resubmitting could charge twice.
+`--compare-profiles` adjudicates both profiles' inventories and refreshes their
+comparison. Final loss values appear only after accepted adjudication; unavailable
+audits have no loss rate.
 
 ### Compare recorded runs
 

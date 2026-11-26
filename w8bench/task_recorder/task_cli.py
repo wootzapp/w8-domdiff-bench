@@ -988,35 +988,19 @@ def _run_batch_actor(
 
 def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]], *, reconcile_only: bool = False) -> None:
     """Advance judging or reconcile its bound receipts without dispatching work."""
-    results = {}
     if not reconcile_only:
-        from w8bench.verifier.batch import BatchJobs
         judge_models = {partner["judge_model"] for partner in partners}
         if len(judge_models) != 1:
             raise RunnerError("scheduled completion judge models differ")
-        groups = {}
-        for partner in partners:
-            source = Path(partner["recording"]).resolve()
-            queue = BatchJobs(source.parent.parent / "evaluations" / "batch_jobs", recordings=[source]).root
-            groups.setdefault(queue, []).append(partner)
-        for selected in groups.values():
-            log_path = Path(selected[0]["log"]).with_name(f"judge_round_{selected[-1]['sequence']:06d}.log")
-            with log_path.open("a", encoding="utf-8") as log:
-                result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-                    "--run", *[partner["recording"] for partner in selected], "--rubric", str(args.rubric_dir.resolve()),
-                    "--env-file", str(args.env_file.resolve()), "--judge-model", selected[0]["judge_model"], "--execute"],
-                    cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-            results.update({partner["recording"]: (result, log_path) for partner in selected})
-            if result.returncode not in (0, 75):
-                break
+        log_path = Path(partners[0]["log"]).with_name(f"judge_{partners[-1]['sequence']:06d}.log")
+        with log_path.open("a", encoding="utf-8") as log:
+            result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+                "--run", *[partner["recording"] for partner in partners], "--rubric", str(args.rubric_dir.resolve()),
+                "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
+                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
     from .prepare_verifier_data import inspect_recording
     for partner in partners:
         recording_path = Path(partner["recording"])
-        if not reconcile_only:
-            if partner["recording"] not in results:
-                partner.update(grade_outcome="not_started", evaluation_outcome="not_started", judge_exit_code=75)
-                continue
-            result, log_path = results[partner["recording"]]
         if reconcile_only and (not partner.get("completed") or not (recording_path / "final.json").is_file()):
             continue
         if reconcile_only and not (recording_path.parent.parent / "evaluations" / "profiles" / "primary").is_dir():
@@ -1037,7 +1021,6 @@ def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]
             _scheduled_grade(partner, summary)
         elif reconcile_only:
             continue
-        pending = evaluation.get("status") == "batch_pending" or not reconcile_only and result.returncode == 75 and not evaluation
         stages = evaluation.get("stages", {})
         audit_deferred = (evaluation.get("status") == "incomplete"
             and stages.get("audit", {}).get("status") == "blocked"
@@ -1047,17 +1030,16 @@ def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]
         if not reconcile_only:
             partner["judge_log"] = str(log_path)
         partner.update(evaluation_path=str(evaluation_path),
-            evaluation_outcome=evaluation.get("status", "batch_pending" if pending else "unavailable"),
-            grade_outcome=stages.get("paired_completion", {}).get("verdict",
-                "batch_pending" if pending else "grading_error"),
-            judge_exit_code=75 if pending else 0 if evaluation.get("status") in {"complete", "awaiting_adjudication"}
+            evaluation_outcome=evaluation.get("status", "unavailable"),
+            grade_outcome=stages.get("paired_completion", {}).get("verdict", "grading_error"),
+            judge_exit_code=0 if evaluation.get("status") in {"complete", "awaiting_adjudication"}
                 else 1 if reconcile_only else result.returncode)
         if audit_deferred:
             partner["evaluation_reason"] = "audit_configuration_failed"
         else:
             partner.pop("evaluation_reason", None)
         if reconcile_only:
-            partner["grade_completed"] = not pending and not audit_deferred
+            partner["grade_completed"] = not audit_deferred
 
 
 def _grade_batch_pair(
@@ -1101,8 +1083,7 @@ def _grade_batch_pair(
             partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
                 judge_error=f"{type(error).__name__}: {error}")
     for partner in partners:
-        partner.update(grade_completed=partner.get("judge_exit_code") != 75
-            and partner.get("evaluation_reason") != "audit_configuration_failed", judge_ended_at=utc_now())
+        partner.update(grade_completed=partner.get("evaluation_reason") != "audit_configuration_failed", judge_ended_at=utc_now())
     write_json_lines(ledger_path, ledger)
 
 

@@ -21,7 +21,6 @@ from w8bench.verifier.clients.retry import GracefulRetryClient
 from w8bench.model_identity import match_model_id, response_acceptance
 from w8bench.verifier.audit_requests import _completion, SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT
 load_env(Path('.env'))
-os.environ['JUDGE_TRANSPORT'] = 'normal'
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash'
 base = Path('internal/compatibility')
 sequence = 1

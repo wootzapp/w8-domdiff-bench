@@ -43,7 +43,7 @@ preparation and recording commands.
 | `rubrics/` | Frozen task criteria and catalog bindings. |
 | `recordings/<collection>/` | Ledger, catalog copy and raw actor attempts. |
 | `trajectories/<collection>/` | Paired verifier inputs by trial, arm, task and recording hash. |
-| `evaluations/<collection>/` | Completion, native results, audit, profile comparison and Batch receipts. |
+| `evaluations/<collection>/` | Completion, native results, audit, profile comparison and call receipts. |
 | `results/<collection>/` | Aggregated summaries, pairs, per-task metrics and report. |
 | `manifests/` | Verifier package integrity records. |
 
@@ -100,5 +100,5 @@ Upload each evaluation directory with its collection-relative prefix:
 
 The `evaluations/` prefix mirrors each local evaluation directory's parent path.
 Restoring evaluations places it beside the same actor directories; evaluation
-receipts retain relative Batch queue bindings. Credentials, private curation and
+receipts retain recording and source bindings. Credentials, private curation and
 solution notes are not dataset artifacts.

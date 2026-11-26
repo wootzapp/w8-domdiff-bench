@@ -28,7 +28,6 @@ from w8bench.verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION, calc
 
 @pytest.fixture(autouse=True)
 def offline_model_access(monkeypatch):
-    monkeypatch.setenv("JUDGE_TRANSPORT", "normal")
     monkeypatch.setenv("NATIVE_JUDGE_PROFILE", "primary")
     monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test-key")

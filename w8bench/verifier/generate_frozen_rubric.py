@@ -97,8 +97,6 @@ def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_
     clients = {}
     calls = {}
     agent = None
-    previous_transport = os.environ.get("JUDGE_TRANSPORT")
-    os.environ["JUDGE_TRANSPORT"] = "normal"
     try:
         agent = _rubric_agent(args, clients, calls)
         rubric = asyncio.run(agent._generate_rubric(task["instruction"],
@@ -117,10 +115,6 @@ def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_
             receipt.update(ungraded_reason=str(error), judge_fallback={"stage": error.stage, "reason": error.reason})
         raise
     finally:
-        if previous_transport is None:
-            os.environ.pop("JUDGE_TRANSPORT", None)
-        else:
-            os.environ["JUDGE_TRANSPORT"] = previous_transport
         receipt.update(call_metrics=calls, token_usage={model: usage_dict(client) for model, client in clients.items()},
             rubric_generation_calls=sum(value["logical_calls"] for value in calls.values()),
             generation_trace=getattr(agent, "rubric_generation_trace", []))

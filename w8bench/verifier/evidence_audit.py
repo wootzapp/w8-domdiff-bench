@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import audit_evidence, audit_requests, audit_validation
-from .batch import _save, publication
 from .common import CanonicalRubric, canonical_sha256, load_canonical_rubric, load_json
+from w8bench.task_recorder.recorder_support import write_json
 
 
 SCHEMA_VERSION = "automated-evidence-audit/v9"
@@ -640,8 +640,7 @@ def run_evidence_audit(
         if _fingerprints(inputs) != evidence["input_fingerprints"]:
             raise ValueError("Audit evidence changed during inventory")
         report["inventory_checkpoint_sha256"] = canonical_sha256(report)
-        with publication():
-            _save(checkpoint_path, report)
+        write_json(checkpoint_path, report)
         return report
     adjudication = _request_adjudication(
         inputs, adjudicator_model, inventory.decisions, call, adjudication_invalid

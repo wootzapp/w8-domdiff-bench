@@ -193,7 +193,7 @@ and audit responses require matching returned IDs and complete output. All faile
 attempt usage remains in receipts; ungraded audits have no pooled loss rate.
 
 All model requests use Google's GenerateContent API. Native validation operations
-allow an initial answer and one correction; a batched evidence fallback gives
+allow an initial answer and one correction; a grouped evidence fallback gives
 each individual criterion/state operation the same two-attempt budget. Rubric
 preparation and audit validation have their own budgets in the
 [datacard](datacard.md#judge-delivery).

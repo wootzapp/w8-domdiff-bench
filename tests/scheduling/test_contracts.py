@@ -923,8 +923,7 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
     assert shell_count >= 30 and python_count >= 1
     assert {'w8bench.task_recorder.task_cli', 'w8bench.task_recorder.browser_runtime',
         'w8bench.task_recorder.prepare_verifier_data', 'w8bench.verifier.generate_frozen_rubric',
-        'w8bench.verifier.run_comparison', 'w8bench.verifier.run_full_comparison',
-        'w8bench.verifier.batch'} <= set(checked)
+        'w8bench.verifier.run_comparison', 'w8bench.verifier.run_full_comparison'} <= set(checked)
 
 
 @pytest.mark.parametrize('script', ['check-model-compatibility.py', 'calibrate-coordinates.py', 'calibrate-text.py'])
@@ -945,13 +944,11 @@ def test_paid_runbook_diagnostics_require_explicit_execution(tmp_path, monkeypat
 @pytest.mark.parametrize('compare_profiles', [False, True])
 @pytest.mark.parametrize('execute', [False, True])
 @pytest.mark.usefixtures('no_network')
-def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeypatch, compare_profiles, execute):
+def test_ledger_evaluator_preserves_order_and_selection(tmp_path, monkeypatch, compare_profiles, execute):
     import runpy
     import subprocess
     import sys
     script = Path(__file__).resolve().parents[2]/'scripts/evaluate-ledger.py'
-    # Interleave trials in the ledger so grouping must retain the first recording
-    # and row order within each queue, including a finalized technical attempt.
     runs = [tmp_path/'trial_0001/dom/task_02', tmp_path/'trial_0002/screenshot/task_02',
         tmp_path/'trial_0001/screenshot/task_02', tmp_path/'technical_attempt_02/trial_0001/dom/task_19']
     for run in runs:
@@ -959,20 +956,6 @@ def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeyp
     ledger = tmp_path/'ledger.jsonl'
     write_json_lines(ledger, [{'recording': str(run)} for run in runs] +
         [{'recording': str(tmp_path/'unfinished')}])
-    from w8bench.verifier.batch import BatchJobs
-    assert BatchJobs(tmp_path/'fallback', recordings=runs).root == tmp_path/'evaluations/batch_jobs'
-    for index, run in enumerate(runs):
-        queue = tmp_path / ('queue_b' if index == 1 else 'queue_a')
-        queue.mkdir(exist_ok=True)
-        task = {'source_task_id': run.name, 'observation_mode': run.parent.name,
-            'run_name': run.parent.parent.name}
-        write_json(run/'task.json', task)
-        receipt = run.parent.parent/'evaluations/profiles/primary'/task['run_name']/task['observation_mode']/run.name/('a'*64)/'evaluation.json'
-        identity = {'task': run.name, 'arm': task['observation_mode'], 'trial': task['run_name'],
-            'recording_sha256': 'a'*64, 'profile': 'primary'}
-        write_json(receipt, {'task_id': run.name, 'actor_arm': task['observation_mode'],
-            'trial_id': task['run_name'], 'recording_sha256': 'a'*64,
-            'batch_queue_context': {'root': str(queue), 'identity': identity}})
     monkeypatch.setattr(task_cli, '_execute_batch_judge', lambda *args, **kwargs: None)
     commands = []
     monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
@@ -987,20 +970,18 @@ def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeyp
         with pytest.raises(SystemExit) as error:
             runpy.run_path(str(script), run_name='__main__')
         assert error.value.code == 0
-    assert commands[:2] == commands[2:]
-    for command, selected in zip(commands, [[runs[0], runs[2], runs[3]], [runs[1]]]*2):
-        assert command[command.index('--run')+1:command.index('--rubric')] == list(map(str, selected))
+    assert len(commands) == 2 and commands[0] == commands[1]
+    for command in commands:
+        assert command[command.index('--run')+1:command.index('--rubric')] == list(map(str, runs))
         assert command[command.index('--rubric')+1] == str(tmp_path/'rubrics')
         assert command[command.index('--judge-model')+1] == 'gemini-3.6-flash'
-        assert command[command.index('--judge-transport')+1] == 'batch'
         assert ('--execute' in command) == execute
         assert ('--compare-profiles' in command) == compare_profiles
 
 
-@pytest.mark.parametrize('statuses,expected,count', [([75, 0], 75, 2), ([0, 75], 75, 2),
-    ([1, 0], 1, 1), ([130, 0], 130, 1)])
+@pytest.mark.parametrize('status', [0, 1, 130])
 @pytest.mark.usefixtures('no_network')
-def test_ledger_evaluator_preserves_pending_and_stops_on_errors(tmp_path, monkeypatch, statuses, expected, count):
+def test_ledger_evaluator_records_errors_and_interruptions(tmp_path, monkeypatch, status):
     import runpy
     import subprocess
     import sys
@@ -1010,28 +991,19 @@ def test_ledger_evaluator_preserves_pending_and_stops_on_errors(tmp_path, monkey
         write_json(run/'final.json', {})
     ledger = tmp_path/'ledger.jsonl'
     write_json_lines(ledger, [{'recording': str(run)} for run in runs])
-    for index, run in enumerate(runs):
-        queue = tmp_path / f'queue_{index}'
-        queue.mkdir()
-        trial = run.parent.parent.name
-        write_json(run/'task.json', {'source_task_id': 'task_02', 'observation_mode': 'dom', 'run_name': trial})
-        write_json(run.parent.parent/'evaluations/profiles/primary'/trial/'dom/task_02'/('a'*64)/'evaluation.json', {
-            'task_id': 'task_02', 'actor_arm': 'dom', 'trial_id': trial, 'recording_sha256': 'a'*64,
-            'batch_queue_context': {'root': str(queue), 'identity': {'task': 'task_02', 'arm': 'dom',
-                'trial': trial, 'profile': 'primary', 'recording_sha256': 'a'*64}}})
     monkeypatch.setattr(task_cli, '_execute_batch_judge', lambda *args, **kwargs: None)
     commands = []
     monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
-        (commands.append(command) or SimpleNamespace(returncode=statuses[len(commands)-1])))
+        (commands.append(command) or SimpleNamespace(returncode=status)))
     monkeypatch.setattr(sys, 'argv', [str(script), '--ledger', str(ledger), '--execute'])
     with pytest.raises(SystemExit) as error:
         runpy.run_path(str(script), run_name='__main__')
-    assert error.value.code == expected and len(commands) == count
-    if expected == 130:
+    assert error.value.code == status and len(commands) == 1
+    if status == 130:
         saved = [json.loads(line) for line in ledger.read_text().splitlines()]
-        assert saved[0]['evaluation_outcome'] == 'cancelled' and saved[0]['grade_outcome'] == 'ungraded'
-        assert saved[0]['judge_exit_code'] == 130 and saved[0]['grade_completed'] is True
-        assert saved[0]['judge_ended_at'] and saved[1] == {'recording': str(runs[1])}
+        assert all(row['evaluation_outcome'] == 'interrupted' and row['grade_outcome'] == 'ungraded' for row in saved)
+        assert all(row['judge_exit_code'] == 130 and row['grade_completed'] is False for row in saved)
+        assert all(row['judge_ended_at'] for row in saved)
 
 
 @pytest.mark.usefixtures('no_network')

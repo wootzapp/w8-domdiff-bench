@@ -12,14 +12,12 @@ from pathlib import Path
 from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
 from w8bench.verifier.common import validate_endpoint_configs, native_judge_model
-from w8bench.verifier.batch import judge_transport
 from w8bench.settings import actor_settings
 from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
 assert os.environ.get('GEMINI_API_KEY', '').strip(), 'Missing credential'
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor model'
-assert judge_transport() == 'batch', 'Unexpected judge transport'
 assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
 assert native_judge_model() == 'gemini-3.5-flash-lite', 'Unexpected native model'
 media = actor_settings({})['media_resolution']
@@ -41,7 +39,7 @@ print(json.dumps({'status': 'offline_preflight_passed', 'tasks': len(rows),
     'catalog_sha256': hashlib.sha256(catalog.read_bytes()).hexdigest(),
     'actor': os.environ['ACTOR_MODEL'], 'completion': 'gemini-3.6-flash',
     'rubric_model': 'gemini-3.1-pro-preview', 'verifier_models': ['gemini-3.5-flash-lite'], 'audit': audit,
-    'judge_transport': judge_transport(), 'native_profile': 'primary',
+    'judge_transport': 'normal', 'native_profile': 'primary',
     'max_output_tokens': settings.max_output_tokens, 'max_turns': settings.max_steps,
     'media_resolution': media,
     'memory_characters': MAX_TASK_MEMORY_CHARS}, indent=2))

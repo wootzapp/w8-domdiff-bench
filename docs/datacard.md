@@ -222,7 +222,7 @@ full-score checks.
 The launcher runs completion, native verification and inventory through
 `--stage evaluate`. A valid inventory leaves the evaluation
 `awaiting_adjudication`; `--stage adjudicate` consumes it for final loss decisions.
-Inventory and adjudication share one frozen settings contract. Batch requests
+Inventory and adjudication share one frozen settings contract. Model calls
 and validation attempts retain their usage across the stage boundary.
 See the [evaluation stages](evaluation-protocol.md#evaluation-stages).
 
@@ -255,25 +255,18 @@ auxiliary scores, directional loss and coverage.
 | --- | --- | --- | --- | --- |
 | Actor, both arms | `gemini-3.8-flash` | Normal | MEDIUM | 10,000 |
 | Rubric generation and dependency check | `gemini-3.1-pro-preview` | Normal | Medium | Unset |
-| Native screenshot and DOM verifiers, all stages | `gemini-3.5-flash-lite` | Batch | Medium | Unset |
-| Native Pro comparison profile, all stages | `gemini-3.1-pro-preview` | Batch | Medium | Unset |
-| Paired completion and optional actor-native grade | `gemini-3.6-flash` | Batch | Medium | 10,000 |
-| Audit inventory | `gemini-3.1-pro-preview` | Batch | Unset | Unset |
-| Audit adjudication | `gemini-4-argon` | Batch | Unset | Unset |
+| Native screenshot and DOM verifiers, all stages | `gemini-3.5-flash-lite` | Normal | Medium | Unset |
+| Native Pro comparison profile, all stages | `gemini-3.1-pro-preview` | Normal | Medium | Unset |
+| Paired completion and optional actor-native grade | `gemini-3.6-flash` | Normal | Medium | 10,000 |
+| Audit inventory | `gemini-3.1-pro-preview` | Normal | Unset | Unset |
+| Audit adjudication | `gemini-4-argon` | Normal | Unset | Unset |
 
-All model stages use Google's GenerateContent API. `JUDGE_TRANSPORT` selects
-`batch` by default or `normal` for judging. Actors,
-actor preflight and rubric preparation stay normal. Native stages retain the
-115,000-token input guard. Judge image requests specify high detail. Temperature
-is omitted in the listed configurations.
-
-Batch items contain the normal request body inside the provider envelope. Ready
-calls share provider/model/stage rounds; stage dependencies remain ordered.
-Submitted IDs and raw responses are durable. Repeating the same command polls
-saved jobs and replays answered items through the same validators. Pending work
-is not an ungraded judgment or task failure. Cancellation forbids late imports;
-uncertain submission acknowledgement blocks resubmission until its actual job ID
-is reconciled. See the [Batch controls](runbook.md#controls-and-outputs).
+All model stages use Google's GenerateContent API through direct requests. Native
+stages retain the 115,000-token input guard. Judge image requests specify high
+detail. Temperature is omitted in the listed configurations. Stage dependencies
+remain ordered, and responses pass through each stage's validators. Completed
+bound stages are reused on resume; failed attempts retain usage and receipts.
+See the [evaluation controls](runbook.md#controls-and-outputs).
 
 Common completion has no native-result input and is shared across profiles.
 Each profile runs its own native verifiers and audit on each identical actor
@@ -284,7 +277,7 @@ human accuracy labels. Profiles are isolated in output and primary aggregation.
 
 Completion allows one request per grading attempt. Native verifier operations,
 including both validity stages, allow two validation attempts total: the initial
-answer and one correction. A batched evidence-analysis failure falls back to
+answer and one correction. A grouped evidence-analysis failure falls back to
 individual criterion/state operations, each with that same two-attempt budget.
 Rubric generation and dependency checking allow five attempts per operation;
 inventory and adjudication allow three. Native repairs and endpoint retries retain

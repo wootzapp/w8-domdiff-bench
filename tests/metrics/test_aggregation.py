@@ -333,7 +333,7 @@ def test_aggregate_distributions_categories_and_missing_audit_coverage(run_pair)
         "matching_verifier_usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
         "usage": {"input_tokens": None, "output_tokens": None, "total_tokens": None},
         "known_usage_lower_bound": {"input_tokens": 120, "output_tokens": 40, "total_tokens": 160},
-        "coverage": "partial", "matching_verifier_status": "batch_pending"}
+        "coverage": "partial", "matching_verifier_status": "running"}
     pair["dom"]["judge_usage_streams"]["screenshot_verifier"] = {
         "calls": 1, "usage": {"input_tokens": 9000, "output_tokens": 1000, "total_tokens": 10000},
         "usage_coverage": "complete"}
@@ -877,24 +877,6 @@ def test_audit_aggregation_requires_explicit_nonfresh_override(tmp_path):
     summary, _ = audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=10, allow_nonfresh=True)
     assert summary["browser_profile_policy"] == {"allow_nonfresh": True,
         "override_used": True, "nonfresh_recordings": 1}
-
-
-@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gemini-3.6-flash',.75,3.75),('gemini-4-argon',2,10)])
-def test_batch_judge_cost_and_unknown_attempt_usage(model,pin,pout):
-    from w8bench.verifier.run_metrics import _price_stream
-    def stream(mode):
-        return {'calls':1,'usage_coverage':'complete','call_records':[{'model':model,'transport':mode,
-            'usage':{'input_tokens':1000,'output_tokens':100,'reasoning_tokens':50}}]}
-    normal,batch=stream('normal'),stream('batch')
-    _price_stream(normal);_price_stream(batch)
-    assert batch['cost']['estimated_usd']==pytest.approx(normal['cost']['estimated_usd']/2)
-    assert batch['cost']['transport_modes']=={'batch':1}
-    assert batch['cost']['estimated_usd']==pytest.approx((1000*pin+100*pout)/2_000_000)
-    batch['call_records'][0]['batch_items']=[{'model':model,'transport':'batch','usage':None},
-        {'model':model,'transport':'batch','usage':{'input_tokens':1000,'output_tokens':100}}]
-    _price_stream(batch)
-    assert batch['cost']['estimated_usd'] is None and batch['cost']['unpriced_calls']==1
-    assert batch['cost']['known_usage_estimate_usd'] is not None
 
 
 def test_evidence_aggregation_refuses_mixed_native_judge_profiles(tmp_path):

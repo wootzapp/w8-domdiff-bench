@@ -162,8 +162,7 @@ def _completion_streams(grade, secondary):
             streams[name] = {"model": item.get("judge_model"), "calls": calls, "usage": normalized,
                 "call_records": [{"model": item.get("judge_model"),
                     "returned_model": item.get("returned_judge_model"), "usage": normalized,
-                    "transport": item.get("transport", "normal"), "batch_job_id": item.get("batch_job_id"),
-                    "batch_items": item.get("batch_items", [])}] if calls == 1 else [],
+                    "transport": item.get("transport", "normal")}] if calls == 1 else [],
                 "usage_coverage": "complete" if not calls or all((normalized or {}).get(key) is not None for key in ("input_tokens", "output_tokens")) else "unknown"}
     return streams
 
@@ -248,7 +247,7 @@ def _append_attempt_history(streams, stages, evaluation_path):
                     "call_records": [{"model": configured,
                         "returned_model": (prior.get("model_settings") or {}).get("returned_model"),
                         "transport": prior.get("transport", (prior.get("effective_settings") or {}).get("transport", "normal")),
-                        "batch_items": prior.get("batch_items", []), "usage": prior_usage}] if prior.get("calls") == 1 else []})
+                        "usage": prior_usage}] if prior.get("calls") == 1 else []})
             else:
                 provider_metrics = prior.get("provider_call_metrics") or {}
                 snapshot = prior.get("artifact_snapshots", {}).get("run_metrics.json")
@@ -297,30 +296,6 @@ def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary):
     streams = _completion_streams(grade, secondary)
     _verifier_streams(streams, stages, evaluation_path)
     audit = _audit_streams(streams, stages)
-    context = (evaluation or {}).get("batch_queue_context")
-    if context:
-        from .batch import BatchJobs
-        jobs = BatchJobs(context["root"])
-        for name in ("paired_completion", "dom_model", "screenshot_verifier"):
-            stage = stages.get(name, {})
-            if stage.get("status") != "batch_pending":
-                continue
-            identity = dict(context["identity"])
-            prefix = f"{name}."
-            if name == "paired_completion":
-                identity["profile"] = "common"
-                prefix = "completion.paired"
-            records = jobs.records(identity, prefix, len(stage.get("attempt_history", [])) + 1)
-            if not records:
-                continue
-            key = name if name == "paired_completion" and name not in streams else f"{name}:pending_batch"
-            values = [_usage_values(record.get("usage")) for record in records]
-            usage = {field: sum(row[field] for row in values if row[field] is not None)
-                if any(row[field] is not None for row in values) else None for field in values[0]}
-            streams[key] = {"model": records[0]["model"], "calls": len(records), "call_records": records,
-                "usage": _normalized_usage(usage), "usage_coverage": "complete" if all(row["input_tokens"] is not None and row["output_tokens"] is not None
-                    for row in values) else "partial" if any(row["input_tokens"] is not None for row in values) else "unknown",
-                "scope": "Provider batch items from this pending stage attempt; earlier attempts remain separate."}
     _append_attempt_history(streams, stages, evaluation_path)
     _combine_attempt_usage(streams)
     if evaluation is not None:
@@ -370,11 +345,8 @@ def _price_call(call, stream, assumptions, price_sources):
     if threshold is not None and input_tokens > threshold:
         pin, pout, pcache, pwrite = pin * 2, pout * 1.5, pcache * 2, pwrite * 2
     transport = call.get("transport", "normal")
-    if transport not in {"normal", "batch"}:
+    if transport != "normal":
         return None
-    if transport == "batch":
-        pin, pout, pcache = pin / 2, pout / 2, pcache / 2
-        assumptions.add("batch_rates")
     write_details = _object(details.get("cache_write_tokens_details"))
     written_12h = write_details.get("ttl_12h_tokens", 0)
     if written and not write_details:
@@ -388,7 +360,7 @@ def _price_call(call, stream, assumptions, price_sources):
 def _price_stream(stream, *, reconcile_usage=True):
     estimate, priced, assumptions, price_sources = 0.0, 0, set(), set()
     records = stream.get("call_records", [])
-    billing_items = [item for call in records for item in (call.get("batch_items") or [call])]
+    billing_items = records
     unreconciled = 0
     conflicts = 0
     residuals = []

@@ -12,7 +12,6 @@ import tiktoken
 from google import genai
 from google.genai import types
 
-from ..batch import judge_transport, http_transport
 from .messages import CreateResult, ImageObj, LLMMessage, RequestUsage, ToolSchema, message_to_gemini_format
 
 
@@ -58,12 +57,13 @@ class ChatCompletionClient:
             if isinstance(thinking, dict) and "thinking_level" in thinking:
                 thinking["thinkingLevel"] = thinking.pop("thinking_level")
                 request._content = json.dumps(payload).encode("utf-8")
+                request.stream = httpx.ByteStream(request._content)
                 request.headers["Content-Length"] = str(len(request._content))
         self._http_attempts += 1
         record = self._active_call.get()
         if record is not None:
             record["http_attempts"] += 1
-            record["http_attempts_scope"] = "batch_items_replayed_once_in_final_receipt" if record.get("transport") == "batch" else "provider_http_requests"
+            record["http_attempts_scope"] = "provider_http_requests"
 
     def _start_call(self, record):
         stage_path = self._logical_stage.get()
@@ -190,7 +190,7 @@ def _record_usage(response, client, *, record=None):
 
 
 class GeminiClientWrapper(ChatCompletionClient):
-    """Native GenerateContent requests through normal or Batch transport."""
+    """Native GenerateContent requests and response accounting."""
 
     def __init__(self, *mode, **kwargs):
         evidence_mode = mode[0] if mode else "screenshot_verifier"
@@ -256,7 +256,7 @@ class GeminiClientWrapper(ChatCompletionClient):
         request = self._chat_request(messages, tools, json_output, extra_create_args)
         config = request["config"]
         record = {"configured_model": self.model, "requested_model": self.model, "provider": "google",
-            "transport": judge_transport(), "reasoning_effort": getattr(config.thinking_config, "thinking_level", None),
+            "transport": "normal", "reasoning_effort": getattr(config.thinking_config, "thinking_level", None),
             "temperature": config.temperature, "max_output_tokens": config.max_output_tokens,
             "http_timeout_seconds": self._http_options["timeout"] / 1000,
             "http_attempts": 0, "http_attempts_observed": True,
@@ -265,19 +265,7 @@ class GeminiClientWrapper(ChatCompletionClient):
             record["reasoning_effort"] = record["reasoning_effort"].value
         token = self._start_call(record)
         try:
-            if judge_transport() == "batch":
-                options = {**self._http_options, "httpx_async_client": httpx.AsyncClient(
-                    transport=http_transport("google", f"{self._evidence_mode}.{record['stage']}", record),
-                    event_hooks={"request": [self._record_http_request]})}
-                batch_client = genai.Client(api_key=self._api_key, http_options=types.HttpOptions(**options))
-                try:
-                    response = await batch_client.aio.models.generate_content(**request)
-                finally:
-                    await batch_client.aio.aclose()
-                    batch_client.close()
-                    await options["httpx_async_client"].aclose()
-            else:
-                response = await self.client.aio.models.generate_content(**request)
+            response = await self.client.aio.models.generate_content(**request)
         except BaseException as error:
             record["error_type"] = type(error).__name__
             raise

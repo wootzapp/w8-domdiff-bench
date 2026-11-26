@@ -56,12 +56,11 @@ Chromium and overlay checkouts bound by
 The [pilot](docs/runbook.md#record-the-pilot) uses `task_26`, `task_02`, `task_19`
 and `task_25`, both arms, one trial each.
 Model requests use Google's GenerateContent API. Actor calls and rubric preparation
-use normal transport; judging defaults to
-Batch. Pending judging returns 75; repeat the same evaluation command to poll.
+use direct requests, as do completion, both native verifiers and the evidence audit.
 Evaluation uses `--stage evaluate` for completion, native verification and
 inventory, then `--stage adjudicate` for final audit decisions from saved
 inventories. The [judging instructions](docs/runbook.md#controls-and-outputs) cover profiles,
-queue cancellation and uncertain submission receipts.
+evaluation stages, resume and result bindings.
 
 ## Outputs
 
@@ -70,7 +69,6 @@ queue cancellation and uncertain submission receipts.
 | `recordings/<collection>/ledger.jsonl` | Scheduled tasks, arms, trials, attempts and execution/evaluation outcomes. |
 | `recordings/<collection>/trial_NNNN/<arm>/<task>/` | Decisions, paired states, browser receipts and actor outcome. |
 | `recording.parent.parent / "evaluations"` | Bound verifier inputs, common completion and profile-specific verifier and audit results. |
-| `recordings/<collection>/evaluations/batch_jobs/` | Shared judge requests, job receipts and imported responses; evaluation receipts retain the owning queue. |
 | `reports/<collection>/` | Offline aggregation, paired comparisons, metrics, costs and coverage. |
 
 The [recording guide](docs/recordings.md) defines exact paths, including technical

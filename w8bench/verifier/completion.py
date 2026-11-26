@@ -127,24 +127,14 @@ def _criterion_grades(response, ids, state_count):
 
 
 async def _judge_completion(grade, run, recording, criteria, ids, judge_model, api_key, base_url, evidence_policy):
-    from .batch import judge_transport, request
-    if judge_transport() == "batch" and base_url.rstrip("/") != "https://generativelanguage.googleapis.com/v1beta":
-        raise ValueError("Batch completion requires the Google GenerateContent endpoint; custom completion endpoints use normal transport")
     payload = _judge_payload(run, recording, criteria, evidence_policy)
     response = {}
     grade.update(method="ungraded", verdict="ungraded", judge_calls=1,
         judge_model=judge_model, judge_base_url=base_url, max_output_tokens=10000,
         judge_schema_sha256=hashlib.sha256(json.dumps(GRADE_SCHEMA, sort_keys=True).encode()).hexdigest())
     try:
-        if judge_transport() == "batch":
-            receipt = request(payload, provider="google", endpoint="generateContent", model=judge_model,
-                stage=f"completion.{evidence_policy}", record=grade)
-            response = ModelClient._gemini_response(receipt["body"])
-            if receipt["status_code"] >= 400:
-                raise RuntimeError(f"Batch completion request failed: HTTP {receipt['status_code']}")
-        else:
-            client = ModelClient(api_key, judge_model, base_url)
-            response = await asyncio.to_thread(client._post, payload)
+        client = ModelClient(api_key, judge_model, base_url)
+        response = await asyncio.to_thread(client._post, payload)
         if isinstance(response.get("provider_response"), dict):
             from .audit_requests import _record_gemini_response
             accounting = {}
@@ -156,7 +146,7 @@ async def _judge_completion(grade, run, recording, criteria, ids, judge_model, a
                 "output_tokens_details": {"reasoning_tokens": usage.get("reasoning_tokens")}}
             grade.update({key: accounting[key] for key in ("provider_usage", "usage_coverage", "usage_lower_bound", "usage_known_calls")
                 if key in accounting})
-        grade["transport"] = judge_transport()
+        grade["transport"] = "normal"
         acceptance = response_acceptance(judge_model, response.get("model"), response, output_cap=10000)
         grade.update(model_id_match=acceptance["model_id_match"], refusal_reason=acceptance["refusal_reason"])
         if not acceptance["accepted"]:
