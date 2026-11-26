@@ -23,12 +23,12 @@ them into the local `data/` directory.
 Difficulty describes the research scope; every task uses the same configured
 turn cap. The turn ranges below are planning guidance, not measured task lengths.
 
-| Difficulty | Scope | Turn guidance |
-| --- | --- | --- |
-| Easy | One site, one to three pages, a few facts or a simple filter or search. | 5–15 |
-| Medium | Filters, sorting or detail pages with several related findings. | 15–40 |
-| Hard | Deep navigation or two to three sites with multiple constraints. | 40–100 |
-| Complex | Several sites, comparing or calculating across many items. | Generally under 150 |
+| Difficulty | Task IDs | Scope | Turn guidance |
+| --- | --- | --- | --- |
+| Easy | `task_01`–`task_10` | One site, one to three pages, a few facts or a simple filter or search. | 5–15 |
+| Medium | `task_11`–`task_20` | Filters, sorting or detail pages with several related findings. | 15–40 |
+| Hard | `task_21`–`task_30` | Deep navigation or two to three sites with multiple constraints. | 40–100 |
+| Complex | `task_31`–`task_40` | Several sites, comparing or calculating across many items. | Generally under 150 |
 
 Report changing values as observed during the run and cite the source
 pages used. The actor receives the instruction, stopping condition and constraints

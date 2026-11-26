@@ -53,8 +53,8 @@ and ports. The browser image is `w8-core:domdiff-bench`; its build uses the loca
 Chromium and overlay checkouts bound by
 [protocol/browser-build.json](protocol/browser-build.json).
 
-The [pilot](docs/runbook.md#record-the-pilot) uses `task_26`, `task_02`, `task_19`
-and `task_25`, both arms, one trial each.
+The [pilot](docs/runbook.md#record-the-pilot) uses `task_01`, `task_12`, `task_29`
+and `task_35`, both arms, one trial each.
 Model requests use Google's GenerateContent API. Actor calls and rubric preparation
 use direct requests, as do completion, both native verifiers and the evidence audit.
 Evaluation uses `--stage evaluate` for completion, native verification and

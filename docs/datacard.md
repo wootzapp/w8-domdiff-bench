@@ -178,13 +178,14 @@ remain shared between arms.
 ## Task catalog and provenance
 
 The [catalog](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/paired-capture/tasks.jsonl) contains `task_01` through
-`task_40`, ten at each difficulty. Its SHA-256 is
-`1b21a93282a438f638b70dabc427b6d6cda48b196af7ab46425b8241785cbf67`.
+`task_40`: easy `task_01`–`task_10`, medium `task_11`–`task_20`, hard
+`task_21`–`task_30` and complex `task_31`–`task_40`. Its SHA-256 is
+`2d46b590a49921984cf48504775f37a78bb60ecfc5ed5119e0e6f8c3a36d7d38`.
 The [dataset README](../data/README.md) is the schema, constraints and difficulty
 reference. Workload guidance does not change the shared turn cap or determine
 success.
 
-The pilot uses `task_26` (easy), `task_02` (medium), `task_19` (hard) and `task_25`
+The pilot uses `task_01` (easy), `task_12` (medium), `task_29` (hard) and `task_35`
 (complex), both arms with one trial each. The full collection accepts any positive
 trial count per arm. Catalog and rubric hashes bind the schedule; run manifests
 retain the catalog hash, or `null` for a manual task without a catalog.

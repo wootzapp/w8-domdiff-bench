@@ -30,7 +30,8 @@ assert settings.max_output_tokens == 10000 and settings.max_steps == 200
 assert MAX_TASK_MEMORY_CHARS == 8000
 catalog = Path('data/tasks.jsonl')
 rows = parse_task_catalog(catalog.read_text(), source=str(catalog))
-assert len(rows) == 40 and {r['task_id'] for r in rows} == {f'task_{n:02d}' for n in range(1, 41)}
+assert len(rows) == 40 and [r['task_id'] for r in rows] == [f'task_{n:02d}' for n in range(1, 41)]
+assert [r['difficulty'] for r in rows] == [difficulty for difficulty in ('easy', 'medium', 'hard', 'complex') for _ in range(10)]
 assert Counter(r['difficulty'] for r in rows) == dict.fromkeys(('easy', 'medium', 'hard', 'complex'), 10)
 assert Path('internal/task_validity.json').is_file(), 'Missing task-validity metadata'
 validate_endpoint_configs('config')

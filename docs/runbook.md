@@ -394,11 +394,11 @@ not guarantee general legibility. All three diagnostics use **14 nominal request
 
 ### Record the pilot
 
-Use task_26 (easy), task_02 (medium), task_19 (hard) and task_25 (complex), both
+Use task_01 (easy), task_12 (medium), task_29 (hard) and task_35 (complex), both
 arms, one trial each. Plan first:
 
 ```bash
-./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
+./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
@@ -409,7 +409,7 @@ Set `BENCH_PILOT_RUN` to the printed name, then execute and inspect:
 ```bash
 : "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
 export BENCH_PILOT_RUN
-./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
+./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
   --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
@@ -473,7 +473,7 @@ receipts; active recorders/launchers/judges must finish or stop first. Retry jud
 A single-task command selects one arm and keeps a local attempt ledger:
 
 ```bash
-./scripts/run-task task_02 --observation-mode dom \
+./scripts/run-task task_12 --observation-mode dom \
   --output-dir recordings --run-name single_task
 ```
 
