@@ -101,7 +101,7 @@ VNC_HOST_PORT={values['VNC_HOST_PORT']}
 # Google credentials: actors, rubrics, completion, native verifiers and evidence audit.
 ACTOR_MODEL={values['ACTOR_MODEL']}
 GEMINI_BASE_URL={values.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')}
-W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
+W8_RUN_NAME={values.get('W8_RUN_NAME', 'run1')}
 TASK_CATALOG_URL={values.get('TASK_CATALOG_URL', '')}
 
 EVIDENCE_AUDIT_MODEL={values.get('EVIDENCE_AUDIT_MODEL', '')}
@@ -135,7 +135,7 @@ def _configuration_values(existing: dict, defaults: dict, suffix: str, container
         ),
         "GEMINI_BASE_URL": existing.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
         "TASK_CATALOG_URL": existing.get("TASK_CATALOG_URL", defaults.get("TASK_CATALOG_URL", "")),
-        "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
+        "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run1"),
     }
     for key in ("EVIDENCE_AUDIT_MODEL", "EVIDENCE_ADJUDICATOR_MODEL",
                 "EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "GEMINI_API_KEY", "TASK_CATALOG_FILE"):

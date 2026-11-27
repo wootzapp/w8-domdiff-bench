@@ -6,6 +6,7 @@ import csv
 import hashlib
 import json
 from pathlib import Path
+from w8bench.run_paths import run_directory
 
 import pytest
 
@@ -288,7 +289,7 @@ def test_evaluation_join_checks_identity_and_keeps_four_directional_metrics(run_
     paths, *_ = run_pair
     recording = inspect_recording(paths["dom"])
     task = recording["task"]
-    root = paths["dom"].parent.parent / "evaluations" / "profiles" / "primary" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
+    root = run_directory(paths["dom"], area="evaluations") / "primary"
     metrics = {name: {"count": index, "denominator": 4, "rate": index/4} for index, name in enumerate((
         "screenshot_evidence_loss", "dom_model_evidence_loss", "screenshot_verifier_misses", "dom_model_verifier_misses"))}
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
@@ -694,7 +695,7 @@ def test_recorded_contracts_and_actual_browser_labels_match_the_schedule(setting
         recording["manifest"]["browser_profile_provenance"]["browser_build"]["overlay_revision"] = "another-overlay"
     else:
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/profiles/primary/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
+        path = run_directory(source, area="evaluations") / "primary" / "evaluation.json"
         value = json.loads(path.read_text())
         if kind == "missing_evaluation":
             value.pop("effective_settings")
@@ -726,7 +727,7 @@ def test_aggregation_refuses_new_and_unversioned_actual_contracts(settings_compa
         recording["manifest"].pop("effective_settings")
     else:
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/profiles/primary/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
+        path = run_directory(source, area="evaluations") / "primary" / "evaluation.json"
         value = json.loads(path.read_text()); value.pop("effective_settings"); write_json(path, value)
     with pytest.raises(ValueError, match="effective settings differ"):
         compare_case(case)
@@ -738,7 +739,7 @@ def test_all_unversioned_synthetic_contracts_still_aggregate(settings_comparison
         recording = case.recordings[row["recording"]]
         recording["manifest"].pop("effective_settings")
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/profiles/primary/trial_0001" / row["arm"] / "custom" / recording["recording_sha256"] / "evaluation.json"
+        path = run_directory(source, area="evaluations") / "primary" / "evaluation.json"
         value = json.loads(path.read_text()); value.pop("effective_settings"); write_json(path, value)
     assert compare_case(case) == 0
 
@@ -852,9 +853,9 @@ def test_partial_failed_transport_has_no_model_turn_but_unknown_cost(tmp_path):
     write_json(source / 'manifest.json', {'turn_policy': 'actor-response-turn/v2',
         'model_turns': 0, 'states': [], 'steps': [], 'controls': {'max_turns': 200}})
     write_json(source / 'turns' / 'turn_000001' / 'request.json', {'api_call_started': True})
-    write_json_lines(source / 'turns' / 'turn_000001' / 'transport_attempts.jsonl', [
+    write_json(source / 'turns' / 'turn_000001' / 'metadata.json', {'transport_attempts': [
         {'attempt': i, 'response_received': False, 'usage': None, 'status': 'transport_error'}
-        for i in (1, 2, 3)])
+        for i in (1, 2, 3)]})
     summary = _partial_summary({'recording': str(source), 'task': {'instruction': 'Read heading.'},
         'configuration': {'model': 'gemini-3.1-pro-preview'}, 'run_name': 'trial_0001',
         'technical_outcome': 'technical_failure'}, 'dom', 'custom')

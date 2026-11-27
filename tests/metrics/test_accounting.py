@@ -5,6 +5,7 @@ import hashlib
 import importlib
 import json
 from pathlib import Path
+from w8bench.run_paths import run_directory
 from types import SimpleNamespace
 
 import httpx
@@ -48,7 +49,7 @@ def test_completion_attempt_history_prices_only_the_recorded_model(tmp_path, met
 def _verifier_usage_recording(tmp_path):
     import hashlib
 
-    source = tmp_path / "recordings/task"
+    source = tmp_path / "recordings/trial/dom/task"
     source.mkdir(parents=True)
     fingerprint = "a" * 64
     recording = {
@@ -58,7 +59,7 @@ def _verifier_usage_recording(tmp_path):
         "manifest": {"controls": {"max_turns": 200}, "steps": [], "states": [], "run_name": "trial"},
         "decisions": [], "final": {"run_status": "completed"},
     }
-    folder = tmp_path / "evaluations/profiles/primary/trial/dom/task" / fingerprint
+    folder = run_directory(source, area="evaluations") / "primary"
     metrics = folder / "dom_model/run_metrics.json"
     metrics.parent.mkdir(parents=True)
     calls = [{"configured_model": "gemini-3.1-pro-preview", "returned_model": "gemini-3.1-pro-preview", "usage_reported": True,
@@ -162,17 +163,17 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     paths, *_ = run_pair
     recording = inspect_recording(paths["dom"])
     task = recording["task"]
-    root = paths["dom"].parent.parent / "evaluations" / "profiles" / "primary" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
+    root = run_directory(paths["dom"], area="evaluations") / "primary"
     root.mkdir(parents=True)
     grade = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "observation_mode": "dom", "rubric_sha256": "frozen", "evidence_policy": "paired",
         "method": "model_judge", "verdict": "success", "judge_model": "gemini-3.6-flash", "judge_calls": 1,
         "returned_judge_model": "gemini-3.6-flash-2026-10-01",
         "usage": {"input_tokens": 30, "output_tokens": 10}}
-    write_json(root / "paired_completion.json", grade)
+    write_json(root.parent / "completion.json", grade)
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen", "stages": {
-        "paired_completion": {"status": "model_judge", "result": str(root / "paired_completion.json"), "attempt_history": [
+        "paired_completion": {"status": "model_judge", "result": str(root.parent / "completion.json"), "attempt_history": [
             {"status": "ungraded", "calls": 1, "usage": {"input_tokens": 20, "output_tokens": 5}, "usage_coverage": "complete",
                 "model_settings": {"returned_model": "gemini-3.6-flash-2026-10-01"}},
             {"status": "interrupted", "usage_coverage": "unknown"}]},
@@ -744,7 +745,7 @@ def test_completion_usage_requires_valid_principal_counts(
     assert stream["cost"]["estimated_usd"] is None
 
 @pytest.mark.parametrize("outcome", ["startup_failure", "not_started", "interrupted", "incomplete_recording"])
-@pytest.mark.parametrize("attempt_evidence", [False, "request", "response", "result", "counter", "malformed_counter", "malformed_decisions", "steps"])
+@pytest.mark.parametrize("attempt_evidence", [False, "request", "response", "metadata", "counter", "malformed_counter", "malformed_decisions", "steps"])
 def test_scheduled_actor_cost_is_zero_only_when_no_calls_are_known(
     tmp_path, outcome, attempt_evidence
 ):
@@ -752,7 +753,7 @@ def test_scheduled_actor_cost_is_zero_only_when_no_calls_are_known(
     for arm in ("dom", "screenshot"):
         recording = tmp_path / arm / "custom"
         if attempt_evidence:
-            if attempt_evidence in {"request", "response", "result"}:
+            if attempt_evidence in {"request", "response", "metadata"}:
                 write_json(recording / "turns" / "turn_000001" / f"{attempt_evidence}.json", {"model": "gemini-3.1-pro-preview"})
             elif attempt_evidence in {"counter", "malformed_counter"}:
                 write_json(recording / "manifest.json", {"model_turns": 1 if attempt_evidence == "counter" else "1"})

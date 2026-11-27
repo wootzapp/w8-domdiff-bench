@@ -703,10 +703,10 @@ def test_fairness_input_preflight_prevents_dispatch_without_truncation(monkeypat
         with pytest.raises(RunnerError) as error: client._post(payload)
         assert error.value.technical_failure_class == 'actor_input_limit'
         assert client.last_input_report['api_call_started'] is False
-        assert not (tmp_path/'transport_attempts.jsonl').exists()
-    receipt = json.loads((tmp_path/'input_preflight.json').read_text())
+        assert not json.loads((tmp_path/'metadata.json').read_text()).get('transport_attempts')
+    receipt = json.loads((tmp_path/'metadata.json').read_text())['input_preflight']
     assert receipt['input_tokens'] == total and receipt['safe_input_limit'] == 950
-    assert payload == original and 'never-save-this-key' not in (tmp_path/'input_preflight.json').read_text()
+    assert payload == original and 'never-save-this-key' not in (tmp_path/'metadata.json').read_text()
     assert sum(url.endswith(':generateContent') for url in seen) == int(allowed)
 
 
@@ -730,7 +730,7 @@ def test_fairness_cancelled_preflight_cannot_write_late_receipts(monkeypatch, tm
     client = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
     client.last_input_report = {'api_call_started': True}
     client.turn_dir = tmp_path
-    pending = tmp_path/'input_preflight.json'
+    pending = tmp_path/'metadata.json'
     preserved = {'status': 'cancelled', 'input_tokens': None, 'generation_attempted': False}
     calls = []
     def respond(request, **kwargs):
@@ -739,13 +739,13 @@ def test_fairness_cancelled_preflight_cannot_write_late_receipts(monkeypatch, tm
         if stage == blocked_stage:
             client.transport_cancelled = True
             client.last_input_report['input_preflight'] = preserved.copy()
-            write_json(pending, preserved)
+            write_json(pending, {'input_preflight': preserved})
         assert stage != 'generation'
         return io.BytesIO(json.dumps({'name': 'models/gemini-3.8-flash', 'inputTokenLimit': 1000}
             if stage == 'metadata' else {'totalTokens': 20}).encode())
     monkeypatch.setattr(runner.urllib.request, 'urlopen', respond)
     with pytest.raises(asyncio.CancelledError): client._post({'contents': [{'parts': [{'text': 'a' * 600}]}]})
-    assert json.loads(pending.read_text()) == preserved
+    assert json.loads(pending.read_text())['input_preflight'] == preserved
     assert client.last_input_report['input_preflight'] == preserved
     assert calls == (['metadata'] if blocked_stage == 'metadata' else ['metadata', 'count'])
 
@@ -836,13 +836,13 @@ def test_count_tokens_retries_then_uses_confirmed_or_estimated_size(monkeypatch,
     else:
         with pytest.raises(RunnerError) as error: client._post(payload)
         assert error.value.technical_failure_class == 'actor_input_limit'
-    receipt = json.loads((tmp_path/'input_preflight.json').read_text())
+    receipt = json.loads((tmp_path/'metadata.json').read_text())['input_preflight']
     assert len(counts) == 3 and delays == [2, 8]
     assert len(generated) == int(allowed)
     assert receipt['input_tokens'] == (600 if recover else None)
     assert receipt['status'] == ('within_limit' if recover else 'local_fallback' if allowed else 'input_limit')
     assert len(receipt['transport_attempts']) == 3
-    if not allowed: assert not (tmp_path/'transport_attempts.jsonl').exists()
+    if not allowed: assert not json.loads((tmp_path/'metadata.json').read_text()).get('transport_attempts')
 
 
 @pytest.mark.parametrize('status,body,kind', [(401, '{}', 'provider_auth'),

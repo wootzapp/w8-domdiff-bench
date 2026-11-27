@@ -16,19 +16,24 @@ from .paired_metrics import aggregate, validate_settings_contracts, validate_rec
 from .run_metrics import summarize, _price_stream
 from w8bench.usage import valid_token_component
 from w8bench.settings import normalized_settings, require_same_settings
+from w8bench.run_paths import run_directory
 
 
 def _read_ledger(path):
-    ledger = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    paths = [path] if isinstance(path, (str, Path)) else path
+    ledger = [json.loads(line) for item in paths for line in Path(item).read_text().splitlines() if line.strip()]
     if not ledger:
         raise ValueError("empty attempt ledger")
     identities = [(row["task_id"], row["trial"], row["arm"]) for row in ledger]
     if len(set(identities)) != len(identities):
         raise ValueError("duplicate ledger task/arm/trial")
     trial_counts = {row["trials"] for row in ledger}
-    if len(trial_counts) != 1 or next(iter(trial_counts)) <= 0:
+    if any(type(count) is not int or count <= 0 for count in trial_counts):
         raise ValueError("invalid configured trial count")
-    n = next(iter(trial_counts))
+    selected_trials = {row["trial"] for row in ledger}
+    if any(type(trial) is not int or trial <= 0 for trial in selected_trials):
+        raise ValueError("invalid trial number")
+    n = len(selected_trials)
     paths = [str(Path(row["recording"]).resolve()) for row in ledger]
     if len(set(paths)) != len(paths):
         raise ValueError("a recording path is reused across scheduled attempts")
@@ -43,7 +48,7 @@ def _read_ledger(path):
     if len(attempt_paths) != len(set(attempt_paths)):
         raise ValueError("a technical attempt recording is reused across scheduled rows")
     task_ids = {row["task_id"] for row in ledger}
-    if set(identities) != {(task, trial, arm) for task in task_ids for trial in range(1,n+1) for arm in ("dom","screenshot")}:
+    if set(identities) != {(task, trial, arm) for task in task_ids for trial in selected_trials for arm in ("dom","screenshot")}:
         raise ValueError("ledger omits a scheduled task/arm/trial")
     validate_settings_contracts(((row["task_id"], row.get("effective_settings")) for row in ledger), label="scheduled")
     return ledger, n, task_ids
@@ -188,7 +193,7 @@ def _partial_summary(row, arm, task_id):
     if (source / "manifest.json").is_file():
         partial_manifest = json.loads((source / "manifest.json").read_text())
     turn_evidence = any(any((source / "turns").glob(f"turn_*/{name}.json"))
-                        for name in ("request", "response", "result"))
+                        for name in ("request", "response", "metadata"))
     reported_turns = partial_manifest.get("model_turns")
     counter_clear = ("model_turns" not in partial_manifest or
                      valid_token_component(reported_turns) and reported_turns == 0)
@@ -205,18 +210,18 @@ def _partial_summary(row, arm, task_id):
     response_turn_policy = partial_manifest.get("turn_policy") == "actor-response-turn/v2"
     if response_turn_policy:
         response_turns = {path.parent.name for path in (source / "turns").glob("*/response.json")}
-        for transport in (source / "turns").glob("*/transport_attempts.jsonl"):
-            for line in transport.read_text().splitlines():
-                try:
-                    receipt = json.loads(line)
-                except json.JSONDecodeError:
-                    undecodable_decisions = True
-                    continue
-                if receipt.get("response_received") is True:
-                    response_turns.add(transport.parent.name)
+        pending_transport = False
+        for path in (source / "turns").glob("*/metadata.json"):
+            try:
+                metadata = json.loads(path.read_text())
+            except json.JSONDecodeError:
+                undecodable_decisions = True
+                continue
+            if any(receipt.get("response_received") is True for receipt in metadata.get("transport_attempts", [])):
+                response_turns.add(path.parent.name)
+            pending_transport |= metadata.get("pending_transport", {}).get("status") == "started"
         summary["turns_complete"] = (not decisions and not undecodable_decisions and valid_token_component(reported_turns)
-            and reported_turns == 0 and not response_turns
-            and not any(json.loads(path.read_text()).get("status") == "started" for path in (source / "turns").glob("*/transport_pending.json")))
+            and reported_turns == 0 and not response_turns and not pending_transport)
     if not no_calls and not decisions and not response_turn_policy:
         summary["turns_missing_usage"] = 1
     if no_calls:
@@ -305,10 +310,10 @@ def _pair_attempt(rows, available, task_id, trial, *, allow_nonfresh=False):
     return receipt, reports, unmatched
 
 
-def _paired_attempts(ledger, n, task_ids, records, *, allow_nonfresh=False):
+def _paired_attempts(ledger, task_ids, records, *, allow_nonfresh=False):
     pairs, reports, unmatched = [], [], []
     for task_id in sorted(task_ids):
-        for trial in range(1,n+1):
+        for trial in sorted({row["trial"] for row in ledger}):
             rows = {row["arm"]: row for row in ledger if row["task_id"]==task_id and row["trial"]==trial}
             available = {arm: records.get((task_id,trial,arm)) for arm in ("dom","screenshot")}
             receipt, report, missing = _pair_attempt(rows, available, task_id, trial, allow_nonfresh=allow_nonfresh)
@@ -380,15 +385,15 @@ def _write_reports(output, indexed, summary, pairs, reports):
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ledger", type=Path, required=True, help="batch schedule and attempt outcomes")
+    parser.add_argument("--ledger", type=Path, nargs="+", required=True, help="one or more run schedules and attempt outcomes")
     parser.add_argument("--pass-k", type=int, nargs="+", help="k values; default is all scheduled trial counts")
     parser.add_argument("--output", type=Path, required=True, help="new report directory")
     parser.add_argument("--allow-nonfresh", action="store_true",
         help="explicitly include reused or unverified browser profiles and record the override")
     args = parser.parse_args(argv)
-    ledger, n, task_ids = _read_ledger(args.ledger)
+    ledger, _, task_ids = _read_ledger(args.ledger)
     indexed, records = _recorded_attempts(ledger, allow_nonfresh=args.allow_nonfresh)
-    pairs, reports, unmatched = _paired_attempts(ledger, n, task_ids, records, allow_nonfresh=args.allow_nonfresh)
+    pairs, reports, unmatched = _paired_attempts(ledger, task_ids, records, allow_nonfresh=args.allow_nonfresh)
     summary = aggregate(pairs, pass_k=args.pass_k)
     summary.update(browser_profile_policy={"allow_nonfresh": args.allow_nonfresh,
         "override_used": any(pair.get("browser_profile_policy", {}).get("override_used") for pair in pairs)},
@@ -396,7 +401,7 @@ def main(argv: list[str] | None = None) -> int:
         paired_tasks=len({pair["task_id"] for pair in pairs if pair["recordings_paired"]}),
         paired_attempts=sum(pair["recordings_paired"] for pair in pairs),
         scheduled_tasks=len(task_ids), unmatched_arms=unmatched,
-        ledger=str(args.ledger.resolve()),
+        ledger=[str(path.resolve()) for path in args.ledger],
         technical_outcomes=dict(Counter(row["technical_outcome"] for row in ledger)),
         actor_attempts=sum(sum(bool(item.get("started_at")) or item.get("completed") is True
             for item in row["attempts"]) if row.get("attempts") else int(row["technical_outcome"] not in {"not_started", "running"}) for row in ledger),
@@ -406,7 +411,7 @@ def main(argv: list[str] | None = None) -> int:
         evaluation_outcomes=dict(Counter(row.get("evaluation_outcome", "not_available") for row in ledger)),
         full_evaluation_completed_attempts=sum(row.get("evaluation_outcome") == "complete" for row in ledger),
         full_evaluation_completion_rate=sum(row.get("evaluation_outcome") == "complete" for row in ledger) / len(ledger),
-        judge_processes_without_usage=sum(bool(row.get("judge_started_at")) and not (Path(row["recording"])/"completion.json").is_file() for row in ledger))
+        judge_processes_without_usage=sum(bool(row.get("judge_started_at")) and not run_directory(Path(row["recording"]), area="evaluations").joinpath("completion.json").is_file() for row in ledger))
     _write_reports(args.output, indexed, summary, pairs, reports)
     return 0
 

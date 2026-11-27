@@ -104,8 +104,9 @@ def _inspect_actor_request(source: Path, task: dict, manifest: dict, states: lis
         raise ValueError("turn response path is not local to the turn")
     if not 1 <= row.get("state", 0) <= len(states):
         raise ValueError("model turn refers to a nonexistent state")
-    if read_object(directory / "result.json") != row:
-        raise ValueError("turn result differs from decision log")
+    if row.get("metadata") != f"turns/turn_{turn:06d}/metadata.json":
+        raise ValueError("turn metadata path is not local to the turn")
+    read_object(directory / "metadata.json")
     state = states[row["state"] - 1]
     artifact = row.get("model_input", {}).get("observation", {})
     if artifact.get("sha256") != state["observation_sha256"]:
@@ -307,8 +308,8 @@ def _verifier_events(manifest: dict) -> list:
     return events
 
 
-def _stage_projection(source: Path, staging: Path, task_id: str, manifest: dict, task_data: list, events: list, answer: dict, folder: str, filename: str, stem: str) -> dict:
-    root = staging / folder / task_id
+def _stage_projection(source: Path, staging: Path, manifest: dict, task_data: list, events: list, answer: dict, folder: str, filename: str, stem: str) -> dict:
+    root = staging / folder
     root.mkdir(parents=True)
     write_json(root / "task_data.json", task_data)
     write_json_lines(root / "web_surfer.log", events)
@@ -331,30 +332,49 @@ def prepare_recording(recording: dict[str, Any], output: Path) -> dict[str, Any]
     source = Path(recording["source"])
     task, manifest = recording["task"], recording["manifest"]
     mode, task_id = task["observation_mode"], task["source_task_id"]
-    destination = output / str(task.get("run_name") or manifest["run_name"]) / mode / task_id / recording["recording_sha256"]
+    destination = output
     if destination.resolve().is_relative_to(source):
         raise ValueError("export output must be outside the source recording")
-    if destination.exists():
-        raise ValueError(f"output already exists: {destination}")
-    destination.parent.mkdir(parents=True, exist_ok=True)
     context = _evaluation_context(recording, task, manifest, mode, task_id)
-    events = _verifier_events(manifest)
-    with tempfile.TemporaryDirectory(dir=destination.parent) as temp:
-        staging = Path(temp) / "recording"
-        answer = {"final_answer": recording["final"]["final_answer"], "env_state_json": "<no_answer>",
-            "env_state_raw": "<no_answer>", "is_aborted": recording["final"]["run_status"] != "completed",
-            "is_rel_paths": True, "token_usage": {}}
-        task_data = [{"task_id": task_id, "confirmed_task": task["instruction"], "website": task["start_url"],
-            "level": task.get("difficulty") or task.get("category") or "recorded_browser_task", "evaluation_context": context}]
-        projected = {}
-        for folder, filename, stem in (("data-ss", "screenshot.png", "screenshot"), ("data-dom", "dom_model.txt", "dom_model")):
-            projected[folder] = _stage_projection(source, staging, task_id, manifest, task_data, events, answer, folder, filename, stem)
+    if destination.exists():
+        receipt = read_object(destination / "input_receipt.json")
+        if any(receipt.get(key) != value for key, value in context.items()):
+            raise ValueError("evaluation staging belongs to another recording")
+        projected = receipt.get("projected_files_sha256")
+        if not isinstance(projected, dict) or set(projected) != {"data-ss", "data-dom"}:
+            raise ValueError("staged evaluation input receipt is invalid")
+        for folder, hashes in projected.items():
+            if not isinstance(hashes, dict) or not hashes or not (destination / folder).is_dir() or (destination / folder).is_symlink():
+                raise ValueError("staged evaluation input receipt is invalid")
+            if any(path.name not in {*hashes, "task_data_with_canonical_rubric.json"}
+                    or not path.is_file() or path.is_symlink() for path in (destination / folder).iterdir()):
+                raise ValueError("staged evaluation input changed")
+            for name, digest in hashes.items():
+                path = destination / folder / name
+                if (Path(name).name != name or path.is_symlink() or not path.resolve().is_relative_to(destination.resolve())
+                        or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest):
+                    raise ValueError("staged evaluation input changed")
         if inspect_recording(source)["recording_sha256"] != recording["recording_sha256"]:
             raise ValueError("source changed during export")
-        write_json(staging / "input_receipt.json", {**context, "projected_files_sha256": projected})
-        staging.rename(destination)
+    else:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        events = _verifier_events(manifest)
+        with tempfile.TemporaryDirectory(dir=destination.parent) as temp:
+            staging = Path(temp) / "recording"
+            answer = {"final_answer": recording["final"]["final_answer"], "env_state_json": "<no_answer>",
+                "env_state_raw": "<no_answer>", "is_aborted": recording["final"]["run_status"] != "completed",
+                "is_rel_paths": True, "token_usage": {}}
+            task_data = [{"task_id": task_id, "confirmed_task": task["instruction"], "website": task["start_url"],
+                "level": task.get("difficulty") or task.get("category") or "recorded_browser_task", "evaluation_context": context}]
+            projected = {}
+            for folder, filename, stem in (("data-ss", "screenshot.png", "screenshot"), ("data-dom", "dom_model.txt", "dom_model")):
+                projected[folder] = _stage_projection(source, staging, manifest, task_data, events, answer, folder, filename, stem)
+            if inspect_recording(source)["recording_sha256"] != recording["recording_sha256"]:
+                raise ValueError("source changed during export")
+            write_json(staging / "input_receipt.json", {**context, "projected_files_sha256": projected})
+            staging.rename(destination)
     return {"source": str(source), "output": str(destination), "observation_mode": mode,
-        "screenshot_task": str(destination / "data-ss" / task_id), "dom_task": str(destination / "data-dom" / task_id),
+        "screenshot_task": str(destination / "data-ss"), "dom_task": str(destination / "data-dom"),
         "recording_sha256": recording["recording_sha256"], "evaluation_context": context}
 
 
@@ -373,8 +393,10 @@ def main(argv: list[str] | None = None) -> int:
     result = []
     for source in sources:
         recording = inspect_recording(source)
+        run_root = source.parents[3] if source.parent.parent.parent.name == "attempts" else source.parent.parent
+        destination = args.output / run_root.name / source.relative_to(run_root)
         result.append({"source": str(source), "status": "valid"} if args.dry_run
-            else prepare_recording(recording, args.output))
+            else prepare_recording(recording, destination))
     print(json.dumps(result, indent=2))
     return 0
 

@@ -92,19 +92,20 @@ def _normalized_usage(value):
 
 
 def _load_receipts(recording, source, task, manifest, partial):
-    evaluation_path = (source.parent.parent / "evaluations" / "profiles" / "primary" / str(task.get("run_name") or manifest.get("run_name"))
-        / task["observation_mode"] / task["source_task_id"] / str(recording.get("recording_sha256")) / "evaluation.json")
+    from w8bench.run_paths import run_directory
+    task_root = run_directory(source, area="evaluations")
+    evaluation_path = task_root / "primary" / "evaluation.json"
     evaluation = read_object(evaluation_path) if evaluation_path.is_file() and not partial else None
     if evaluation is not None and any(evaluation.get(key) != expected for key, expected in (
             ("recording_sha256", recording["recording_sha256"]), ("task_id", task["source_task_id"]),
             ("actor_arm", task["observation_mode"]), ("trial_id", str(task.get("run_name") or manifest.get("run_name"))))):
         raise ValueError("evaluation receipt belongs to a different task, arm, trial or recording")
-    grade_path = source / "completion.json"
+    grade_path = task_root / "completion.json"
     grade = read_object(grade_path) if grade_path.is_file() and not partial and evaluation is None else None
     stages = (evaluation or {}).get("stages", {})
     if grade is None and stages.get("paired_completion", {}).get("result"):
         result = Path(stages["paired_completion"]["result"])
-        if not result.resolve().is_relative_to(evaluation_path.parent.resolve()):
+        if result.resolve() != grade_path.resolve():
             raise ValueError("primary completion result is outside its evaluation folder")
         grade = read_object(result)
     if grade is not None and (grade.get("recording_sha256") != recording["recording_sha256"] or
@@ -112,7 +113,7 @@ def _load_receipts(recording, source, task, manifest, partial):
         raise ValueError("completion grade is stale or belongs to a different run")
     if grade is not None and evaluation is not None and grade.get("rubric_sha256") != evaluation.get("rubric_sha256"):
         raise ValueError("completion and evaluation frozen rubric hashes differ")
-    secondary_path = source / "completion_actor_native.json"
+    secondary_path = task_root / "completion_actor_native.json"
     secondary = read_object(secondary_path) if secondary_path.is_file() and not partial else None
     if secondary and (secondary.get("recording_sha256") != recording["recording_sha256"]
             or secondary.get("evidence_policy") != "actor_native"
@@ -475,10 +476,10 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
     partial = recording.get("partial_recording", False)
     evaluation_path, evaluation, grade, secondary, stages = _load_receipts(recording, source, task, manifest, partial)
     transport_receipts = []
-    for path in sorted((source / "turns").glob("*/transport_attempts.jsonl")):
-        transport_receipts.extend(json.loads(line) for line in path.read_text().splitlines() if line)
-    for pending in sorted((source / "turns").glob("*/transport_pending.json")):
-        item = read_object(pending)
+    for path in sorted((source / "turns").glob("*/metadata.json")):
+        metadata = read_object(path)
+        transport_receipts.extend(metadata.get("transport_attempts", []))
+        item = metadata.get("pending_transport", {})
         if item.get("status") == "started":
             transport_receipts.append({**item, "usage": None, "response_received": False, "model": task.get("model")})
     failed_transport = [row for row in transport_receipts if row.get("response_received") is not True]

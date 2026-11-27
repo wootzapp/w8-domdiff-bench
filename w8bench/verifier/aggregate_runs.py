@@ -64,10 +64,15 @@ def hierarchical_intervals(clusters: list[list[tuple[int, int, int]]], *,
 
 def _run_manifest(root, driver_arms):
     root = Path(root).resolve(strict=True)
-    project_root = root.parent.parent
+    project_root = next((parent.parent for parent in root.parents if parent.name == "evaluations"), root.parent.parent)
     manifest_path = project_root / "manifests" / f"{root.name}.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
-    evaluations = sorted(root.rglob("evaluation.json"))
+    profile = root.name if root.name in {"primary", "pro"} else os.environ.get("NATIVE_JUDGE_PROFILE", "primary")
+    available = sorted(root.rglob("evaluation.json"))
+    evaluations = [path for path in available
+        if path.parent.name not in {"primary", "pro"} or path.parent.name == profile]
+    if available and not evaluations:
+        raise ValueError(f"No evaluation results for native profile {profile}")
     run_name = root.name
     if evaluations:
         entries, trial_ids, arms = [], set(), set()
@@ -510,7 +515,7 @@ def _read_readme(path):
 def _category_annotations(args, categories, summary):
     if args.categories:
         with args.categories.open(newline="", encoding="utf-8") as stream:
-            annotations = {(row.get("run_name", "run_1"), row["task"], str(row["criterion_index"]),
+            annotations = {(row.get("run_name", "run1"), row["task"], str(row["criterion_index"]),
                             row["representation"], row["finding_sha256"]): row for row in csv.DictReader(stream, delimiter="\t")}
         for row in categories:
             key = (row["run_name"], row["task"], str(row["criterion_index"]), row["representation"], row["finding_sha256"])

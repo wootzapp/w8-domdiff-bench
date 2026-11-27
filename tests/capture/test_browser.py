@@ -9,6 +9,8 @@ import statistics
 import subprocess
 import time
 from pathlib import Path
+
+from w8bench.run_paths import run_directory
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -831,13 +833,13 @@ def test_capture_retry_preserves_passive_failure_metadata(tmp_path, monkeypatch)
     monkeypatch.setattr(FakeCDP, "call", call)
     synchronize = AsyncMock(return_value={"switched": False})
     monkeypatch.setattr(capture, "synchronize_recorder_target", synchronize)
-    run = tmp_path / "run"
+    run = tmp_path / "recordings/run1/screenshot/task"
     bundle, reconnects = asyncio.run(capture.capture_after_action_bundle(
         FakeCDP(observation_mode="screenshot"), None, run / "steps" / "step_001", max_nodes=100,
         max_text_chars=1000, observation_mode="screenshot", attempts=2))
     assert bundle.capture_metadata["paired_complete"]
     assert len(reconnects) == 1 and synchronize.await_count == 1
-    failures = [json.loads(line) for line in (run / "capture_failures.jsonl").read_text().splitlines()]
+    failures = [json.loads(line) for line in (run_directory(run, area="logs") / "capture_failures.jsonl").read_text().splitlines()]
     assert len(failures) == 1
     assert failures[0]["attempt"] == 1
     assert failures[0]["directory"] == "steps/step_001"
@@ -988,7 +990,7 @@ async def test_renderer_crash_fails_pending_calls_and_blocks_further_capture(tmp
     cdp = capture.CDPClient('http://localhost:9222')
     cdp.target = {'targetId': 'page-one'}
     cdp.session_id = 'session-one'
-    cdp.recording_dir = tmp_path
+    cdp.recording_dir = tmp_path / "recordings/run1/dom/task"
     class Socket:
         def __init__(self):
             self.requests = []
@@ -1008,7 +1010,7 @@ async def test_renderer_crash_fails_pending_calls_and_blocks_further_capture(tmp
     with pytest.raises(RunnerError):
         await cdp.call('Page.getFrameTree')
     assert len(cdp.ws.requests) == count
-    records = [json.loads(line) for line in (tmp_path / 'browser_events.jsonl').read_text().splitlines()]
+    records = [json.loads(line) for line in (run_directory(cdp.recording_dir, area="logs") / 'browser_events.jsonl').read_text().splitlines()]
     assert records[0]['method'] == crash_method
     assert records[0]['target_id'] == 'page-one'
 
@@ -1046,14 +1048,14 @@ async def test_target_identity_never_falls_back_to_matching_url_or_title():
 @pytest.mark.asyncio
 async def test_cdp_call_receipt_contains_timing_but_not_request_secret(tmp_path):
     cdp = capture.CDPClient('http://localhost:9222')
-    cdp.recording_dir = tmp_path
+    cdp.recording_dir = tmp_path / "recordings/run1/dom/task"
     cdp.session_id = 'session'
     class Socket:
         async def send_json(self, request):
             cdp.pending[request['id']].set_result({'id': request['id'], 'result': {'ok': True}})
     cdp.ws = Socket()
     assert await cdp.call('Network.setExtraHTTPHeaders', {'headers': {'Authorization': 'secret'}}) == {'ok': True}
-    text = (tmp_path / 'cdp_calls.jsonl').read_text()
+    text = (run_directory(cdp.recording_dir, area="logs") / 'cdp_calls.jsonl').read_text()
     row = json.loads(text)
     assert row['method'] == 'Network.setExtraHTTPHeaders'
     assert row['duration_seconds'] >= 0
@@ -1098,7 +1100,7 @@ async def test_identity_registry_refreshes_after_navigation_and_binds_popup_by_e
     cdp = capture.CDPClient('http://localhost:9222')
     cdp.target = {'targetId': 'parent', 'url': 'https://same.test/'}
     cdp.session_id = 'parent-session'
-    cdp.recording_dir = tmp_path
+    cdp.recording_dir = tmp_path / "recordings/run1/dom/task"
     pages = [{**cdp.target, 'type': 'page'}, {'targetId': 'popup', 'type': 'page',
         'openerId': 'parent', 'url': 'https://same.test/'}]
     calls = []
@@ -1126,7 +1128,7 @@ async def test_identity_registry_refreshes_after_navigation_and_binds_popup_by_e
     writes = [x for x in calls if x[0] == 'Runtime.evaluate']
     assert writes and all(x[1]['contextId'] == 42 for x in writes)
     assert not any(x[0] == 'Page.addScriptToEvaluateOnNewDocument' for x in calls)
-    assert (tmp_path / 'target_registry.json').is_file()
+    assert (run_directory(cdp.recording_dir, area="logs") / 'target_registry.json').is_file()
     cdp.target_registry['parent']['identity_marker'] = marker
     with pytest.raises(RunnerError, match='unique exact'):
         cdp._select_active_target(AgentBrowserPage('t2', 'https://same.test/', 'Same', identity_marker=marker), pages)
@@ -1188,7 +1190,7 @@ async def test_liveness_probe_dead_target_does_not_attach_or_continue(monkeypatc
 @pytest.mark.asyncio
 async def test_cli_call_receipts_do_not_persist_arguments_or_credentials(tmp_path, monkeypatch):
     driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222', timeout=90)
-    driver.recording_dir = tmp_path
+    driver.recording_dir = tmp_path / "recordings/run1/dom/task"
     class Process:
         returncode = 0
         args = ['unused']
@@ -1198,7 +1200,7 @@ async def test_cli_call_receipts_do_not_persist_arguments_or_credentials(tmp_pat
         def poll(self): return self.returncode
     monkeypatch.setattr(subprocess, 'Popen', lambda *a, **kw: Process())
     driver._invoke_sync(['fill', '@e1', 'fake-credential'])
-    text = (tmp_path/'agent_browser_calls.jsonl').read_text()
+    text = (run_directory(driver.recording_dir, area="logs") / 'agent_browser_calls.jsonl').read_text()
     row = json.loads(text)
     assert row['command'] == 'fill' and row['duration_seconds'] >= 0
     assert 'fake-credential' not in text and '@e1' not in text
@@ -1240,7 +1242,7 @@ async def test_unexpected_session_detach_is_recorded_without_false_crash(tmp_pat
     cdp = capture.CDPClient('http://localhost:9222')
     cdp.target = {'targetId': 'one'}
     cdp.session_id = 'current'
-    cdp.recording_dir = tmp_path
+    cdp.recording_dir = tmp_path / "recordings/run1/dom/task"
     class Socket:
         async def __aiter__(self):
             yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps({
@@ -1251,7 +1253,7 @@ async def test_unexpected_session_detach_is_recorded_without_false_crash(tmp_pat
     cdp.ws = Socket()
     await cdp._read_messages()
     assert cdp._session_detached and cdp._page_failure is None
-    text = (tmp_path/'browser_events.jsonl').read_text()
+    text = (run_directory(cdp.recording_dir, area="logs") / 'browser_events.jsonl').read_text()
     assert 'javascriptDialogOpening' in text
     assert 'credential-not-for-logs' not in text and 'also-secret' not in text
 
@@ -1302,7 +1304,7 @@ def test_fairness_dom_progress_ignores_ref_only_renumbering():
 @pytest.mark.asyncio
 async def test_fairness_identity_binding_ignores_unrelated_target_failure(tmp_path,monkeypatch):
     driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222',timeout=90)
-    cdp = capture.CDPClient('http://localhost:9222');cdp.recording_dir=tmp_path
+    cdp = capture.CDPClient('http://localhost:9222');cdp.recording_dir=tmp_path / "recordings/run1/dom/task"
     cdp.target_registry={'active':{'identity_marker':'private'},'background':{'identity_marker':'other'}}
     commands=[]
     async def command(method,params=None,**kwargs):
@@ -1320,7 +1322,7 @@ async def test_fairness_identity_binding_ignores_unrelated_target_failure(tmp_pa
     detached={params['sessionId'] for method,params,kwargs in commands if method=='Target.detachFromTarget'}
     assert detached=={'active-session','background-session'}
     assert not cdp.identity_reads
-    receipts=(tmp_path/'target_identity.jsonl').read_text()
+    receipts=(run_directory(cdp.recording_dir, area="logs") / 'target_identity.jsonl').read_text()
     assert 'background' in receipts and 'error' in receipts
 
 @pytest.mark.asyncio
@@ -1425,7 +1427,7 @@ async def test_fairness_capture_monitor_failure_is_unknown_and_passive(tmp_path,
 async def test_fairness_reference_cli_aligns_to_the_shared_exact_target(tmp_path,monkeypatch):
     from w8bench.task_recorder.agent_browser import AgentBrowserPage
     cdp=capture.CDPClient('http://localhost:9222',observation_mode='dom');cdp.target={'targetId':'parent'}
-    cdp.target_registry={'popup':{'target_id':'popup'}};cdp.recording_dir=tmp_path
+    cdp.target_registry={'popup':{'target_id':'popup'}};cdp.recording_dir=tmp_path / "recordings/run1/dom/task"
     async def shared(client):
         client.target={'targetId':'popup'};return {'selected_target_id':'popup','switched':True}
     common=AsyncMock(side_effect=shared)
@@ -1436,7 +1438,7 @@ async def test_fairness_reference_cli_aligns_to_the_shared_exact_target(tmp_path
     assert result['selected_target_id']=='popup' and result['switched'] is True
     assert driver.active_page.await_args.kwargs=={'target_id':'popup'}
     assert cdp.target_registry['popup']['tab_id']=='t2'
-    assert json.loads((tmp_path/'target_registry.json').read_text())['targets'][0]['tab_id']=='t2'
+    assert json.loads((run_directory(cdp.recording_dir, area="logs") / 'target_registry.json').read_text())['targets'][0]['tab_id']=='t2'
     assert common.await_count==1
 
 @pytest.mark.asyncio
@@ -1455,7 +1457,7 @@ async def test_fairness_passive_model_projection_failure_keeps_screenshot(tmp_pa
 
 @pytest.mark.asyncio
 async def test_fairness_capture_retry_preserves_prior_raw_files_in_next_free_attempt(tmp_path,monkeypatch):
-    parent=tmp_path/'run/steps';parent.mkdir(parents=True)
+    parent=tmp_path/'recordings/run1/dom/task/steps';parent.mkdir(parents=True)
     (parent/'step_001_capture_attempt_01').mkdir()
     (parent/'step_001_capture_attempt_01/keep.txt').write_text('existing diagnostic')
     (parent/'step_001_capture_attempt_02').symlink_to('missing-diagnostic')
@@ -1476,7 +1478,7 @@ async def test_fairness_capture_retry_preserves_prior_raw_files_in_next_free_att
     assert (parent/'step_001_capture_attempt_03/raw.txt').read_text()=='first capture'
     assert (parent/'step_001_capture_attempt_02').is_symlink()
     assert (parent/'step_001_capture_attempt_01/keep.txt').read_text()=='existing diagnostic'
-    receipt=json.loads((parent.parent/'capture_failures.jsonl').read_text())
+    receipt=json.loads((run_directory(parent.parent, area="logs") / 'capture_failures.jsonl').read_text())
     assert receipt['preserved_capture']=='steps/step_001_capture_attempt_03'
     assert calls==2 and len(reconnects)==1
 

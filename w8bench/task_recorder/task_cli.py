@@ -11,6 +11,7 @@ import math
 import os
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -668,7 +669,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     catalog_group.add_argument("--catalog-url", help="HTTP(S) task catalog URL")
     catalog_group.add_argument("--catalog-file", type=Path, help="Frozen local JSONL task catalog")
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
-    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run1")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -763,20 +764,25 @@ def _batch_schedule(
     from .runner import parse_args as recorder_args
     actor_defaults = recorder_args(["--env-file", str(args.env_file.resolve())])
     schedule = []
-    for trial in range(1, args.trials + 1):
-        for index, definition in enumerate(definitions):
+    match = re.fullmatch(r"(.+?)(_?)(\d+)", batch_dir.name)
+    prefix, separator, first = (match.group(1), match.group(2), int(match.group(3))) if match else (batch_dir.name, "_", 1)
+    for offset in range(args.trials):
+        trial = first + offset
+        run = batch_dir if offset == 0 else batch_dir.with_name(f"{prefix}{separator}{trial}")
+        for index, supplied in enumerate(definitions):
+            definition = {**supplied, "source_catalog": str(run / "catalog.jsonl")}
             modes = ["dom", "screenshot"] if (index + trial - 1) % 2 == 0 else ["screenshot", "dom"]
             for order, mode in enumerate(modes, 1):
                 identity = safe_task_id(definition["source_task_id"])
                 rubric = args.rubric_dir.resolve() / f"{identity}.json" if args.rubric_dir else None
                 if not args.dry_run and (rubric is None or not rubric.is_file()):
                     raise RunnerError(f"missing frozen rubric: {rubric}")
-                row = {"sequence": len(schedule)+1, "task_id": identity, "arm": mode,
+                row = {"sequence": index * 2 + order, "task_id": identity, "arm": mode,
                     "trial": trial, "trials": args.trials, "arm_order": order,
-                    "run_name": f"trial_{trial:04d}", "task": definition,
+                    "run_name": run.name, "task": definition,
                     "catalog_sha256": catalog_hash,
-                    "recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
-                    "scheduled_recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
+                    "recording": str(run / mode / identity),
+                    "scheduled_recording": str(run / mode / identity),
                     "attempt_number": 1, "attempts": [],
                     "configuration": {"model": model_name, "max_turns": args.max_steps,
                         "max_output_tokens": args.max_output_tokens,
@@ -876,7 +882,7 @@ def _batch_actor_command(
     model_name: str,
 ) -> list[str]:
     """Describe one scheduled actor invocation with its exact execution settings."""
-    attempt_root = batch_dir if row.get("attempt_number", 1) == 1 else batch_dir / "technical_attempt_02"
+    attempt_root = batch_dir.parent
     command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
         "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
         "--observation-mode", row["arm"], "--output-dir", str(attempt_root),
@@ -900,7 +906,8 @@ def _execute_batch_actor(
     directory: Path,
 ) -> None:
     """Execute one actor and record its terminal recording status."""
-    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}_{row.get('attempt_number', 1):02d}.log"
+    from w8bench.run_paths import run_directory
+    log_path = run_directory(Path(row["scheduled_recording"]), area="logs") / f"attempt_{row.get('attempt_number', 1):02d}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     row["log"] = str(log_path)
     command = _batch_actor_command(args, row, batch_dir, catalog_path, model_name)
@@ -941,11 +948,11 @@ def _run_batch_actor(
     directory: Path,
 ) -> None:
     """Retain attempts and rerun one technical failure with a fresh browser."""
+    from w8bench.run_paths import run_directory
     attempts = row.setdefault("attempts", [])
     number = row.get("attempt_number", 1)
     while number <= 2:
-        directory = (Path(row.get("scheduled_recording", directory)) if number == 1
-            else batch_dir / "technical_attempt_02" / row["run_name"] / row["arm"] / row["task_id"])
+        directory = Path(row.get("scheduled_recording", directory))
         row.update(recording=str(directory), attempt_number=number)
         if len(attempts) < number:
             attempts.append({"attempt_number": number, "recording": str(directory), "completed": False})
@@ -977,12 +984,24 @@ def _run_batch_actor(
             break
         # The completed first attempt is immutable. A pending second attempt is
         # published before launching so resume never repeats the first actor.
+        archive = batch_dir / "attempts" / row["arm"] / row["task_id"] / f"attempt_{number:02d}"
+        if directory.exists():
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            directory.rename(archive)
+        diagnostic_logs = run_directory(directory, area="logs")
+        archived_logs = run_directory(archive, area="logs")
+        if diagnostic_logs.exists() and not archived_logs.exists():
+            archived_logs.parent.mkdir(parents=True, exist_ok=True)
+            diagnostic_logs.rename(archived_logs)
+            if attempt.get("log"):
+                attempt["log"] = str(archived_logs / Path(attempt["log"]).name)
+        attempt["recording"] = str(archive)
         number += 1
         row.update(completed=False, technical_outcome="not_started", grade_outcome="ungraded")
         for key in ("started_at", "ended_at", "actor_ended_at", "technical_failure_class", "error", "exit_code", "log", "actor_calls_attempted"):
             row.pop(key, None)
     write_json_lines(ledger_path, ledger)
-    print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
+    print(f"{batch_dir.name} {row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']}: "
         f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
 
 
@@ -999,15 +1018,15 @@ def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]
                 "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
                 cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
     from .prepare_verifier_data import inspect_recording
+    from w8bench.run_paths import run_directory
     for partner in partners:
         recording_path = Path(partner["recording"])
         if reconcile_only and (not partner.get("completed") or not (recording_path / "final.json").is_file()):
             continue
-        if reconcile_only and not (recording_path.parent.parent / "evaluations" / "profiles" / "primary").is_dir():
+        if reconcile_only and not run_directory(recording_path, area="evaluations").is_dir():
             continue
         checked = inspect_recording(recording_path)
-        evaluation_path = (recording_path.parent.parent / "evaluations" / "profiles" / "primary" / partner["run_name"] /
-            partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
+        evaluation_path = run_directory(recording_path, area="evaluations") / "primary" / "evaluation.json"
         evaluation = json.loads(evaluation_path.read_text()) if evaluation_path.is_file() else {}
         if not reconcile_only and result.returncode == 130:
             partner.update(judge_log=str(log_path), evaluation_path=str(evaluation_path),
@@ -1060,7 +1079,8 @@ def _grade_batch_pair(
                 evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
             continue
         if "log" not in partner:
-            path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
+            from w8bench.run_paths import run_directory
+            path = run_directory(recording_path, area="logs") / "launcher.log"
             path.parent.mkdir(parents=True, exist_ok=True)
             partner["log"] = str(path)
         if partner["grade_outcome"] == "running":
@@ -1258,35 +1278,54 @@ def run_batch(args: argparse.Namespace) -> int:
     planning_only = args.dry_run and (args.rubric_dir is None or any(
         not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
         for definition in definitions))
-    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name), fresh=not args.resume).resolve()
-    args.run_name = batch_dir.name
-    if args.resume and not any((batch_dir / name).is_file() for name in ("ledger.jsonl", "schedule_preview.jsonl")):
-        raise RunnerError("--resume requires an existing run ledger")
-    frozen_catalog = _freeze_batch_catalog(batch_dir, definitions, catalog_bytes)
-    ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
+    requested = run_directory(args.output_dir, resolve_run_name(args.run_name), fresh=not args.resume, reserve=False).resolve()
     model_name = args.model
-    schedule = _batch_schedule(args, definitions, catalog_hash, batch_dir, planning_only, model_name)
-    # The global batch lock prevents two schedules from alternating through one browser.
     with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
-        ledger = _batch_ledger(ledger_path, schedule, planning_only)
-        _guard_batch_processes(batch_dir, ledger)
-        if args.resume and not args.dry_run:
-            _execute_batch_judge(args, ledger, reconcile_only=True)
-        write_json_lines(ledger_path, ledger)
+        batch_dir = requested
+        if not args.resume:
+            match = re.fullmatch(r"(.+?)(_?)(\d+)", requested.name)
+            prefix, separator, number = (match.group(1), match.group(2), int(match.group(3))) if match else (requested.name, "_", 1)
+            while True:
+                siblings = [batch_dir if offset == 0 else batch_dir.with_name(f"{prefix}{separator}{number + offset}") for offset in range(args.trials)]
+                if not any(path.exists() for path in siblings):
+                    break
+                number += 1
+                batch_dir = requested.with_name(f"{prefix}{separator}{number}")
+        args.run_name = batch_dir.name
+        schedule = _batch_schedule(args, definitions, catalog_hash, batch_dir, planning_only, model_name)
+        groups = {}
+        for row in schedule:
+            groups.setdefault(Path(row["scheduled_recording"]).parent.parent, []).append(row)
+        ledgers = []
+        for run, expected in groups.items():
+            ledger_path = run / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
+            if args.resume and not ledger_path.is_file() and not (run / "schedule_preview.jsonl").is_file():
+                raise RunnerError("--resume requires an existing run ledger")
+        for run, expected in groups.items():
+            frozen_catalog = _freeze_batch_catalog(run, [r["task"] for r in expected], catalog_bytes)
+            ledger_path = run / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
+            ledger = _batch_ledger(ledger_path, expected, planning_only)
+            _guard_batch_processes(run, ledger)
+            write_json_lines(ledger_path, ledger)
+            ledgers.append((run, frozen_catalog, ledger_path, ledger))
         if args.dry_run:
-            print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
-                ("; execution requires frozen rubrics" if planning_only else ""))
+            for run, _, ledger_path, ledger in ledgers:
+                print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
+                    ("; execution requires frozen rubrics" if planning_only else ""))
             return 0
-        for row in ledger:
-            if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
-                raise RunnerError("frozen batch catalog changed after scheduling")
-            directory = Path(row["recording"])
-            if not row["completed"] or (row["technical_outcome"] == "technical_failure" and len(row.get("attempts", [])) < 2):
-                _run_batch_actor(args, row, ledger, ledger_path, batch_dir, frozen_catalog, model_name, directory)
-            # Record both arms back to back before any grading latency.
-            if row["arm_order"] == 2:
-                _grade_batch_pair(args, row, ledger, ledger_path, batch_dir)
-        print(ledger_path)
+        for run, frozen_catalog, ledger_path, ledger in ledgers:
+            if args.resume:
+                _execute_batch_judge(args, ledger, reconcile_only=True)
+            write_json_lines(ledger_path, ledger)
+            for row in ledger:
+                if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
+                    raise RunnerError("frozen batch catalog changed after scheduling")
+                directory = Path(row["recording"])
+                if not row["completed"] or (row["technical_outcome"] == "technical_failure" and len(row.get("attempts", [])) < 2):
+                    _run_batch_actor(args, row, ledger, ledger_path, run, frozen_catalog, model_name, directory)
+                if row["arm_order"] == 2:
+                    _grade_batch_pair(args, row, ledger, ledger_path, run)
+            print(ledger_path)
         return 0
 
 
@@ -1343,7 +1382,7 @@ def run_single_task(args: argparse.Namespace) -> int:
     number = int(os.environ.get("W8_ACTOR_ATTEMPT_NUMBER", "1")) if batch_owned else max(1, len(attempts))
     result = 1
     while number <= 2:
-        args.output_dir = base if number == 1 or batch_owned else base.parent / "technical_attempt_02" / base.name
+        args.output_dir = base
         run_id = safe_task_id(str(definition.get("source_task_id") or task_id))
         directory = (args.output_dir / args.observation_mode / run_id).resolve()
         if not batch_owned and len(attempts) < number:
@@ -1351,7 +1390,12 @@ def run_single_task(args: argparse.Namespace) -> int:
         attempt = attempts[number - 1] if not batch_owned else {}
         final_path = directory / "final.json"
         if not batch_owned and (attempt.get("started_at") or attempt.get("completed")):
-            final = json.loads(final_path.read_text()) if final_path.is_file() else {}
+            saved_final_path = Path(attempt["recording"]) / "final.json"
+            archived = base / "attempts" / args.observation_mode / run_id / f"attempt_{number:02d}"
+            if not saved_final_path.is_file() and (archived / "final.json").is_file():
+                attempt["recording"] = str(archived)
+                saved_final_path = archived / "final.json"
+            final = json.loads(saved_final_path.read_text()) if saved_final_path.is_file() else {}
             outcome = final.get("run_status", "interrupted")
             result = attempt.get("exit_code", 0 if outcome == "completed" else 1)
         else:
@@ -1399,6 +1443,17 @@ def run_single_task(args: argparse.Namespace) -> int:
         write_json_lines(ledger_path, records)
         if outcome != "technical_failure" or number == 2:
             return result
+        archive = base / "attempts" / args.observation_mode / run_id / f"attempt_{number:02d}"
+        if directory.exists():
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            directory.rename(archive)
+        diagnostic_logs = run_directory(directory, area="logs")
+        archived_logs = run_directory(archive, area="logs")
+        if diagnostic_logs.exists() and not archived_logs.exists():
+            archived_logs.parent.mkdir(parents=True, exist_ok=True)
+            diagnostic_logs.rename(archived_logs)
+        attempt["recording"] = str(archive)
+        write_json_lines(ledger_path, records)
         number += 1
     return result
 

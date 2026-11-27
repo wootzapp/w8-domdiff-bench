@@ -26,6 +26,7 @@ from w8bench.verifier.run_comparison import main as comparison_main
 from w8bench.verifier.run_full_comparison import main as compare_main
 from w8bench.verifier.run_metrics import summarize
 from w8bench.verifier.validate_inputs import validate_pair
+from w8bench.run_paths import run_directory
 import asyncio
 import hashlib
 import json
@@ -108,14 +109,15 @@ def test_common_judge_evidence_and_secondary_policy(run_pair, tmp_path, monkeypa
         assert any("inlineData" in item for item in content)
         assert "DOM_ONLY_SECRET" in json.dumps(content)
         assert "[ref=e1]" not in json.dumps(content)
-    primary = (paths["dom"] / "completion.json").read_bytes()
+    primary_root = run_directory(paths["dom"], area="evaluations")
+    primary = (primary_root / "completion.json").read_bytes()
     grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gemini-3.6-flash", api_key="test", execute=True,
         evidence_policy="actor_native"))
     assert grade["evidence_policy"] == "actor_native"
-    assert (paths["dom"] / "completion_actor_native.json").exists()
-    assert (paths["dom"] / "completion.json").read_bytes() == primary
+    assert (primary_root / "completion_actor_native.json").exists()
+    assert (primary_root / "completion.json").read_bytes() == primary
     # Mixing policies is rejected even if every other grading control matches.
-    write_json(paths["dom"] / "completion.json", grade)
+    write_json(primary_root / "completion.json", grade)
     with pytest.raises(ValueError, match="evidence_policy"):
         compare(*(inspect_recording(paths[m]) for m in ("dom", "screenshot")))
 
@@ -139,7 +141,7 @@ def test_judge_failure_is_ungraded_and_keeps_its_usage_separate(run_pair, tmp_pa
     assert grade["usage"]["input_tokens"] == 101 and grade["usage"]["output_tokens"] == 17
     assert grade["returned_judge_model"] == "gemini-3.6-flash"
     assert grade["evidence_policy"] == "paired"
-    assert json.loads((paths["dom"] / "completion.json").read_text()) == grade
+    assert json.loads((run_directory(paths["dom"], area="evaluations") / "completion.json").read_text()) == grade
     receipt, _ = compare(*(inspect_recording(paths[mode]) for mode in ("dom", "screenshot")))
     summary = aggregate([receipt])
     assert summary["modes"]["dom"]["actor_turns"] == 4
@@ -240,7 +242,7 @@ def test_full_pipeline_freezes_inputs_grades_both_formats_and_resumes(full_evalu
         assert value["stages"][name]["signals"]["runtime_penalty_total_max_points"] == 0
     assert value["coverage"]["audit_eligible_states"] == value["coverage"]["expected_state_ids"]
     assert comparison.inspect_recording(paths[mode])["recording_sha256"] == before
-    receipt = json.loads((output.parent / "input_receipt.json").read_text())
+    receipt = json.loads(Path(value["input_receipt"]).read_text())
     assert receipt["recording_sha256"] == before and receipt["actor_arm"] == mode
     assert value["validity_date"] == receipt["validity_date"]
     generation = json.loads((output.parent / "rubric_generation_metrics.json").read_text())
@@ -253,7 +255,13 @@ def test_full_pipeline_freezes_inputs_grades_both_formats_and_resumes(full_evalu
     with pytest.raises(ValueError, match="judge artifact changed"):
         comparison.main(args)
     judge_result.write_bytes(original)
-    evidence = next((output.parent / "data-dom").rglob("dom_model*.txt"))
+    completion_path = Path(value["stages"]["paired_completion"]["result"])
+    completion_bytes = completion_path.read_bytes()
+    completion_path.write_bytes(completion_bytes + b" ")
+    with pytest.raises(ValueError, match="saved primary grade artifact changed"):
+        comparison.main(args)
+    completion_path.write_bytes(completion_bytes)
+    evidence = next((Path(value["input_receipt"]).parent / "data-dom").rglob("dom_model*.txt"))
     evidence.write_text(evidence.read_text() + "Changed staged evidence")
     with pytest.raises(ValueError, match="staged evaluation input changed"):
         comparison.main(args)
@@ -470,7 +478,7 @@ def test_completion_combines_frozen_criteria_with_failure_precedence(completion_
     assert any(part.get("text") == "Marker: SAVED\n" for part in content)
     assert any("inlineData" in part for part in content)
     assert all("[ref=e1]" not in part.get("text", "") for part in content)
-    assert json.loads((case.run / "completion.json").read_text())["verdict"] == expected
+    assert json.loads((run_directory(case.run, area="evaluations") / "completion.json").read_text())["verdict"] == expected
 
 
 @pytest.mark.parametrize("states", [[], [0], [2], [True], [1.0], ["1"]])
@@ -496,7 +504,7 @@ def test_completion_refuses_task_rubric_drift_before_transport(completion_case, 
         asyncio.run(completion.grade_run(case.run, case.rubric_path,
             judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert case.requests == []
-    assert not (case.run / "completion.json").exists()
+    assert not (run_directory(case.run, area="evaluations") / "completion.json").exists()
 
 
 @pytest.mark.parametrize("technical,answer,expected", [
@@ -533,7 +541,7 @@ def test_completion_refuses_to_save_if_source_identity_changes(completion_case, 
     with pytest.raises(ValueError, match="recording changed during grading"):
         asyncio.run(completion.grade_run(case.run, case.rubric_path,
             judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
-    assert not (case.run / "completion.json").exists()
+    assert not (run_directory(case.run, area="evaluations") / "completion.json").exists()
     assert len(case.requests) == 1
 
 
@@ -894,7 +902,7 @@ def test_native_ungraded_blocks_audit_and_excludes_loss_rates(
     def score(command, log_path):
         original(command, log_path)
         if f"w8bench.verifier.{native}.runner" in command:
-            path = log_path.parent / "result.json"
+            path = Path(command[command.index("--output") + 1]) / "result.json"
             raw = json.loads(path.read_text())
             raw.update(scoring.ungraded_result(scoring.UngradedVerifierError(stage, reason)),
                 intermediate_mm_rubric_steps=None)
@@ -941,23 +949,41 @@ def test_native_ungraded_blocks_audit_and_excludes_loss_rates(
 def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_evaluation,tmp_path,monkeypatch):
     from w8bench.verifier import run_comparison as pipeline
     paths,rubric,calls=full_evaluation
+    original = completion.ModelClient._post
+    def first_ungraded(self, payload):
+        result = original(self, payload)
+        if len(calls['primary']) == 1:
+            result['output_text'] = 'invalid completion JSON'
+        return result
+    monkeypatch.setattr(completion.ModelClient, '_post', first_ungraded)
     args=['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash',
         '--compare-profiles','--execute']
+    assert pipeline.main(args)==1
     assert pipeline.main(args)==0
     assert pipeline.main([*args,'--stage','adjudicate'])==0
-    assert len(calls['primary'])==2  # One shared grade per independent recording.
+    assert len(calls['primary'])==3  # The ungraded response and two accepted shared grades.
     assert len(calls['scorers'])==8 and len(calls['audit'])==8
     report=json.loads(next(tmp_path.rglob('profile_comparison.json')).read_text())
     assert len(report['rows'])==4 and all(row['agreement']==1 for row in report['rows'])
     assert all(subset['agreement'] is None for row in report['rows'] for subset in row['screenshot_only_subsets'].values())
     for path in tmp_path.rglob('evaluation.json'):
         value=json.loads(path.read_text())
-        profile='pro' if '/profiles/pro/' in str(path) else 'primary'
+        profile='pro' if path.parent.name == 'pro' else 'primary'
         expected='gemini-3.1-pro-preview' if profile=='pro' else 'gemini-3.5-flash-lite'
         assert value['effective_settings']['stages']['dom_model']['models']==[expected,expected]
+        primary = Path(value['stages']['paired_completion']['result'])
+        assert hashlib.sha256(primary.read_bytes()).hexdigest() == value['stages']['paired_completion']['result_sha256']
+        if value['actor_arm'] == 'dom':
+            history, = value['stages']['paired_completion']['attempt_history']
+            assert history['status'] == 'ungraded' and history['usage']['total_tokens'] == 70
+            assert json.loads(Path(history['result']).read_text())['method'] == 'ungraded'
+            assert json.loads(primary.read_text())['attempt_history'] == [history]
+    summary = summarize(inspect_recording(paths['dom']))
+    assert summary['judge_usage_streams']['paired_completion']['usage']['total_tokens'] == 140
+    assert summary['judge_usage_streams']['paired_completion']['calls'] == 2
     assert pipeline.main(args)==0
-    assert len(calls['primary'])==2 and len(calls['scorers'])==8 and len(calls['audit'])==8
-    assert next(tmp_path.rglob('profile_comparison_2.json')).is_file()
+    assert len(calls['primary'])==3 and len(calls['scorers'])==8 and len(calls['audit'])==8
+    assert next(tmp_path.rglob('profile_comparison_3.json')).is_file()
 
 
 def test_preflight_is_read_only_for_each_profile(full_evaluation,tmp_path):
@@ -992,7 +1018,7 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
     assert comparison.main(['--run', str(paths['dom']), '--rubric', str(rubric),
         '--judge-model', 'gemini-3.6-flash', '--compare-profiles', '--stage', 'adjudicate', '--execute']) == 0
     for file in tmp_path.rglob('evaluation.json'):
-        profile = 'pro' if '/profiles/pro/' in str(file) else 'primary'
+        profile = 'pro' if file.parent.name == 'pro' else 'primary'
         evaluation = json.loads(file.read_text())
         for mode in ('screenshot_verifier', 'dom_model'):
             evaluation['stages'][mode]['criteria'] = [
@@ -1026,7 +1052,7 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
         assert quality['audit_repair_attempts'] == 1 and quality['repair_attempts'] == 5
         assert quality['refusals'] == 1
         assert quality['audits_blocked_by_unavailable_native'] == quality['runs_without_loss_values'] == 0
-    pro_file = next(file for file in tmp_path.rglob('evaluation.json') if '/profiles/pro/' in str(file))
+    pro_file = next(file for file in tmp_path.rglob('evaluation.json') if file.parent.name == 'pro')
     value = json.loads(pro_file.read_text())
     value['stages']['dom_model']['status'] = 'ungraded'
     value['stages']['audit'].update(status='blocked', reason='verifier_results_unavailable')

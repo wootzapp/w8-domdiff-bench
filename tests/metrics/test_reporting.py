@@ -53,8 +53,7 @@ def evaluation_for(recording, **overrides):
 def evaluation_path(recording):
     source = Path(recording["source"])
     task = recording["task"]
-    return (source.parent.parent / "evaluations" / "profiles" / "primary" / task["run_name"] / task["observation_mode"]
-            / task["source_task_id"] / recording["recording_sha256"] / "evaluation.json")
+    return run_directory(source, area="evaluations") / "primary" / "evaluation.json"
 
 def pair_for(recording):
     row = summarize(recording)
@@ -156,7 +155,7 @@ def test_ungraded_primary_policy_cannot_be_mixed(run_pair):
     paths, *_ = run_pair
     for mode, policy in (("dom","paired"),("screenshot","actor_native")):
         recording = inspect_recording(paths[mode])
-        write_json(paths[mode]/"completion.json", {"task_id":"task_01", "observation_mode":mode,
+        write_json(run_directory(paths[mode], area="evaluations")/"completion.json", {"task_id":"task_01", "observation_mode":mode,
             "recording_sha256":recording["recording_sha256"], "method":"ungraded", "verdict":"ungraded",
             "evidence_policy":policy})
     with pytest.raises(ValueError, match="evidence_policy"):
@@ -236,7 +235,7 @@ def test_summary_refuses_evaluation_receipts_from_another_run(metric_recording_f
 @pytest.mark.parametrize("field", ["recording_sha256", "task_id", "observation_mode"])
 def test_summary_refuses_primary_completion_from_another_run(metric_recording_factory, field):
     recording = metric_recording_factory()
-    write_json(Path(recording["source"]) / "completion.json", completion_for(recording, **{field: "another-run"}))
+    write_json(run_directory(recording["source"], area="evaluations") / "completion.json", completion_for(recording, **{field: "another-run"}))
     with pytest.raises(ValueError, match="stale or belongs to a different run"):
         summarize(recording)
 
@@ -245,13 +244,13 @@ def test_summary_refuses_secondary_completion_with_wrong_identity_or_policy(metr
     recording = metric_recording_factory()
     grade = completion_for(recording, evidence_policy="actor_native")
     grade[field] = "another-run"
-    write_json(Path(recording["source"]) / "completion_actor_native.json", grade)
+    write_json(run_directory(recording["source"], area="evaluations") / "completion_actor_native.json", grade)
     with pytest.raises(ValueError, match="secondary completion grade is stale or has the wrong policy"):
         summarize(recording)
 
 def test_primary_completion_must_match_the_evaluation_rubric(metric_recording_factory):
     recording = metric_recording_factory()
-    target = evaluation_path(recording).parent / "paired_completion.json"
+    target = evaluation_path(recording).parent.parent / "completion.json"
     write_json(target, completion_for(recording))
     write_json(evaluation_path(recording), evaluation_for(recording, rubric_sha256="another-rubric",
         stages={"paired_completion": {"result": str(target)}}))
@@ -277,8 +276,8 @@ def test_bound_completion_fallback_retains_grade_and_judge_usage(metric_recordin
     recording = metric_recording_factory()
     path = evaluation_path(recording)
     grade = completion_for(recording)
-    write_json(path.parent / "paired_completion.json", grade)
-    write_json(path, evaluation_for(recording, stages={"paired_completion": {"result": str(path.parent / "paired_completion.json")}}))
+    write_json(path.parent.parent / "completion.json", grade)
+    write_json(path, evaluation_for(recording, stages={"paired_completion": {"result": str(path.parent.parent / "completion.json")}}))
     result = summarize(recording)
     assert result["completion"] == grade
     assert result["judge_usage"] == {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
@@ -291,8 +290,8 @@ def test_secondary_grade_keeps_its_own_usage_and_primary_verdict(metric_recordin
     primary = completion_for(recording)
     secondary = completion_for(recording, evidence_policy="actor_native", verdict="failure",
                                usage={"input_tokens": 20, "output_tokens": 7})
-    write_json(source / "completion.json", primary)
-    write_json(source / "completion_actor_native.json", secondary)
+    write_json(run_directory(source, area="evaluations") / "completion.json", primary)
+    write_json(run_directory(source, area="evaluations") / "completion_actor_native.json", secondary)
     result = summarize(recording)
     assert result["completion"]["verdict"] == "success"
     assert result["secondary_completion"]["verdict"] == "failure"
@@ -312,7 +311,7 @@ def test_summary_refuses_a_changed_normalized_verifier_usage_artifact(metric_rec
 
 def test_summary_refuses_an_unknown_completion_verdict(metric_recording_factory):
     recording = metric_recording_factory()
-    write_json(Path(recording["source"]) / "completion.json", completion_for(recording, verdict="probably"))
+    write_json(run_directory(recording["source"], area="evaluations") / "completion.json", completion_for(recording, verdict="probably"))
     with pytest.raises(ValueError, match="invalid completion verdict"):
         summarize(recording)
 
@@ -482,7 +481,7 @@ def test_aggregation_refuses_mixed_policy_versions_for_ungraded_receipts(
         for arm in ("dom", "screenshot"):
             recording = metric_recording_factory(arm=arm, trial=f"trial_{trial:04d}", usage={"input_tokens": 4, "output_tokens": 2})
             metric_evaluation_factory(recording, grade_usage={"input_tokens": 3, "output_tokens": 1})
-            path = evaluation_path(recording).parent / "paired_completion.json"
+            path = evaluation_path(recording).parent.parent / "completion.json"
             grade = json.loads(path.read_text())
             grade.update(method="ungraded", verdict="ungraded")
             if trial == 1:
@@ -499,7 +498,7 @@ def test_aggregation_keeps_unstarted_placeholders_with_versioned_grades(
 ):
     recording = metric_recording_factory(usage={"input_tokens": 4, "output_tokens": 2})
     metric_evaluation_factory(recording, grade_usage={"input_tokens": 3, "output_tokens": 1})
-    path = evaluation_path(recording).parent / "paired_completion.json"
+    path = evaluation_path(recording).parent.parent / "completion.json"
     grade = json.loads(path.read_text())
     grade.update(completion_policy_version="paired-completion/v4", acceptance_policy_version="returned-model-acceptance/v2")
     write_json(path, grade)
@@ -792,17 +791,17 @@ def test_normalizer_reads_ambiguity_from_its_actual_stage_and_preserves_missing(
 
 def test_run_selection_and_no_double_nesting(monkeypatch):
     monkeypatch.delenv("W8_RUN_NAME", raising=False)
-    assert resolve_run_name() == "run_1"
-    monkeypatch.setenv("W8_RUN_NAME", "run_2")
-    assert run_directory("recordings") == Path("recordings/run_2")
-    assert run_directory("recordings/run_3", "run_3") == Path("recordings/run_3")
-    assert resolve_run_name("run_3") == "run_3"
+    assert resolve_run_name() == "run1"
+    monkeypatch.setenv("W8_RUN_NAME", "run2")
+    assert run_directory("recordings") == Path("recordings/run2")
+    assert run_directory("recordings/run3", "run3") == Path("recordings/run3")
+    assert resolve_run_name("run3") == "run3"
     for value in ("", "..", "/tmp/other", "run/2", "a\\b"):
         with pytest.raises(ValueError):
             resolve_run_name(value)
 
 @pytest.mark.parametrize("name,existing,next_name", [
-    ("run_1", ("run_1", "run_2"), "run_3"),
+    ("run1", ("run1", "run2"), "run3"),
     ("pilot", ("pilot", "pilot_2"), "pilot_3"),
 ])
 def test_new_run_reservation_uses_next_sequence_without_overwriting(tmp_path, name, existing, next_name):

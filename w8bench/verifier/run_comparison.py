@@ -25,6 +25,7 @@ from .completion import grade_run
 from w8bench.settings import evaluation_settings, stage_settings, require_same_settings, completion_settings
 from w8bench.model_identity import ModelResponseRefusal
 from w8bench.usage import valid_token_component
+from w8bench.run_paths import run_directory
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPOSITORY_ROOT / "config"
@@ -211,32 +212,11 @@ def _attempt_history(stage):
 
 
 def _prepare_inputs(run, recording):
-    task = recording["task"]
-    output = run.parent.parent / "evaluations" / "profiles" / os.environ.get("NATIVE_JUDGE_PROFILE", "primary")
-    root = output / str(task.get("run_name") or recording["manifest"]["run_name"]) / task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"]
-    if root.exists():
-        receipt = read_object(root / "input_receipt.json")
-        if receipt["recording_sha256"] != recording["recording_sha256"] or receipt["source_files_sha256"] != recording["files"]:
-            raise ValueError("evaluation staging belongs to another recording")
-        for folder, hashes in receipt["projected_files_sha256"].items():
-            for name, digest in hashes.items():
-                path = root / folder / task["source_task_id"] / name
-                if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
-                    raise ValueError("staged evaluation input changed")
-    else:
-        if os.environ.get("NATIVE_JUDGE_PROFILE", "primary") == "pro":
-            original = run.parent.parent / "evaluations" / "profiles" / "primary" / str(task.get("run_name") or recording["manifest"]["run_name"]) / task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"]
-            if original.exists():
-                root.mkdir(parents=True)
-                for name in ("data-ss", "data-dom"):
-                    shutil.copytree(original / name, root / name)
-                shutil.copy2(original / "input_receipt.json", root / "input_receipt.json")
-            else:
-                prepare_recording(recording, output)
-        else:
-            prepare_recording(recording, output)
-    screenshot_task = root / "data-ss" / task["source_task_id"]
-    dom_task = root / "data-dom" / task["source_task_id"]
+    staged = run_directory(run, area="trajectories")
+    root = run_directory(run, area="evaluations") / os.environ.get("NATIVE_JUDGE_PROFILE", "primary")
+    prepare_recording(recording, staged)
+    screenshot_task = staged / "data-ss"
+    dom_task = staged / "data-dom"
     return root, screenshot_task, dom_task
 
 
@@ -278,7 +258,8 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
         "schema_version": "within-run-evaluation/v3", "recording_sha256": recording["recording_sha256"],
         "rubric_sha256": rubric_hash, "task_id": task["source_task_id"], "actor_arm": task["observation_mode"],
         "trial_id": str(task.get("run_name") or recording["manifest"]["run_name"]), "coverage": recording["coverage"],
-        "validity_date": read_object(root / "input_receipt.json")["validity_date"],
+        "validity_date": read_object(run_directory(recording["source"], area="trajectories") / "input_receipt.json")["validity_date"],
+        "input_receipt": str(run_directory(recording["source"], area="trajectories") / "input_receipt.json"),
         "verifier_packages": None, "runtime": _package_versions(), "stages": {}, "preflight": None}
     if evaluation["recording_sha256"] != recording["recording_sha256"] or evaluation["rubric_sha256"] != rubric_hash:
         raise ValueError("evaluation identity or frozen rubric changed")
@@ -294,16 +275,27 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
 
 
 def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluation, evaluation_file):
-    primary = root / "paired_completion.json"
+    primary = root.parent / "completion.json"
     previous = evaluation["stages"].get("paired_completion", {})
-    common = Path(os.environ["W8_JUDGE_COMPLETION_TARGET"]) if os.environ.get("W8_JUDGE_COMPLETION_TARGET") else run / "completion.json"
-    if common.exists() and read_object(common).get("method") != "ungraded" and (
-            not primary.exists() or read_object(primary).get("method") == "ungraded"):
-        write_json(primary, read_object(common))
-
+    siblings = []
+    shared = previous
+    for path in sorted(root.parent.glob("*/evaluation.json")):
+        if path == evaluation_file or path.parent.name not in NATIVE_JUDGE_PROFILES:
+            continue
+        other = read_object(path)
+        if any(other.get(key) != evaluation.get(key) for key in (
+                "recording_sha256", "rubric_sha256", "task_id", "actor_arm", "trial_id")):
+            raise ValueError("completion profiles belong to different inputs")
+        siblings.append((path, other))
+        candidate = other.get("stages", {}).get("paired_completion", {})
+        if candidate and (not shared or len(candidate.get("attempt_history", [])) > len(shared.get("attempt_history", []))):
+            shared = candidate
     grade = None
     if primary.exists():
-        if previous.get("result_sha256") and hashlib.sha256(primary.read_bytes()).hexdigest() != previous["result_sha256"]:
+        digest = hashlib.sha256(primary.read_bytes()).hexdigest()
+        references = [previous, *[other.get("stages", {}).get("paired_completion", {}) for _, other in siblings]]
+        if any(item.get("result_sha256") and item["result_sha256"] != digest for item in references) and not any(
+                item.get("result_sha256") == digest for item in references):
             raise ValueError("saved primary grade artifact changed")
         grade = read_object(primary)
         if grade["recording_sha256"] != recording["recording_sha256"] or grade["rubric_sha256"] != rubric_hash:
@@ -311,14 +303,26 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         current = completion_settings(recording, rubric_hash=rubric_hash, judge_model=args.judge_model,
             base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"), evidence_policy="paired")
         require_same_settings(grade.get("effective_settings"), current, label="saved completion")
-    history = list(previous.get("attempt_history", []))
+    history = list((grade or {}).get("attempt_history", shared.get("attempt_history", [])))
     if grade is None or grade["method"] == "ungraded":
-        history = _attempt_history(previous)
-        if len(history) > len(previous.get("attempt_history", [])) and primary.exists():
-            archived = root / "_attempts" / f"paired_completion_{len(history):04d}.json"
+        if not shared and grade is not None:
+            shared = {"status": grade["method"], "verdict": grade["verdict"],
+                "usage": grade.get("usage"), "calls": grade.get("judge_calls", 0),
+                "model_settings": grade.get("model_settings"), "attempt_history": history,
+                "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion"),
+                "usage_coverage": "complete" if grade.get("judge_calls", 0) == 0 or all(
+                    valid_token_component((grade.get("usage") or {}).get(component))
+                    for component in ("input_tokens", "output_tokens")) else "unknown"}
+        history = _attempt_history(shared)
+        if primary.exists() and shared.get("status") not in {"running", "failed", "interrupted"}:
+            archived = root.parent / "_attempts" / f"completion_{len(history):04d}.json"
             archived.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(primary, archived)
-            history[-1].update(result=str(archived))
+            if archived.exists():
+                if archived.read_bytes() != primary.read_bytes():
+                    raise ValueError("shared completion attempt artifact changed")
+            else:
+                shutil.copy2(primary, archived)
+            history[-1].update(result=str(archived), result_sha256=hashlib.sha256(archived.read_bytes()).hexdigest())
         evaluation["stages"]["paired_completion"] = {"status": "running", "usage_coverage": "unknown", "attempt_history": history,
             "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion")}
         write_json(evaluation_file, evaluation)
@@ -331,8 +335,9 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
                 error=f"{type(error).__name__}: {error}")
             write_json(evaluation_file, evaluation)
             raise
-        write_json(primary, grade)
-    evaluation["stages"]["paired_completion"] = {"status": grade["method"], "verdict": grade["verdict"],
+    grade["attempt_history"] = history
+    write_json(primary, grade)
+    stage = {"status": grade["method"], "verdict": grade["verdict"],
         "result": str(primary), "result_sha256": hashlib.sha256(primary.read_bytes()).hexdigest(),
         "usage": grade.get("usage"), "calls": grade.get("judge_calls", 0),
         "model_settings": grade.get("model_settings"), "transport": grade.get("transport", "normal"),
@@ -341,7 +346,18 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         "usage_coverage": "complete" if grade.get("judge_calls", 0) == 0 or all(
             valid_token_component((grade.get("usage") or {}).get(component))
             for component in ("input_tokens", "output_tokens")) else "unknown"}
+    evaluation["stages"]["paired_completion"] = stage
     write_json(evaluation_file, evaluation)
+    for path, other in siblings:
+        if "paired_completion" not in other.get("stages", {}):
+            continue
+        other["stages"]["paired_completion"] = stage.copy()
+        ready = grade["method"] != "ungraded" and all(other["stages"].get(name, {}).get("status") == "complete"
+            for name in ("screenshot_verifier", "dom_model"))
+        audit_status = other["stages"].get("audit", {}).get("status")
+        other["status"] = ("complete" if ready and audit_status == "complete" else
+            "awaiting_adjudication" if ready and audit_status == "awaiting_adjudication" else "incomplete")
+        write_json(path, other)
     return grade
 
 
@@ -427,9 +443,9 @@ def _verifier_history(stage, root, name):
         prior = history[-1]
         snapshots = {}
         for filename in ("result.json", "run_metrics.json", "run.log"):
-            original = root / name / filename
+            original = Path(stage["log"]) if filename == "run.log" and stage.get("log") else root / name / filename
             if original.is_file():
-                archived = root / name / "_attempts" / f"attempt_{len(history):04d}" / filename
+                archived = (original.parent if filename == "run.log" else root) / "_attempts" / name / f"attempt_{len(history):04d}" / filename
                 archived.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(original, archived)
                 snapshots[filename] = {"path": str(archived),
@@ -441,12 +457,13 @@ def _verifier_history(stage, root, name):
 
 def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, stage, run_commands, evaluation_file, evaluation):
     try:
-        _run_logged(run_commands[name], root / name / "run.log")
+        log_path = Path(stage["log"])
+        _run_logged(run_commands[name], log_path)
         metrics = normalizer(root / name / "result.json", input_task=screenshot_task if name == "screenshot_verifier" else dom_task,
-            rubric_file=rubric, generation_metrics=generation, run_log=root / name / "run.log")
+            rubric_file=rubric, generation_metrics=generation, run_log=log_path)
         native_result = read_object(root / name / "result.json")
         write_json(root / name / "run_metrics.json", metrics)
-        log = (root / name / "run.log").read_text()[stage["log_start_offset"]:]
+        log = log_path.read_text()[stage["log_start_offset"]:]
         fallback_patterns = {
             "zero_relevance": r"Failed relevance for DOM state|Failed to score screenshot \d+ after",
             "baseline_rescore": r"Failed to rescore (?:criterion \d+|rubric) after",
@@ -456,7 +473,8 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
         fallback_counts = {kind: len(re.findall(pattern, log, flags=re.I)) for kind, pattern in fallback_patterns.items()}
         stage.update(status="ungraded" if metrics.get("status") == "ungraded" or metrics.get("result", {}).get("status") == "ungraded" else "complete",
             artifacts_sha256={filename: hashlib.sha256((root / name / filename).read_bytes()).hexdigest()
-                for filename in ("result.json", "run_metrics.json", "run.log")},
+                for filename in ("result.json", "run_metrics.json")},
+            log_sha256=hashlib.sha256(log_path.read_bytes()).hexdigest(),
             usage=metrics.get("token_usage"), calls=metrics.get("llm_calls"),
             signals=metrics["result"], criteria=metrics["criteria"], penalty_criteria=metrics.get("penalty_criteria", []),
             evidence_diagnostics=metrics.get("dom_model_evidence_audit"),
@@ -478,7 +496,7 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
     write_json(evaluation_file, evaluation)
 
 
-def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task):
+def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task, log_root):
     stage = evaluation["stages"].get(name, {})
     current_settings = stage_settings(evaluation.get("effective_settings"), name)
     if stage.get("status") == "complete":
@@ -513,7 +531,8 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
         "effective_settings": current_settings,
         "result": str(root / name / "result.json"), "usage": None, "usage_coverage": "unknown",
         "attempt_history": history, "preflight": format_preflight,
-        "log_start_offset": len((root / name / "run.log").read_text()) if (root / name / "run.log").is_file() else 0}
+        "log": str(log_root / name / "run.log"),
+        "log_start_offset": len((log_root / name / "run.log").read_text()) if (log_root / name / "run.log").is_file() else 0}
     evaluation["stages"][name] = stage
     write_json(evaluation_file, evaluation)
     _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, stage, run_commands, evaluation_file, evaluation)
@@ -625,7 +644,7 @@ def _evaluate_recording(args, run, recording):
                 evaluation.get("stages", {}).get(name, {}).get("status") in {"ungraded", "failed", "blocked", "not_available"}
                 for name in ("screenshot_verifier", "dom_model")):
             return 1
-        primary = root / "paired_completion.json"
+        primary = root.parent / "completion.json"
         inventory = audit.get("inventory") or {}
         checkpoint = root / "audit_inventory.json"
         if (not primary.is_file() or read_object(primary).get("method") not in {"model_judge", "exact_final_answer"}
@@ -641,7 +660,8 @@ def _evaluate_recording(args, run, recording):
     evaluation["audit_configuration_error"] = audit_configuration_error
     run_commands, auxiliary_control_error = _prepare_verifiers(args, root, rubric, generation, frozen, screenshot_task, dom_task, evaluation, evaluation_file, require_local_packages, validate_generation_metrics, validate_pair, validate_endpoint_configs)
     for name, normalizer in (("screenshot_verifier", normalize_screenshot), ("dom_model", normalize_dom_model)):
-        _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task)
+        _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task,
+            run_directory(run, area="logs") / os.environ.get("NATIVE_JUDGE_PROFILE", "primary"))
     _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit, phase=phase)
     stage_ready = grade is not None and grade["method"] != "ungraded" and all(
         evaluation["stages"][name].get("status") == "complete" for name in ("screenshot_verifier", "dom_model"))
@@ -686,20 +706,17 @@ def main(argv: list[str] | None = None) -> int:
                         "evidence_policy": args.judge_evidence_policy, "stage": args.stage,
                         "model_calls": 0, "writes_performed": False}))
                     continue
-                common = (run.parent.parent / "evaluations" / "common" /
-                    str(recording["task"].get("run_name") or recording["manifest"]["run_name"]) /
-                    recording["task"]["observation_mode"] / recording["task"]["source_task_id"] /
-                    recording["recording_sha256"] / ("completion_actor_native.json" if args.judge_evidence_policy == "actor_native" else "completion.json"))
+                common = run_directory(run, area="evaluations") / (
+                    "completion_actor_native.json" if args.judge_evidence_policy == "actor_native" else "completion.json")
                 os.environ["W8_JUDGE_COMPLETION_TARGET"] = str(common)
                 if args.judge_evidence_policy == "actor_native":
-                    os.environ.pop("W8_JUDGE_COMPLETION_TARGET", None)
                     asyncio.run(grade_run(run, selected.rubric, judge_model=args.judge_model,
                         api_key=os.environ.get("GEMINI_API_KEY", ""), base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
                         execute=True, evidence_policy="actor_native"))
                 else:
                     failed = bool(_evaluate_recording(selected, run, recording)) or failed
         if args.compare_profiles and args.execute:
-            report = compare_profiles(runs, runs[0].parent.parent / "evaluations" / "profile_comparison.json")
+            report = compare_profiles(runs, run_directory(runs[0], area="evaluations").parent.parent / "profile_comparison.json")
             print(json.dumps({"profile_comparison": report["output"]}))
         return 1 if failed else 0
     finally:

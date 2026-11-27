@@ -7,6 +7,7 @@ import pytest
 
 from tests.conftest import actor_preflight_response
 from w8bench.task_recorder import runner
+from w8bench.run_paths import run_directory
 from w8bench.task_recorder.recorder_support import RunnerError, write_json, append_json_line, write_json_lines
 
 
@@ -28,10 +29,11 @@ def test_actor_retries_transient_http_only(monkeypatch, tmp_path, code):
     monkeypatch.setattr(runner.urllib.request, 'urlopen', request)
     assert client._post({'contents': []})['model'] == 'gemini-3.8-flash'
     assert calls == [180, 180, 180]
-    rows = [json.loads(x) for x in (tmp_path / 'transport_attempts.jsonl').read_text().splitlines()]
+    rows = json.loads((tmp_path / 'metadata.json').read_text())['transport_attempts']
     assert len(rows) == 3 and rows[0]['usage'] is None
     assert rows[0]['status_code'] == code and rows[-1]['status'] == 'response_received'
     assert len(sleeps) == 2 and 2 <= sleeps[0] <= 2.5 and 8 <= sleeps[1] <= 8.5
+    assert {path.name for path in tmp_path.iterdir()} == {'metadata.json'}
 
 
 @pytest.mark.parametrize('code,body', [(401,'auth'), (403,'forbidden'), (400,'bad request'), (429,'insufficient_quota'), (429,'credit_balance_exhausted'), (503,'billing disabled')])
@@ -48,7 +50,7 @@ def test_actor_does_not_retry_permanent_provider_errors(monkeypatch, tmp_path, c
     monkeypatch.setattr(runner.urllib.request, 'urlopen', request)
     with pytest.raises(RunnerError):client._post({'contents': []})
     assert len(calls) == 1
-    assert 'credential-for-redaction' not in (tmp_path / 'transport_attempts.jsonl').read_text()
+    assert 'credential-for-redaction' not in (tmp_path / 'metadata.json').read_text()
 
 
 def test_actor_exhausted_transport_has_unknown_usage(monkeypatch, tmp_path):
@@ -63,7 +65,7 @@ def test_actor_exhausted_transport_has_unknown_usage(monkeypatch, tmp_path):
     monkeypatch.setattr(runner.urllib.request,'urlopen',request)
     with pytest.raises(RunnerError) as error:client._post({'contents':[]})
     assert error.value.technical_failure_class == 'actor_transport_exhausted'
-    rows=[json.loads(x) for x in (tmp_path/'transport_attempts.jsonl').read_text().splitlines()]
+    rows=json.loads((tmp_path/'metadata.json').read_text())['transport_attempts']
     assert len(rows)==3 and all(x['usage'] is None for x in rows)
     assert not client.last_input_report.get('model_response_received')
 
@@ -85,11 +87,12 @@ def test_failure_health_and_interruption_receipts_are_redacted(monkeypatch, tmp_
     monkeypatch.setenv('GEMINI_API_KEY','secret-health-marker')
     monkeypatch.setattr(runner,'subprocess',SimpleNamespace(run=lambda *a, **k:SimpleNamespace(returncode=0,stdout='secret-health-marker',stderr='')),raising=False)
     monkeypatch.setattr(runner,'generate_trajectory_artifacts',lambda _: {'status':'complete'})
+    source = tmp_path/'recordings'/'run1'/'dom'/'fixture'
     manifest={'steps':[],'states':[],'model_turns':0,'browser_profile_provenance':{'container_id':'a'*64}}
-    runner.finalize_recording_artifacts(tmp_path,manifest,{'status':'failure','run_status':'interrupted'})
-    assert 'secret-health-marker' not in (tmp_path/'failure_health.json').read_text()
-    assert '[redacted]' in (tmp_path/'failure_health.json').read_text()
-    assert json.loads((tmp_path/'interruption.json').read_text())['model_turns']==0
+    runner.finalize_recording_artifacts(source,manifest,{'status':'failure','run_status':'interrupted'})
+    assert 'secret-health-marker' not in (run_directory(source, area='logs')/'failure_health.json').read_text()
+    assert '[redacted]' in (run_directory(source, area='logs')/'failure_health.json').read_text()
+    assert json.loads((run_directory(source, area='logs')/'interruption.json').read_text())['model_turns']==0
 
 
 @pytest.mark.asyncio
@@ -112,6 +115,10 @@ async def test_no_response_is_not_a_model_turn(actor_request_args, monkeypatch):
         await runner._model_turn(args,{'instruction':'inspect'},client,actor_request_args['bundle'],runner.ActorState(),manifest,root,directory,1,'dom',(1365,768),runner.CDPClient('http://offline.test'))
     assert manifest['model_turns']==0 and manifest['actor_transport_attempts']==3
     assert not (root/'decisions.jsonl').exists()
+    assert {path.name for path in directory.iterdir()} == {'request.json', 'metadata.json'}
+    metadata = json.loads((directory/'metadata.json').read_text())
+    assert metadata['failure']['response_received'] is False
+    assert len(metadata['transport_attempts']) == 3
 
 
 def test_each_modality_schema_is_validated_and_comparable(run_pair):
@@ -162,10 +169,10 @@ def test_failure_health_is_recorded_before_browser_cleanup(run_pair, tmp_path, m
     from types import SimpleNamespace
     import asyncio
     seen=[]
-    output=tmp_path/'timing'
+    output=tmp_path/'recordings'/'run1'/'screenshot'
     class Client:
         async def __aenter__(self):return self
-        async def __aexit__(self,*args):seen.append((output/'fixture'/'failure_health.json').exists())
+        async def __aexit__(self,*args):seen.append((run_directory(output/'fixture', area='logs')/'failure_health.json').exists())
     monkeypatch.setattr(runner,'CDPClient',lambda *a,**k:Client())
     async def failed(*args):raise RunnerError('fixture capture failure')
     monkeypatch.setattr(runner,'_initial_capture',failed)
@@ -188,7 +195,7 @@ async def test_cancelled_transport_retains_pending_attempt_without_retry(actor_r
     monkeypatch.setattr(runner.urllib.request,'urlopen',request)
     monkeypatch.setattr(runner.asyncio,'to_thread',inline)
     with pytest.raises(runner.asyncio.CancelledError):await client.decide(**actor_request_args)
-    pending=json.loads((actor_request_args['turn_dir']/'transport_pending.json').read_text())
+    pending=json.loads((actor_request_args['turn_dir']/'metadata.json').read_text())['pending_transport']
     assert pending['attempt']==1 and pending['status']=='started' and pending['usage'] is None
     assert calls==[1] and client.transport_cancelled and client.last_response is None
 

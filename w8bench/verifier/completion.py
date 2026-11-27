@@ -183,7 +183,8 @@ async def grade_run(run: Path, rubric_path: Path, *, judge_model: str = "", api_
     rubric, grade = _grade_identity(recording, rubric_path, judge_model, evidence_policy)
     current_settings = completion_settings(recording, rubric_hash=grade["rubric_sha256"],
         judge_model=judge_model, base_url=base_url, evidence_policy=evidence_policy)
-    target = Path(os.environ["W8_JUDGE_COMPLETION_TARGET"]) if os.environ.get("W8_JUDGE_COMPLETION_TARGET") else run / (
+    from w8bench.run_paths import run_directory
+    target = Path(os.environ["W8_JUDGE_COMPLETION_TARGET"]) if os.environ.get("W8_JUDGE_COMPLETION_TARGET") else run_directory(run, area="evaluations") / (
         "completion.json" if evidence_policy == "paired" else "completion_actor_native.json")
     if target.is_file():
         previous = read_object(target)

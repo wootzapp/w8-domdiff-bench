@@ -77,7 +77,7 @@ def _index_pairs(pairs, pass_k):
     by_task: dict[str, list[dict[str, Any]]] = defaultdict(list)
     identities = set()
     for pair in pairs:
-        identity = (pair.get("trial_id", "run_1"), pair["task_id"])
+        identity = (pair.get("trial_id", "run1"), pair["task_id"])
         if identity in identities:
             raise ValueError(f"duplicate trial/task attempt: {identity}")
         identities.add(identity)

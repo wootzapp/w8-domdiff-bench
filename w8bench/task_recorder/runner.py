@@ -302,6 +302,7 @@ class ModelClient:
         self.last_response: dict[str, Any] | None = None
         self.transport_cancelled = False
         self.model_input_limit: int | None = None
+        self.turn_metadata: dict[str, Any] = {}
 
     @staticmethod
     def _gemini_usage(usage: Any) -> dict[str, Any]:
@@ -351,6 +352,7 @@ class ModelClient:
             data=json.dumps(native_payload).encode(), method="POST", headers=headers)
         actor = self.last_input_report.get("api_call_started") is True
         if actor:
+            self.turn_metadata = {"transport_attempts": []}
             if self.transport_cancelled:
                 raise asyncio.CancelledError()
             # Byte-based text estimation is conservative and excludes encoded image data.
@@ -374,8 +376,9 @@ class ModelClient:
                 "transport_attempts": []}
             preflight_started = time.monotonic()
             self.last_input_report["input_preflight"] = dict(preflight)
+            self.turn_metadata["input_preflight"] = preflight
             if getattr(self, "turn_dir", None) is not None:
-                write_json(self.turn_dir / "input_preflight.json", preflight)
+                write_json(self.turn_dir / "metadata.json", self.turn_metadata)
             try:
                 for stage in ("metadata", "count"):
                     if self.transport_cancelled:
@@ -475,7 +478,7 @@ class ModelClient:
                 if not self.transport_cancelled:
                     self.last_input_report["input_preflight"] = dict(preflight)
                     if getattr(self, "turn_dir", None) is not None:
-                        write_json(self.turn_dir / "input_preflight.json", preflight)
+                        write_json(self.turn_dir / "metadata.json", self.turn_metadata)
         attempts = 3 if actor else 1
         for number in range(1, attempts + 1):
             if actor and self.transport_cancelled:
@@ -484,8 +487,9 @@ class ModelClient:
             receipt = {"attempt": number, "started_at": utc_now(), "status_code": None,
                 "usage": None, "finish_reason": None, "response_received": False, "parser_stage": "transport"}
             if actor and getattr(self, "turn_dir", None) is not None:
-                write_json(self.turn_dir / "transport_pending.json", {"attempt": number, "status": "started",
-                    "started_at": receipt["started_at"], "usage": None, "response_received": False})
+                self.turn_metadata["pending_transport"] = {"attempt": number, "status": "started",
+                    "started_at": receipt["started_at"], "usage": None, "response_received": False}
+                write_json(self.turn_dir / "metadata.json", self.turn_metadata)
             raw = ""
             failure = None
             retryable = False
@@ -496,7 +500,7 @@ class ModelClient:
                     preflight["generation_attempted"] = True
                     self.last_input_report["input_preflight"] = dict(preflight)
                     if getattr(self, "turn_dir", None) is not None:
-                        write_json(self.turn_dir / "input_preflight.json", preflight)
+                        write_json(self.turn_dir / "metadata.json", self.turn_metadata)
                 with urllib.request.urlopen(request, timeout=180) as response:
                     receipt["status_code"] = getattr(response, "status", 200)
                     raw = response.read().decode("utf-8", errors="backslashreplace")
@@ -554,8 +558,9 @@ class ModelClient:
             receipt.update(duration_seconds=round(time.monotonic() - started, 6),
                 retryable=retryable, will_retry=retry, backoff_seconds=delay)
             if actor and getattr(self, "turn_dir", None) is not None and not self.transport_cancelled:
-                append_json_line(self.turn_dir / "transport_attempts.jsonl", receipt)
-                write_json(self.turn_dir / "transport_pending.json", {"attempt": number, "status": "finished"})
+                self.turn_metadata["transport_attempts"].append(receipt)
+                self.turn_metadata["pending_transport"] = {"attempt": number, "status": "finished"}
+                write_json(self.turn_dir / "metadata.json", self.turn_metadata)
             if failure is None:
                 return result
             if retry:
@@ -646,6 +651,7 @@ class ModelClient:
                      ) -> tuple[dict[str, Any], dict[str, Any]]:
         self.last_response = None
         self.last_input_report = {}
+        self.turn_metadata = {}
         configured_model = os.environ.get("ACTOR_MODEL", "").strip()
         if configured_model != "gemini-3.8-flash" or self.model != configured_model:
             raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
@@ -676,10 +682,12 @@ class ModelClient:
                 if pending is not None and pending.get("status") == "started":
                     cancelled = {**pending, "status": "cancelled", "ended_at": utc_now()}
                     self.last_input_report["input_preflight"] = cancelled
-                    write_json(turn_dir / "input_preflight.json", cancelled)
-            write_json(turn_dir / "failure.json", {"parser_stage": "input_preflight" if self.last_input_report.get("input_preflight", {}).get("status") in {"error", "input_limit", "cancelled"} else "transport_or_provider_json",
+                    self.turn_metadata["input_preflight"] = cancelled
+                    write_json(turn_dir / "metadata.json", self.turn_metadata)
+            self.turn_metadata["failure"] = {"parser_stage": "input_preflight" if self.last_input_report.get("input_preflight", {}).get("status") in {"error", "input_limit", "cancelled"} else "transport_or_provider_json",
                 "error_type": type(error).__name__, "error": str(error).replace(self.api_key, "[redacted]"),
-                "usage": None, "response_received": self.last_input_report.get("model_response_received", False)})
+                "usage": None, "response_received": self.last_input_report.get("model_response_received", False)}
+            write_json(turn_dir / "metadata.json", self.turn_metadata)
             raise
         response = json.loads(json.dumps(response).replace(self.api_key, "[redacted]"))
         self.last_response = response
@@ -687,10 +695,11 @@ class ModelClient:
         try:
             return self._validated_action(response), response
         except BaseException as error:
-            write_json(turn_dir / "failure.json", {"parser_stage": "actor_action", "error_type": type(error).__name__,
+            self.turn_metadata["failure"] = {"parser_stage": "actor_action", "error_type": type(error).__name__,
                 "error": str(error).replace(self.api_key, "[redacted]"), "raw_response": response,
                 "finish_reason": (response.get("provider_response", {}).get("candidates") or [{}])[0].get("finishReason"),
-                "usage": response.get("usage"), "incomplete_details": response.get("incomplete_details")})
+                "usage": response.get("usage"), "incomplete_details": response.get("incomplete_details")}
+            write_json(turn_dir / "metadata.json", self.turn_metadata)
             raise
 
 
@@ -845,16 +854,18 @@ def state_manifest_record(state_number: int, bundle: CaptureBundle, run_dir: Pat
 def finalize_recording_artifacts(run_dir: Path, manifest: dict[str, Any], final: dict[str, Any],
                                  *, manifest_status: str | None = None,
                                  error: str | None = None, health_only: bool = False) -> tuple[dict[str, Any], dict[str, Any]]:
+    from w8bench.run_paths import run_directory
+    diagnostics = run_directory(run_dir, area="logs")
     final = {**final, "recorded_steps": len(manifest["steps"]),
         "model_turns": manifest["model_turns"], "completion_grade": "ungraded"}
     if not health_only:
         manifest.update(status=manifest_status or final["run_status"], completed_at=utc_now(), final=final)
     if error:
         manifest["error"] = error
-    if final.get("run_status") == "interrupted" and not (run_dir / "interruption.json").exists():
-        write_json(run_dir / "interruption.json", {"recorded_at": utc_now(), "model_turns": manifest["model_turns"],
+    if final.get("run_status") == "interrupted" and not (diagnostics / "interruption.json").exists():
+        write_json(diagnostics / "interruption.json", {"recorded_at": utc_now(), "model_turns": manifest["model_turns"],
             "recorded_steps": len(manifest["steps"]), "status": "interrupted"})
-    if (health_only or final.get("run_status") in {"technical_failure", "interrupted"}) and not (run_dir / "failure_health.json").exists():
+    if (health_only or final.get("run_status") in {"technical_failure", "interrupted"}) and not (diagnostics / "failure_health.json").exists():
         health = {"recorded_at": utc_now(), "technical_failure_class": final.get("technical_failure_class"),
             "container_id": manifest.get("browser_profile_provenance", {}).get("container_id"), "checks": {}}
         container = health["container_id"]
@@ -888,7 +899,7 @@ def finalize_recording_artifacts(run_dir: Path, manifest: dict[str, Any], final:
                     health["checks"][name] = {"status": "unavailable", "error_type": type(probe_error).__name__}
         else:
             health["status"] = "container_identity_unavailable"
-        write_json(run_dir / "failure_health.json", health)
+        write_json(diagnostics / "failure_health.json", health)
     if health_only:
         return final, {}
     # Commit the final manifest before exporting; the exporter reads its states.
@@ -1027,14 +1038,18 @@ def _finish_model_turn(
     args, model, row, manifest, run_dir, turn_dir, turn, started,
 ):
     transports = []
-    for receipt_path in sorted((run_dir / "turns").glob("*/transport_attempts.jsonl")):
-        transports.extend(json.loads(line) for line in receipt_path.read_text().splitlines() if line)
-    pending = [json.loads(path.read_text()) for path in (run_dir / "turns").glob("*/transport_pending.json")]
+    pending = []
+    for metadata_path in sorted((run_dir / "turns").glob("*/metadata.json")):
+        metadata = json.loads(metadata_path.read_text())
+        transports.extend(metadata.get("transport_attempts", []))
+        pending.append(metadata.get("pending_transport", {}))
     in_flight = sum(item.get("status") == "started" for item in pending)
     manifest["actor_transport_attempts"] = len(transports) + in_flight
     manifest["failed_actor_transport_attempts"] = sum(item.get("response_received") is not True for item in transports) + in_flight
-    if (turn_dir / "transport_attempts.jsonl").exists():
-        row["transport_attempts"] = str((turn_dir / "transport_attempts.jsonl").relative_to(run_dir))
+    metadata_path = turn_dir / "metadata.json"
+    if not metadata_path.exists():
+        write_json(metadata_path, getattr(model, "turn_metadata", {}))
+    row["metadata"] = str(metadata_path.relative_to(run_dir))
     row["latency_seconds"] = round(time.monotonic() - started, 6)
     row["model_input"] = model.last_input_report
     if model.last_input_report.get("input_preflight") is not None:
@@ -1062,7 +1077,6 @@ def _finish_model_turn(
     if (turn_dir / "response.json").exists():
         row["response"] = str((turn_dir / "response.json").relative_to(run_dir))
     if model.last_response is not None or model.last_input_report.get("model_response_received"):
-        write_json(turn_dir / "result.json", row)
         append_json_line(run_dir / "decisions.jsonl", row)
     else:
         manifest["model_turns"] = turn - 1
@@ -1402,7 +1416,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("AGENT_BROWSER_TIMEOUT", "90"),
     )
     parser.add_argument("--output-dir")
-    parser.add_argument("--run-name", help="Run name; otherwise W8_RUN_NAME or the next free run_N")
+    parser.add_argument("--run-name", help="Run name; otherwise W8_RUN_NAME or the next free runN")
     parser.add_argument("--max-turns", "--max-steps", dest="max_steps", type=int, default=200,
         help="positive actor turn budget, at most 200")
     parser.add_argument("--settle-seconds", type=finite_nonnegative_float, default=os.environ.get("STEP_SETTLE_SECONDS", "1.0"))

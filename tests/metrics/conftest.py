@@ -4,6 +4,7 @@ import json
 import hashlib
 import os
 from pathlib import Path
+from w8bench.run_paths import run_directory
 
 import pytest
 
@@ -20,7 +21,7 @@ def metric_recording_factory(tmp_path):
     def make(*, arm="dom", usage=None, task_id="custom", trial="trial_0001"):
         nonlocal counter
         counter += 1
-        source = tmp_path / f"source_{counter}" / trial / arm / task_id
+        source = tmp_path / f"source_{counter}" / "recordings" / trial / arm / task_id
         source.mkdir(parents=True)
         return {
             "source": str(source),
@@ -47,8 +48,7 @@ def metric_evaluation_factory():
     def make(recording, *, stages=None, grade_usage=None):
         source = Path(recording["source"])
         task = recording["task"]
-        root = (source.parent.parent / "evaluations" / "profiles" / "primary" / task["run_name"] /
-                task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"])
+        root = run_directory(source, area="evaluations") / "primary"
         root.mkdir(parents=True, exist_ok=True)
         evaluation = {
             "recording_sha256": recording["recording_sha256"],
@@ -58,7 +58,7 @@ def metric_evaluation_factory():
         }
         _write_json(root / "evaluation.json", evaluation)
         if grade_usage is not None:
-            _write_json(root / "paired_completion.json", {
+            _write_json(root.parent / "completion.json", {
                 "recording_sha256": recording["recording_sha256"],
                 "task_id": task["source_task_id"], "observation_mode": task["observation_mode"],
                 "rubric_sha256": "frozen-rubric", "evidence_policy": "paired",
@@ -66,7 +66,7 @@ def metric_evaluation_factory():
                 "judge_model": "gemini-3.6-flash", "returned_judge_model": "gemini-3.6-flash",
                 "judge_calls": 1, "usage": grade_usage,
             })
-            evaluation["stages"].setdefault("paired_completion", {})["result"] = str(root / "paired_completion.json")
+            evaluation["stages"].setdefault("paired_completion", {})["result"] = str(root.parent / "completion.json")
             _write_json(root / "evaluation.json", evaluation)
         return root, evaluation
 

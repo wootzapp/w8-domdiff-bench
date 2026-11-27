@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from w8bench.run_paths import run_directory
 import subprocess
 import sys
 
@@ -47,8 +48,7 @@ if args.stage == "adjudicate":
             continue
         ready = False
         for profile in (("primary", "pro") if args.compare_profiles else ("primary",)):
-            root = (source.parent.parent / "evaluations" / "profiles" / profile / row["run_name"] /
-                row["arm"] / row["task_id"] / checked["recording_sha256"])
+            root = run_directory(source, area="evaluations") / profile
             receipt = root / "evaluation.json"
             if not receipt.is_file():
                 parser.error(f"evaluate {source} with profile {profile} before adjudication")

@@ -18,6 +18,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
 
+from w8bench.run_paths import run_directory
+
 from .agent_browser import (
     AgentBrowserBaseError,
     AgentBrowserClient,
@@ -345,7 +347,7 @@ async def capture_after_action_bundle(
                 preserved = directory.with_name(f"{directory.name}_capture_attempt_{number:02d}")
             if directory.exists():
                 directory.rename(preserved)
-            append_json_line(directory.parent.parent / "capture_failures.jsonl", {
+            append_json_line(run_directory(directory.parent.parent, area="logs") / "capture_failures.jsonl", {
                 "directory": str(directory.relative_to(directory.parent.parent)), "attempt": attempt,
                 "preserved_capture": str(preserved.relative_to(directory.parent.parent)),
                 "recorded_at": utc_now(), "error": f"{type(error).__name__}: {error}",
@@ -818,7 +820,7 @@ async def synchronize_recorder_target(
                 cdp.target_registry[selected["targetId"]]["tab_id"] = active_page.tab_id
                 cdp.connection_report["target_registry"] = list(cdp.target_registry.values())
                 if cdp.recording_dir is not None:
-                    write_json(cdp.recording_dir / "target_registry.json", {"recorded_at": utc_now(),
+                    write_json(run_directory(cdp.recording_dir, area="logs") / "target_registry.json", {"recorded_at": utc_now(),
                         "targets": cdp.connection_report["target_registry"]})
                 report["agent_browser_tab_id"] = active_page.tab_id
             return report
@@ -1213,7 +1215,7 @@ class CDPClient:
             registry = list(self.target_registry.values())
             self.connection_report["target_registry"] = registry
             if self.recording_dir is not None:
-                write_json(self.recording_dir / "target_registry.json", {"recorded_at": utc_now(), "targets": registry})
+                write_json(run_directory(self.recording_dir, area="logs") / "target_registry.json", {"recorded_at": utc_now(), "targets": registry})
             return {"target_registry": registry}
         selected = self._select_active_target(active_page, pages)
         selected_id = str(selected["targetId"])
@@ -1222,7 +1224,7 @@ class CDPClient:
         self.target_registry[selected_id]["tab_id"] = active_page.tab_id
         self.connection_report["target_registry"] = list(self.target_registry.values())
         if self.recording_dir is not None:
-            write_json(self.recording_dir / "target_registry.json", {
+            write_json(run_directory(self.recording_dir, area="logs") / "target_registry.json", {
                 "recorded_at": utc_now(), "targets": self.connection_report["target_registry"]})
         old_target_id = str(self.target.get("targetId", ""))
         new_target_id = str(selected.get("targetId", ""))
@@ -1320,7 +1322,7 @@ class CDPClient:
             report.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
             self.connection_report.setdefault("observation_recovery", []).append(report)
             if self.recording_dir is not None:
-                append_json_line(self.recording_dir / "observation_recovery.jsonl", report)
+                append_json_line(run_directory(self.recording_dir, area="logs") / "observation_recovery.jsonl", report)
 
     async def close(self) -> None:
         """Cancel the reader and close both CDP transport resources idempotently."""
@@ -1379,7 +1381,7 @@ class CDPClient:
                     if method == "Target.targetDestroyed":
                         self.target_registry.pop(target_id, None)
                     if self.recording_dir is not None:
-                        append_json_line(self.recording_dir / "browser_events.jsonl", event)
+                        append_json_line(run_directory(self.recording_dir, area="logs") / "browser_events.jsonl", event)
                     relevant = target_id == str(self.target.get("targetId", "")) and (not event_session or event_session == self.session_id)
                     detached = method in {"Target.detachedFromTarget", "Inspector.detached"}
                     event_failure = None
@@ -1470,7 +1472,7 @@ class CDPClient:
                 self.pending.pop(message_id, None)
             receipt.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
             if self.recording_dir is not None:
-                append_json_line(self.recording_dir / "cdp_calls.jsonl", receipt)
+                append_json_line(run_directory(self.recording_dir, area="logs") / "cdp_calls.jsonl", receipt)
 
 
 def rewrite_ws_url(value: str, http_url: str) -> str:

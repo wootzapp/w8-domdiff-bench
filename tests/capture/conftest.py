@@ -93,7 +93,7 @@ def recording_factory(tmp_path, monkeypatch, no_network):
             return {"model": "gemini-3.8-flash", "output_text": json.dumps(queue.pop(0)),
                 "usage": {"input_tokens": 20, "output_tokens": 10}}
         monkeypatch.setattr(runner.ModelClient, "_post", post)
-        output = tmp_path / "recordings" / name
+        output = tmp_path / "recordings" / name / mode
         args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
             "--task", "Inspect the example page.", "--task-id", name, "--source-task-id", "task1",
             "--start-url", "https://example.test/", "--output-dir", str(output), "--run-name", name,

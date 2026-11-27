@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
+from w8bench.run_paths import run_directory
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -153,7 +155,7 @@ class AgentBrowserClient:
         finally:
             receipt.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
             if self.recording_dir is not None:
-                append_json_line(self.recording_dir / "agent_browser_calls.jsonl", receipt)
+                append_json_line(run_directory(self.recording_dir, area="logs") / "agent_browser_calls.jsonl", receipt)
 
     @staticmethod
     def _command_output(arguments: list[str], completed: Any, json_output: bool) -> dict[str, Any] | list[dict[str, Any]] | str:
@@ -439,7 +441,7 @@ class AgentBrowserClient:
                 if getattr(cdp, "recording_dir", None) is not None:
                     from ..recorder_support import append_json_line
                     for receipt in receipts:
-                        append_json_line(cdp.recording_dir / "target_identity.jsonl", receipt)
+                        append_json_line(run_directory(cdp.recording_dir, area="logs") / "target_identity.jsonl", receipt)
             # Reject a tab switch during the identity read, even if URLs match.
             repeated = await self._invoke(arguments)
             repeated_tabs = repeated.get("data", {}).get("tabs", []) if isinstance(repeated, dict) else []

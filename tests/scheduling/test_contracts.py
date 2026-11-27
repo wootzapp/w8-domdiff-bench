@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+from w8bench.run_paths import run_directory
 import shutil
 from types import SimpleNamespace
 
@@ -316,7 +317,8 @@ def test_launcher_refuses_expired_before_scheduling_and_allows_explicit_override
     assert task_cli.main(args + ["--allow-expired"]) == 0
     if batch:
         preview = output / "expiry" / "schedule_preview.jsonl"
-        rows = [json.loads(line) for line in preview.read_text().splitlines()]
+        previews = [preview, preview.parent.with_name("expiry_2") / preview.name]
+        rows = [json.loads(line) for path in previews for line in path.read_text().splitlines()]
         assert len(rows) == 4 and all(item["planning_only"] for item in rows)
         assert all(item["task"]["valid_until"] == "2000-12-31" for item in rows)
         assert all(item["configuration"]["allow_expired"] is True for item in rows)
@@ -369,7 +371,9 @@ def test_pre_rubric_planning_is_separate_and_cannot_resume_as_execution(tmp_path
     assert task_cli.main(args + ["--dry-run"]) == 0
     root = tmp_path / "recordings" / "plan"
     rows = [json.loads(line) for line in (root / "schedule_preview.jsonl").read_text().splitlines()]
-    assert len(rows) == 4 and all(row["planning_only"] and row["rubric"] is None for row in rows)
+    assert len(rows) == 2 and all(row["planning_only"] and row["rubric"] is None for row in rows)
+    second = root.with_name("plan_2") / "schedule_preview.jsonl"
+    assert len(second.read_text().splitlines()) == 2
     assert not (root / "ledger.jsonl").exists()
     with pytest.raises(RunnerError, match="execution requires --rubric-dir"):
         task_cli.main((args) + ["--resume"])
@@ -639,7 +643,8 @@ def test_schedule_binds_one_frozen_task_rubric_across_arms_and_trials(tmp_path, 
     assert task_cli.main(args) == 0
     ledger = output / "frozen" / "ledger.jsonl"
     original = ledger.read_bytes()
-    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    ledgers = [output / name / "ledger.jsonl" for name in ("frozen", "frozen_2", "frozen_3")]
+    rows = [json.loads(line) for path in ledgers for line in path.read_text().splitlines()]
     assert len(rows) == 12 and len({row["recording"] for row in rows}) == 12
     for name in ("alpha", "beta"):
         selected = [row for row in rows if row["task_id"] == name]

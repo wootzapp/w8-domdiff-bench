@@ -310,11 +310,11 @@ def run_pair(tmp_path, monkeypatch, no_network):
                 "usage": {"input_tokens": 20, "output_tokens": 10,
                     "input_tokens_details": {"cached_tokens": 5}, "output_tokens_details": {"reasoning_tokens": 3}}}
         monkeypatch.setattr(runner.ModelClient, "_post", post)
-        root = tmp_path / mode
+        root = tmp_path / "recordings" / "run1" / mode
         args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"),
             "--observation-mode", mode, "--task", "Report done.", "--task-id", "task_01",
             "--source-task-id", "task_01", "--start-url", "https://example.test",
-            "--output-dir", str(root), "--model", "gemini-3.8-flash", "--api-key", "offline-placeholder",
+            "--output-dir", str(root), "--run-name", "run1", "--model", "gemini-3.8-flash", "--api-key", "offline-placeholder",
             "--max-turns", "6", "--settle-seconds", "0"])
         assert asyncio.run(runner.run(args)) == 0
         paths[mode] = root / "task_01"
@@ -396,7 +396,9 @@ def full_evaluation(run_pair, tmp_path, monkeypatch):
             "call_metrics": {"judge": {"logical_calls": 1, "api_attempts": 1}}}
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text("Mock verifier complete\n")
-        (log_path.parent / "result.json").write_text(json.dumps(result))
+        output = Path(command[command.index("--output") + 1])
+        output.mkdir(parents=True, exist_ok=True)
+        (output / "result.json").write_text(json.dumps(result))
     monkeypatch.setattr(comparison, "_run_logged", score)
     original_audit = evidence_audit.run_evidence_audit
     def audit(**kwargs):

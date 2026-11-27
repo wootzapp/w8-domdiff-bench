@@ -393,8 +393,22 @@ def test_conversion_preserves_every_state_and_source(recording_factory, tmp_path
         assert ("screenshots" in answer) == (root == ss)
     assert digest(source) == before
     immutable = digest(Path(exported["output"]))
-    with pytest.raises(ValueError, match="already exists"):
+    assert prepare.prepare_recording(recording, tmp_path / "inputs") == exported
+    assert digest(Path(exported["output"])) == immutable
+    receipt_path = Path(exported["output"]) / "input_receipt.json"
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = json.loads(receipt_bytes)
+    receipt["recording_sha256"] = "different-recording"
+    write_json(receipt_path, receipt)
+    with pytest.raises(ValueError, match="another recording"):
         prepare.prepare_recording(recording, tmp_path / "inputs")
+    receipt_path.write_bytes(receipt_bytes)
+    evidence = dom / "dom_model1.txt"
+    evidence_bytes = evidence.read_bytes()
+    evidence.write_bytes(evidence_bytes + b"changed")
+    with pytest.raises(ValueError, match="staged evaluation input changed"):
+        prepare.prepare_recording(recording, tmp_path / "inputs")
+    evidence.write_bytes(evidence_bytes)
     assert digest(Path(exported["output"])) == immutable
 
 @pytest.mark.usefixtures("no_network")
@@ -425,10 +439,13 @@ def test_dry_run_checks_without_publishing(recording_factory, tmp_path, capsys):
 def test_duplicate_attempts_are_retained_not_silently_selected(recording_factory, tmp_path):
     first, second = recording_factory("first"), recording_factory("second")
     output = tmp_path / "inputs"
-    assert prepare.main([str(first.parent.parent), str(output)]) == 0
-    tasks = list(output.rglob("data-dom/task1"))
+    assert prepare.main([str(first.parents[2]), str(output)]) == 0
+    tasks = list(output.rglob("data-dom"))
     assert len(tasks) == 2
     assert {json.loads((path / "task_data.json").read_text())[0]["evaluation_context"]["trial_id"] for path in tasks} == {"first", "second"}
+    immutable = digest(output)
+    assert prepare.main([str(first.parents[2]), str(output)]) == 0
+    assert digest(output) == immutable
 
 @pytest.mark.usefixtures("no_network")
 @pytest.mark.parametrize("case", ["artifact", "count", "pending", "changed_action"])
@@ -463,7 +480,7 @@ def test_execution_targets_are_preserved_without_fabricating_coordinates(recordi
     for mode in ("dom", "screenshot"):
         source = recording_factory(mode, mode=mode)
         before = digest(source)
-        exported = prepare.prepare_recording(prepare.inspect_recording(source), tmp_path / "inputs")
+        exported = prepare.prepare_recording(prepare.inspect_recording(source), tmp_path / "inputs" / mode)
         action = json.loads((Path(exported["dom_task"]) / "web_surfer.log").read_text())["arguments"]
         if mode == "dom":
             assert action["ref"] == "e1" and "coordinate" not in action

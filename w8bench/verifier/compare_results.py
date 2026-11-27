@@ -14,6 +14,7 @@ from .run_metrics import summarize
 from .paired_metrics import validate_completion_policy_versions, validate_recorded_settings
 from w8bench.settings import normalized_settings, require_same_settings
 from w8bench.usage import valid_token_component
+from w8bench.run_paths import run_directory
 
 def _validate_recording_pair(dom, screenshot):
     for recording, mode in ((dom, "dom"), (screenshot, "screenshot")):
@@ -136,9 +137,8 @@ def compare_profiles(runs, output):
     for run in runs:
         recording = inspect_recording(run)
         task = recording["task"]
-        suffix = Path(str(task.get("run_name") or recording["manifest"]["run_name"])) / task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"]
-        base = run.parent.parent / "evaluations"
-        roots = {"primary": base / "profiles" / "primary" / suffix, "pro": base / "profiles" / "pro" / suffix}
+        base = run_directory(run, area="evaluations")
+        roots = {profile: base / profile for profile in ("primary", "pro")}
         evaluations = {profile: json.loads((root / "evaluation.json").read_text()) for profile, root in roots.items()}
         bindings = {(value["recording_sha256"], value["rubric_sha256"], value["task_id"], value["actor_arm"], value["trial_id"])
             for value in evaluations.values()}
@@ -152,7 +152,7 @@ def compare_profiles(runs, output):
                 expected = "gemini-3.5-flash-lite" if profile == "primary" else "gemini-3.1-pro-preview"
                 if value["effective_settings"]["stages"][mode]["models"] != [expected, expected]:
                     raise ValueError("Native model profile does not match its output location")
-            grade_path = roots[profile] / "paired_completion.json"
+            grade_path = base / "completion.json"
             grade = json.loads(grade_path.read_text()) if grade_path.exists() else None
             streams, _ = _evaluation_streams(value["stages"], value, roots[profile] / "evaluation.json", grade, None)
             for stream in streams.values():

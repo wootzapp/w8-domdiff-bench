@@ -200,8 +200,6 @@ def _require_allowed_files(root: Path, allowed: set[str], mode: str) -> None:
 def _paired_tasks(screenshot_task, dom_task):
     screenshot = Path(screenshot_task).resolve(strict=True)
     dom = Path(dom_task).resolve(strict=True)
-    if screenshot.name != dom.name:
-        raise ValueError("Paired task folder aliases must match")
     _require_controls(screenshot, "screenshot")
     _require_controls(dom, "DOM-model")
     screenshot_data = load_one_task(screenshot / "task_data.json")
@@ -261,7 +259,7 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     _validate_answers(screenshot, dom)
     return {
         "task_id": internal_id,
-        "task_alias": screenshot.name,
+        "task_alias": internal_id,
         "actions": len(dom_actions),
         "screenshots": len(screenshots),
         "dom_model_states": len(states),

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from w8bench.run_paths import run_directory
 import signal
 import subprocess
 from types import SimpleNamespace
@@ -62,10 +63,11 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
     arguments = ["--trials", str(trials), "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
         "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
-    ledger = output / "batch" / "ledger.jsonl"
+    ledgers = [output / ("batch" if trial == 1 else f"batch_{trial}") / "ledger.jsonl"
+        for trial in range(1, trials + 1)]
     calls = []
     def run(command, **kwargs):
-        rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+        rows = [json.loads(line) for ledger in ledgers for line in ledger.read_text().splitlines()]
         assert len(rows) == 2 * 2 * trials  # Full denominator exists before the first subprocess.
         current = rows[len(calls)]
         assert current["catalog_sha256"] == hashlib.sha256(catalog.read_bytes()).hexdigest()
@@ -83,7 +85,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
     assert not (runtime / "active-run.json").exists()
     assert task_cli.main((arguments) + ["--resume"]) == 0
     assert len(calls) == 4 * trials
-    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    rows = [json.loads(line) for ledger in ledgers for line in ledger.read_text().splitlines()]
     for index in range(0, len(rows), 2):
         first, second = rows[index:index + 2]
         assert (first["task_id"], first["trial"]) == (second["task_id"], second["trial"])
@@ -95,7 +97,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
     assert task_cli.main((arguments) + ["--resume"]) == 0
     assert len(calls) == 4 * trials  # Finished failures are outcomes, not implicit retries.
     report = tmp_path / "empty-recordings-report"
-    assert compare_main(["--ledger", str(ledger), "--output", str(report)]) == 0
+    assert compare_main(["--ledger", *map(str, ledgers), "--output", str(report)]) == 0
     summary = json.loads((report / "summary.json").read_text())
     assert summary["scheduled_attempts"] == 4 * trials
     assert summary["paired_attempts"] == 0
@@ -499,8 +501,8 @@ def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launche
         assert command[2] == "w8bench.verifier.run_comparison"
         judges.append(command)
         recording = Path(command[command.index("--run") + 1])
-        write_json(recording / "completion.json", {"verdict": "success"})
-        evaluation = recording.parent.parent / "evaluations" / "profiles" / "primary" / first["run_name"] / first["arm"] / first["task_id"] / ("r" * 64) / "evaluation.json"
+        write_json(run_directory(recording, area="evaluations") / "completion.json", {"verdict": "success"})
+        evaluation = run_directory(recording, area="evaluations") / "primary" / "evaluation.json"
         write_json(evaluation, {"status": "complete", "stages": {"paired_completion": {"verdict": "success"}}})
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr(task_cli.subprocess, "run", judge)
@@ -705,15 +707,17 @@ def test_technical_attempt_is_retained_and_rerun_once(tmp_path, monkeypatch, arm
         write_json(current / 'final.json', {'run_status': outcome,
             'technical_failure_class': 'browser_crash' if outcome == 'technical_failure' else None})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
-    task_cli._run_batch_actor(args, row, ledger, tmp_path / 'ledger.jsonl', tmp_path,
+    task_cli._run_batch_actor(args, row, ledger, directory.parent.parent / 'ledger.jsonl', directory.parent.parent,
         tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 2
-    assert calls[0] != calls[1]
+    assert calls[0] == calls[1]
     assert row['completed'] and row['technical_outcome'] == 'completed'
     assert row['recording'] == str(calls[1])
     assert [attempt['attempt_number'] for attempt in row['attempts']] == [1, 2]
     assert row['attempts'][0]['technical_failure_class'] == 'browser_crash'
-    assert (calls[0] / 'final.json').is_file()
+    archived = Path(row['attempts'][0]['recording'])
+    assert archived == tmp_path/'trial_0001'/'attempts'/arm/'custom'/'attempt_01'
+    assert json.loads((archived/'final.json').read_text())['run_status'] == 'technical_failure'
 
 
 @pytest.mark.usefixtures('no_network')
@@ -728,8 +732,8 @@ def test_second_technical_attempt_does_not_trigger_a_third(tmp_path, monkeypatch
         row.update(technical_outcome='technical_failure', technical_failure_class='cdp_stall', completed=True)
         write_json(current / 'final.json', {'run_status': 'technical_failure', 'technical_failure_class': 'cdp_stall'})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
-    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], directory.parent.parent / 'ledger.jsonl',
+        directory.parent.parent, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 2
     assert len(row['attempts']) == 2
     assert row['technical_outcome'] == 'technical_failure'
@@ -737,8 +741,8 @@ def test_second_technical_attempt_does_not_trigger_a_third(tmp_path, monkeypatch
 
 @pytest.mark.usefixtures('no_network')
 def test_resume_launches_pending_rerun_without_repeating_first_attempt(tmp_path, monkeypatch):
-    first = tmp_path / 'trial_0001' / 'dom' / 'custom'
-    second = tmp_path / 'technical_attempt_02' / 'trial_0001' / 'dom' / 'custom'
+    first = tmp_path / 'trial_0001' / 'attempts' / 'dom' / 'custom' / 'attempt_01'
+    second = tmp_path / 'trial_0001' / 'dom' / 'custom'
     write_json(first / 'final.json', {'run_status': 'technical_failure', 'technical_failure_class': 'capture_failure'})
     row = {'sequence': 1, 'task_id': 'custom', 'arm': 'dom', 'trial': 1,
         'run_name': 'trial_0001', 'recording': str(second), 'completed': False,
@@ -752,8 +756,8 @@ def test_resume_launches_pending_rerun_without_repeating_first_attempt(tmp_path,
         row.update(technical_outcome='completed', completed=True)
         write_json(current / 'final.json', {'run_status': 'completed'})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
-    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', second)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], second.parent.parent / 'ledger.jsonl',
+        second.parent.parent, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', second)
     assert calls == [second]
     assert len(row['attempts']) == 2
     assert row['technical_outcome'] == 'completed'
@@ -773,8 +777,8 @@ def test_nontechnical_outcome_never_buys_a_fresh_attempt(tmp_path, monkeypatch, 
         row.update(technical_outcome=outcome, completed=True)
         write_json(current / 'final.json', {'run_status': outcome, 'termination_reason': reason})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
-    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], directory.parent.parent / 'ledger.jsonl',
+        directory.parent.parent, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 1
     assert len(row['attempts']) == 1
 
@@ -800,7 +804,7 @@ def test_single_task_uses_fresh_recording_and_attempt_metadata_on_technical_reru
     assert task_cli.main(arguments) == 0
     assert len(calls) == 2
     assert [number for _, number in calls] == [1, 2]
-    assert calls[0][0] != calls[1][0]
+    assert calls[0][0] == calls[1][0]
     ledger = tmp_path / 'recordings' / 'manual' / 'attempt_ledgers' / 'dom' / 'custom.jsonl'
     row = json.loads(ledger.read_text())
     assert row['recording'] == str(calls[1][0].resolve())
