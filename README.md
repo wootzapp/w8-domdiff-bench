@@ -66,10 +66,13 @@ evaluation stages, resume and result bindings.
 
 | Location | Contents |
 | --- | --- |
-| `recordings/<collection>/ledger.jsonl` | Scheduled tasks, arms, trials, attempts and execution/evaluation outcomes. |
-| `recordings/<collection>/trial_NNNN/<arm>/<task>/` | Decisions, paired states, browser receipts and actor outcome. |
-| `recording.parent.parent / "evaluations"` | Bound verifier inputs, common completion and profile-specific verifier and audit results. |
-| `reports/<collection>/` | Offline aggregation, paired comparisons, metrics, costs and coverage. |
+| `recordings/runN/ledger.jsonl` | Scheduled tasks and both arms for one trial, technical attempts and execution/evaluation outcomes. |
+| `recordings/runN/<arm>/<task>/` | Decisions, paired states and the final actor attempt. |
+| `recordings/runN/attempts/<arm>/<task>/attempt_01/` | An earlier technical attempt, when present. |
+| `trajectories/runN/<arm>/<task>/` | Paired, flat screenshot and DOM verifier inputs with their source receipt. |
+| `evaluations/runN/<arm>/<task>/` | Shared completion and profile-specific verifier and audit results. |
+| `logs/runN/` | Local recording, judge and browser diagnostics; excluded from dataset uploads. |
+| `reports/runN/` | Offline aggregation, paired comparisons, metrics, costs and coverage. |
 
 The [recording guide](docs/recordings.md) defines exact paths, including technical
 attempts. The [evaluation protocol](docs/evaluation-protocol.md) defines what the

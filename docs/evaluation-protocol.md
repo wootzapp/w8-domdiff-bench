@@ -72,7 +72,8 @@ identical configuration does not change its normalized content hash.
 
 Trial count is a positive integer supplied through `--trials`; it has no
 default. Before launching child processes, `task_cli.main()` writes one
-`ledger.jsonl` row per scheduled `(task, arm, trial)` run. Rows bind
+`ledger.jsonl` row per scheduled `(task, arm, trial)` run, with one ledger
+and catalog snapshot in each `recordings/runN/` folder. Rows bind
 task/configuration identity, catalog and rubric file hashes, intended recording
 paths and execution order.
 
@@ -86,8 +87,8 @@ permits one fresh attempt with the same task, arm and trial. Both attempts
 remain recorded. Resume reconciles interrupted work and continues a pending
 rerun; it skips completed final attempts. Website blocks, actor failures, turn
 caps and provider auth/quota/billing outcomes do not trigger this rerun. A
-changed task set, trial count or frozen configuration requires a separate batch
-name. Output-name collisions reserve the next free numeric suffix. `--resume` is
+changed task set, trial count or frozen configuration requires a separate
+schedule. Output-name collisions reserve the next free numeric suffix. `--resume` is
 explicit and requires an existing ledger or schedule preview in the selected
 directory. A planning-only preview is not an execution ledger and must not be
 renamed as one; with the approved rubric files present, scheduling creates or
@@ -279,11 +280,11 @@ separately.
 
 | Measurement | Definition | Artifacts |
 |---|---|---|
-| Model turns | Received actor responses, including rejected proposals, malformed/incomplete responses and termination. Failed transport attempts do not count as model turns. | `decisions.jsonl`, per-turn `result.json`, manifest/final `model_turns`. |
+| Model turns | Received actor responses, including rejected proposals, malformed/incomplete responses and termination. Failed transport attempts do not count as model turns. | `decisions.jsonl`, manifest/final `model_turns`. |
 | Action attempts | Accepted executable actions delivered to the browser, including execution errors. Rejections and termination execute no browser action. | Manifest `steps`, state `action.json`, trajectory. |
 | Captured states | Committed active observations. Normally N actions produce N+1 states; capture errors can leave an incomplete transition. | Manifest `states`, `trajectory_export`. |
 | Completion | Independent rubric verdict, separate from actor claims and technical status. | `completion.json`. |
-| Transport attempts | Each actor generation HTTP attempt, its duration, status and reported usage, separately from received responses. Input-preflight attempts are recorded separately and are not model turns. | Per-turn `transport_attempts.jsonl`; raw failed response and parser receipts. |
+| Transport attempts | Each actor generation HTTP attempt, its duration, status and reported usage, separately from received responses. Input-preflight attempts are recorded separately and are not model turns. | Per-turn `metadata.json`; raw failed response and parser receipts. |
 | Technical attempt cost | Earlier technical attempts retained separately from final-attempt success/turn/token metrics. | Ledger `attempts`, `technical_attempts`, `cost_streams["technical_attempts:actor"]`. |
 | Actor usage | Returned input/output totals, plus cached-input and reasoning subsets. | Provider response and decision `usage`. |
 | Arm comparison usage | Actor plus the native verifier matching the actor arm, with exact values or labelled known-usage lower bounds. | Per-run `arm_token_usage`, arm/category summaries. |

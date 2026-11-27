@@ -187,7 +187,8 @@ success.
 
 The pilot uses `task_01` (easy), `task_12` (medium), `task_29` (hard) and `task_35`
 (complex), both arms with one trial each. The full collection accepts any positive
-trial count per arm. Catalog and rubric hashes bind the schedule; run manifests
+trial count per arm. Each numbered run folder contains one trial of both arms.
+Catalog and rubric hashes bind the schedule; run manifests
 retain the catalog hash, or `null` for a manual task without a catalog.
 
 Expiry metadata is committed in `internal/task_validity.json`. Scheduling refuses

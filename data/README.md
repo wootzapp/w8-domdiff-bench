@@ -41,22 +41,26 @@ preparation and recording commands.
 | --- | --- |
 | `tasks.jsonl` | Catalog, with the eight fields above. |
 | `rubrics/` | Frozen task criteria and catalog bindings. |
-| `recordings/<collection>/` | Ledger, catalog copy and raw actor attempts. |
-| `trajectories/<collection>/` | Paired verifier inputs by trial, arm, task and recording hash. |
-| `evaluations/<collection>/` | Completion, native results, audit, profile comparison and call receipts. |
-| `results/<collection>/` | Aggregated summaries, pairs, per-task metrics and report. |
+| `recordings/runN/` | One trial's ledger, catalog copy and raw actor attempts. |
+| `trajectories/runN/<arm>/<task>/` | Paired verifier inputs and source hashes for that recording. |
+| `evaluations/runN/<arm>/<task>/` | Shared completion, profile-specific native results, audit and call receipts. |
+| `results/runN/` | Aggregated summaries, pairs, per-task metrics and report. |
 | `manifests/` | Verifier package integrity records. |
 
-Use a distinct collection name and publish finalized artifacts. Dataset paths
-retain all trials and technical attempts; formats are paired only within a run.
+Each `runN` contains one trial of the selected tasks in both arms. Formats are
+paired only within a recording; earlier technical attempts remain separate from
+the final attempt. Diagnostic logs stay under local `logs/runN/`.
 
-Prepare the trajectories:
+Prepare the trajectories for a saved run:
 
 ```bash
-: "${BENCH_COLLECTION_RUN:?Set the saved collection run name}"
+: "${BENCH_RUN:?Set the saved run name}"
 .venv/bin/python -m w8bench.task_recorder.prepare_verifier_data \
-  "recordings/$BENCH_COLLECTION_RUN" "trajectories/$BENCH_COLLECTION_RUN"
+  "recordings/$BENCH_RUN" trajectories
 ```
+
+The evaluator also prepares and reuses these inputs. Existing bound trajectories
+are validated before reuse.
 
 Authenticate for uploads:
 
@@ -65,40 +69,26 @@ hf auth login
 hf auth whoami
 ```
 
-Upload the raw recordings, trajectories and aggregation output:
+Upload finalized recordings, trajectories, evaluations and aggregation output:
 
 ```bash
-: "${BENCH_COLLECTION_RUN:?Set the saved collection run name}"
+: "${BENCH_RUN:?Set the saved run name}"
 : "${BENCH_RESULT_DIR:?Set the printed aggregation output directory}"
 hf upload WootzappLab/browser-agent-tasks \
-  "recordings/$BENCH_COLLECTION_RUN" "recordings/$BENCH_COLLECTION_RUN" \
-  --type dataset --revision paired-capture \
-  --exclude "evaluations/**" --exclude "**/evaluations/**"
-hf upload WootzappLab/browser-agent-tasks \
-  "trajectories/$BENCH_COLLECTION_RUN" "trajectories/$BENCH_COLLECTION_RUN" \
+  "recordings/$BENCH_RUN" "recordings/$BENCH_RUN" \
   --type dataset --revision paired-capture
 hf upload WootzappLab/browser-agent-tasks \
-  "$BENCH_RESULT_DIR" "results/$BENCH_COLLECTION_RUN" \
+  "trajectories/$BENCH_RUN" "trajectories/$BENCH_RUN" \
+  --type dataset --revision paired-capture
+hf upload WootzappLab/browser-agent-tasks \
+  "evaluations/$BENCH_RUN" "evaluations/$BENCH_RUN" \
+  --type dataset --revision paired-capture
+hf upload WootzappLab/browser-agent-tasks \
+  "$BENCH_RESULT_DIR" "results/$BENCH_RUN" \
   --type dataset --revision paired-capture
 ```
 
-Upload each evaluation directory with its collection-relative prefix:
-
-```bash
-(
-  set -euo pipefail
-  test -d "recordings/$BENCH_COLLECTION_RUN"
-  while IFS= read -r -d '' bench_evaluation_dir; do
-    bench_evaluation_prefix="${bench_evaluation_dir#recordings/}"
-    bench_evaluation_prefix="${bench_evaluation_prefix%/evaluations}"
-    hf upload WootzappLab/browser-agent-tasks \
-      "$bench_evaluation_dir" "evaluations/$bench_evaluation_prefix" \
-      --type dataset --revision paired-capture
-  done < <(find "recordings/$BENCH_COLLECTION_RUN" -type d -name evaluations -prune -print0)
-)
-```
-
-The `evaluations/` prefix mirrors each local evaluation directory's parent path.
-Restoring evaluations places it beside the same actor directories; evaluation
-receipts retain recording and source bindings. Credentials, private curation and
-solution notes are not dataset artifacts.
+`web_surfer.log` is part of the recorded action history and remains included.
+Credentials, diagnostic logs, private curation and solution notes are not dataset
+artifacts. Recording and projection hashes in the receipts bind the published
+formats to the same task, arm and trial.

@@ -19,24 +19,31 @@ override; other browser build and environment checks still apply.
 ## Locate an attempt
 
 ```text
-recordings/<batch-name>/
-  ledger.jsonl
-  logs/attempt_000001_01.log
-  trial_0001/
+recordings/
+  run1/
+    catalog.jsonl
+    ledger.jsonl
     dom/<task-id>/
     screenshot/<task-id>/
+    attempts/<arm>/<task-id>/attempt_01/
+  run2/
   ...
+trajectories/run1/<arm>/<task-id>/
+evaluations/run1/<arm>/<task-id>/
+logs/run1/
 ```
 
-Trial count is an explicitly chosen positive integer with no default. Each
-`(task, arm, trial)` has a distinct recording path, retained for that attempt. A
-standalone one-arm task uses `recordings/<run-name>/<arm>/<task-id>/` and a
-local ledger under
-`recordings/<run-name>/attempt_ledgers/<arm>/<task-id>.jsonl`. A technical rerun
-has its own recording directory; neither attempt is overwritten. Batch reruns
-use `<batch-name>/technical_attempt_02/<trial-name>/<arm>/<task-id>/`.
-Standalone reruns use
-`recordings/technical_attempt_02/<run-name>/<arm>/<task-id>/`.
+Trial count is an explicitly chosen positive integer with no default. Scheduling
+from `run1` creates adjacent trial folders `run1`, `run2` and so on. Each run
+folder has its own catalog snapshot and ledger. Both arms' final attempts use
+`recordings/<run-name>/<arm>/<task-id>/`. An earlier technical attempt stays under
+`recordings/<run-name>/attempts/<arm>/<task-id>/attempt_01/`; it is not another
+trial. Neither attempt is overwritten.
+
+A standalone one-arm task uses the same final-attempt path and a local ledger
+under `recordings/<run-name>/attempt_ledgers/<arm>/<task-id>.jsonl`. Diagnostic
+logs are stored under `logs/<run-name>/` and are not uploaded. The recorded
+`web_surfer.log` is action history and remains with each recording.
 
 `ledger.jsonl` contains one JSON object per scheduled `(task, arm, trial)` run;
 technical attempts remain in that row’s `attempts` list. `sequence`, `task_id`,
@@ -71,19 +78,21 @@ in the ledger.
 | `decisions.jsonl` | One row per received actor response: turn/state, decision, acceptance/rejection/error, prior memory, usage, response metadata, latency and `model_input`. | Includes invalid proposals and termination. Transport failures have separate receipts and do not add a model turn. |
 | `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings, including global `MEDIA_RESOLUTION_HIGH`; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
 | `turns/turn_NNNNNN/response.json` | Raw provider response, returned model, output items and usage. | Present when a response was received; no response is fabricated for a transport failure. |
-| `turns/turn_NNNNNN/result.json` | Decision-log row, including response status, incomplete details and output-limit flag. | Mirrors the received-response decision. A request directory can exist even when dispatch did not occur. |
-| `turns/turn_NNNNNN/input_preflight.json` | Local text/image estimate, model input limit, optional countTokens attempts, dispatch decision and status. | Estimates at or below 50% skip counting. Unavailable counting uses the recorded estimate; confirmed or estimated overflow above 95% prevents generation. |
-| `turns/turn_NNNNNN/transport_pending.json` | In-flight attempt identity and unknown usage; retained on interruption without inventing a model response. | Pending work is reported separately. |
-| `turns/turn_NNNNNN/transport_attempts.jsonl` | HTTP attempt number, status, duration, usage coverage, finish/parser metadata and sanitized failed response where available. | Failed transports do not add model turns; their usage is unknown unless reported. |
-| `cdp_calls.jsonl`, `agent_browser_calls.jsonl` | Per-call timing, status and method metadata. | CDP parameters and CLI arguments are excluded. |
-| `browser_events.jsonl`, `target_registry.json`, `observation_recovery.jsonl` | Crash/detach/dialog events, exact target/opener identities and liveness/reattachment outcomes. | Private identity metadata is not actor evidence; dialog text is excluded. |
-| `failure_health.json`, `interruption.json` | Available container health, bounded log tail and interruption status. | Missing diagnostics remain unavailable; credentials are redacted. |
+| `turns/turn_NNNNNN/metadata.json` | Input preflight, pending transport identity, completed transport attempts and failure metadata. | Local estimates at or below 50% skip counting; confirmed or estimated overflow above 95% prevents generation. Failed transports retain duration, finish/parser metadata, sanitized failed responses and unknown usage unless reported. They do not add model turns. |
 | `trajectory.jsonl` | Normalized action transitions, execution status/error, before/after observations, paired artifacts and capture metadata. | Exported during finalization; missing after-states make the export incomplete. |
 | `web_surfer.log` | JSONL WebSurfer-style action events, model turns, arguments and delivery status. | Derived action log, not additional actor input or model calls. |
-| `completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Standalone completion can write beside the recording; controlled evaluation keeps the shared receipt outside the recording, as described below. Missing, uncertain and ungraded are distinct from confirmed failure. |
-| `completion_actor_native.json` | Optional secondary grade using `actor_native` evidence. | The secondary policy writes beside the recording and does not overwrite the primary grade. Both saved grades contribute to separate judge cost accounting. |
-| `capture_failures.jsonl` | Attempt, directory, timestamp, active error and partial capture metadata. | Failed after-action capture directories are retained under the next free `step_NNN_capture_attempt_XX` name before an existing transport retry. |
+| `evaluations/<run-name>/<arm>/<task-id>/completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Shared across native profiles, outside the actor recording. Missing, uncertain and ungraded are distinct from confirmed failure. |
+| `evaluations/<run-name>/<arm>/<task-id>/completion_actor_native.json` | Optional secondary grade using `actor_native` evidence. | Separate from the primary grade and native profile folders. Both grades contribute to separate judge cost accounting. |
 | `steps/step_NNN/` | One committed captured state. | `step_001` is the initial state; subsequent states follow executable action attempts. |
+
+Diagnostic files live under `logs/<run-name>/<arm>/<task-id>/` and stay local:
+
+| Artifact | Contents | Availability and interpretation |
+|---|---|---|
+| `cdp_calls.jsonl`, `agent_browser_calls.jsonl` | Per-call timing, status and method metadata. | CDP parameters and CLI arguments are excluded. |
+| `browser_events.jsonl`, `target_identity.jsonl`, `target_registry.json`, `observation_recovery.jsonl` | Crash/detach/dialog events, exact target/opener identities and liveness/reattachment outcomes. | Private identity metadata is not actor evidence; dialog text is excluded. |
+| `failure_health.json`, `interruption.json` | Available container health, bounded log tail and interruption status. | Missing diagnostics remain unavailable; credentials are redacted. |
+| `capture_failures.jsonl` | Attempt, directory, timestamp, active error and partial capture metadata. | Failed after-action capture directories are retained under the next free `step_NNN_capture_attempt_XX` name before an existing transport retry; the diagnostic receipt remains local. |
 
 `manifest.controls` records requested model/endpoint, turn and output budgets,
 viewport, settle interval, memory limit, reasoning, temperature setting, locale,
@@ -247,8 +256,8 @@ Exact all-attempt means/medians are null where coverage is incomplete; see the
 [evaluation protocol](evaluation-protocol.md#denominators-and-coverage) for details.
 
 `prepare_recording()` stages flat verifier inputs under
-`<run-name>/<arm>/<task-id>/<recording-hash>/data-ss/<task-id>/` and matching
-`data-dom/`. `input_receipt.json` binds both projections to source files,
+`trajectories/<run-name>/<arm>/<task-id>/data-ss/` and matching `data-dom/`.
+`input_receipt.json` binds both projections to source files,
 observed URLs, validity date and per-state eligibility. Original state IDs and
 full execution chronology survive gaps. Shared history carries no DOM target
 descriptions or actor notes. Export output must remain outside its source recording.
@@ -260,13 +269,14 @@ task projections:
 
 | Projection | Files |
 | --- | --- |
-| `data-ss/<task-id>/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `screenshot<state-id>.png` |
-| `data-dom/<task-id>/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `dom_model<state-id>.txt` |
+| `data-ss/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `screenshot<state-id>.png` |
+| `data-dom/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `dom_model<state-id>.txt` |
 
-Full evaluation writes `evaluation.json`, the imported/frozen rubric and its
-receipt, `paired_completion.json`, both verifier result/metrics/log folders and
-`evidence_audit.json` in the sibling evaluation tree. Completed result hashes are
-checked before reuse. Primary completion, auxiliary signals, fallback quality,
+Full evaluation writes `evaluation.json`, rubric bindings, both verifier
+result/metrics folders, `audit_inventory.json` and `evidence_audit.json` under
+`evaluations/<run-name>/<arm>/<task-id>/<profile>/`. Common `completion.json`
+lives one level above the profile folders; judge diagnostics stay under
+`logs/<run-name>/`. Completed result hashes are checked before reuse. Primary completion, auxiliary signals, fallback quality,
 audit coverage and every cost stream remain distinct.
 Each stage also records its normalized effective settings and returned-model
 diagnostics. Ungraded stages retain failure reasons and attempt usage for resume;
@@ -281,18 +291,20 @@ for the settings compared across resumes, arms and trials.
 
 ## Judge profiles and call receipts
 
-Evaluation roots are relative to the selected recording: let `B` be
-`recording_path.parent.parent / "evaluations"`. For a batch recording beneath
-`recordings/<collection>/trial_0001/<arm>/<task-id>/`, `B` is
-`recordings/<collection>/trial_0001/evaluations/`.
+Evaluation outputs use the same run, driving arm and task as the recording.
+Recording hashes remain in the receipts rather than directory names.
 
 | Output | Location |
 | --- | --- |
-| Primary native evaluation | `B/profiles/primary/<run-name>/<arm>/<task-id>/<recording-hash>/` |
-| Pro native evaluation | `B/profiles/pro/<run-name>/<arm>/<task-id>/<recording-hash>/` |
-| Shared primary completion | `B/common/<run-name>/<arm>/<task-id>/<recording-hash>/completion.json` |
-| Profile-bound copy of primary completion | Each profile's `paired_completion.json` |
-| Profile comparison | `B/profile_comparison.json`, with a numeric collision suffix when needed |
+| Shared primary completion | `evaluations/<run-name>/<arm>/<task-id>/completion.json` |
+| Optional actor-native completion | `evaluations/<run-name>/<arm>/<task-id>/completion_actor_native.json` |
+| Primary native evaluation | `evaluations/<run-name>/<arm>/<task-id>/primary/` |
+| Pro native evaluation | `evaluations/<run-name>/<arm>/<task-id>/pro/` |
+| Earlier completion attempts | `evaluations/<run-name>/<arm>/<task-id>/_attempts/` |
+| Earlier profile-stage attempts | Each profile's `_attempts/` folder. |
+| Profile comparison | `evaluations/<run-name>/profile_comparison.json`, with a numeric collision suffix when needed |
+| Prepared paired evidence | `trajectories/<run-name>/<arm>/<task-id>/` |
+| Recording and judge diagnostics | Local `logs/<run-name>/` |
 
 Each profile evaluation root also contains `audit_inventory.json`. Its content
 hash, source/native/rubric fingerprints, accepted inventory response and usage

@@ -238,15 +238,15 @@ Set `BENCH_TRIALS` to any positive integer and inspect the schedule:
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
 ./scripts/run-task --trials "$BENCH_TRIALS" --catalog-file data/tasks.jsonl \
   --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name collection \
+  --output-dir recordings --run-name plan1 \
   --judge-model gemini-3.6-flash --dry-run
 ```
 
-Use the printed run name, including any collision suffix. This command omits
-`--rubric-dir`, so it writes a planning preview, not an executable ledger.
-After freezing, the pilot/collection commands below supply `--rubric-dir` to create
-`ledger.jsonl`. Inspect all `80 × k` rows, alternating order, paths and settings;
-never rename `schedule_preview.jsonl` to `ledger.jsonl`.
+Inspect the printed run names and paths. This command omits `--rubric-dir`, so
+it writes planning previews, not executable ledgers. With frozen rubrics, the
+recording commands supply `--rubric-dir` to create `ledger.jsonl` in each trial
+folder. Inspect all `80 × k` rows, alternating order, paths and settings; never
+rename `schedule_preview.jsonl` to `ledger.jsonl`.
 
 Expiry uses the inclusive UTC date in `internal/task_validity.json`; an explicit
 `--allow-expired` override must also be retained on resume. Broken-task replacements
@@ -401,7 +401,7 @@ arms, one trial each. Plan first:
 ./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name pilot --dry-run
+  --output-dir recordings --run-name pilot1 --dry-run
 ```
 
 Set `BENCH_PILOT_RUN` to the printed name, then execute and inspect:
@@ -410,7 +410,7 @@ Set `BENCH_PILOT_RUN` to the printed name, then execute and inspect:
 : "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
 export BENCH_PILOT_RUN
 ./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
-  --rubric-dir data/rubrics \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
 
@@ -439,21 +439,24 @@ Use any positive `BENCH_TRIALS`; omit task selectors for all 40 tasks:
 ./scripts/run-task --trials "$BENCH_TRIALS" \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name collection --dry-run
+  --output-dir recordings --run-name run1 --dry-run
 ```
 
-Set `BENCH_COLLECTION_RUN` to the printed name and execute its ledger:
+Set `BENCH_FIRST_RUN` to the printed first run name and execute the schedule:
 
 ```bash
-: "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
+: "${BENCH_FIRST_RUN:?Set the printed first run name}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
-  --rubric-dir data/rubrics \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name "$BENCH_COLLECTION_RUN" --resume
+  --output-dir recordings --run-name "$BENCH_FIRST_RUN" --resume
 ```
 
-The ledger retains all `80 × k` rows and attempts, alternates arm order and continues
-after individual errors. Reconcile every row and evaluation coverage. The response
+The schedule uses adjacent trial folders: starting from `run1` creates `run1`,
+`run2` and so on. Each contains its own catalog snapshot and 80-row ledger. All
+`80 × k` rows and technical attempts remain accounted for; arm order alternates
+and execution continues after individual errors. Reconcile every row and
+evaluation coverage. The response
 budget is 16,000 × k for final attempts plus the same for technical reruns, with up
 to 96,000 × k actor-generation transport attempts. Every final recording gets completion, native
 verification and inventory with frozen rubrics. The [final adjudication command](#final-adjudication)
@@ -461,10 +464,10 @@ uses saved inventories; evidence and retries determine judge work.
 
 ### Resume a recording
 
-Repeat execution with `--resume` and its printed name to retain completed attempts
-and continue technical reruns. Catalog, trials, rubrics, settings and browser must
+Repeat execution with `--resume`, the same first run name and trial count to
+retain completed attempts and continue technical reruns. Catalog, trials, rubrics, settings and browser must
 match. Use a separate purpose/sequence name for another plan, without dates/times.
-Without `--resume`, collisions select a suffix. Interrupted attempts reconcile from
+Without `--resume`, collisions select the next free sequence of run names. Interrupted attempts reconcile from
 receipts; active recorders/launchers/judges must finish or stop first. Retry judging
 [separately](#controls-and-outputs) without repeating actors or discarding receipts.
 
@@ -497,11 +500,12 @@ Validate and stage same-run verifier inputs outside the immutable source tree:
 
 ```bash
 .venv/bin/python -m w8bench.task_recorder.prepare_verifier_data \
-  recordings/collection exported/collection
+  recordings/run1 trajectories
 ```
 
 Add `--dry-run` to validate only. Exports retain task/arm/trial/hash identity, state
-IDs, format gaps and `input_receipt.json`. Navigation states stay in verifiers but
+IDs, format gaps and `input_receipt.json` under
+`trajectories/<run-name>/<arm>/<task-id>/`. Navigation states stay in verifiers but
 not directional audits; empty exports stay valid. Follow [export rules](recordings.md#integrity-and-export)
 for shared histories, URL checks and incomplete recordings. Never pair across runs.
 
@@ -545,19 +549,19 @@ inventory through direct requests. It returns **0** when inventory is ready with
 `evaluation_outcome: awaiting_adjudication`. The launcher uses this stage.
 Evaluation failures retain their status and usage in the ledger.
 
-Set `BENCH_EVALUATION_RUN` to the saved pilot/collection name and preview selection:
+Set `BENCH_RUN` to one saved run name and preview selection:
 
 ```bash
-: "${BENCH_EVALUATION_RUN:?Set the saved pilot or collection run name}"
+: "${BENCH_RUN:?Set one saved run name}"
 .venv/bin/python scripts/evaluate-ledger.py \
-  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl"
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl"
 ```
 
 Evaluate:
 
 ```bash
 .venv/bin/python scripts/evaluate-ledger.py \
-  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage evaluate --execute
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage evaluate --execute
 ```
 
 The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order and
@@ -582,17 +586,18 @@ Primary and Pro results never mix in primary aggregation.
 
 ### Final adjudication
 
-Run final adjudication after all scheduled actors and technical reruns finish.
+Run final adjudication after all actors and technical reruns in the selected
+run finish.
 The command checks the saved inventories before dispatch. It sends adjudication requests
 only; saved completion, native-verifier and inventory results are reused.
 
 ```bash
-: "${BENCH_EVALUATION_RUN:?Set the saved pilot or collection run name}"
+: "${BENCH_RUN:?Set one saved run name}"
 .venv/bin/python scripts/evaluate-ledger.py \
-  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage adjudicate
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage adjudicate
 
 .venv/bin/python scripts/evaluate-ledger.py \
-  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage adjudicate --execute
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage adjudicate --execute
 ```
 
 `--compare-profiles` adjudicates both profiles' inventories and refreshes their
@@ -601,12 +606,19 @@ audits have no loss rate.
 
 ### Compare recorded runs
 
-Aggregate locally (**0 model calls**):
+Aggregate one run locally (**0 model calls**):
 
 ```bash
-: "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
-./scripts/run-comparison --ledger "recordings/$BENCH_COLLECTION_RUN/ledger.jsonl" \
-  --output "reports/$BENCH_COLLECTION_RUN"
+: "${BENCH_RUN:?Set one saved run name}"
+./scripts/run-comparison --ledger "recordings/$BENCH_RUN/ledger.jsonl" \
+  --output "reports/$BENCH_RUN"
+```
+
+Aggregate the numbered runs together:
+
+```bash
+./scripts/run-comparison --ledger recordings/run*/ledger.jsonl \
+  --output reports/comparison
 ```
 
 Supported pass@k values follow the actual trial count; `--pass-k` restricts them.
@@ -616,12 +628,12 @@ is required unless an explicit `--allow-nonfresh` comparison is requested.
 
 | Output | Location |
 | --- | --- |
-| Schedule, attempts, outcomes, logs and recording paths | `recordings/<run>/ledger.jsonl` |
-| Actor turns, input/output tokens, cache/reasoning subsets and limit hits | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `result.json` |
+| Schedule, attempts, outcomes and recording paths | `recordings/<run>/ledger.jsonl`; diagnostic logs stay in local `logs/<run>/` |
+| Actor turns, input/output tokens, cache/reasoning subsets and limit hits | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `metadata.json` |
 | Arm comparison tokens: actor plus matching native verifier | Per-run `arm_token_usage` and arm/category summaries; actor-only `token_usage` and `tokens_per_turn` remain separate |
-| Transport failures, durations, parser stage and usage coverage | Per-turn transport receipts and raw responses |
+| Transport failures, durations, parser stage and usage coverage | Per-turn `metadata.json` and raw responses |
 | Paired artifacts, timing, hashes and capture gaps | `manifest.json`, `steps/step_*/capture.json`; see [recording files](recordings.md#run-level-artifacts) |
-| Completion, native scores, validity, both audit directions and coverage | Ledger-linked `evaluation.json` and stage files, including `completion.json` and `evidence_audit.json` |
+| Completion, native scores, validity, both audit directions and coverage | `evaluations/<run>/<arm>/<task>/completion.json` and profile-bound `evaluation.json`, native results and `evidence_audit.json` |
 | Rubric preparation/approval | `internal/rubrics/drafts/task_XX.metrics.json`, `generation.json`, `review.json`, `freeze.json`; `data/rubrics/task_XX.json` |
 | Pair/task results, pass@k, arm/difficulty metrics and costs | `reports/<run>/pairs.json`, `per_task.json`, `summary.json`, `report.md` |
 
@@ -637,7 +649,7 @@ visible as overhead, with all cost streams retained for full-experiment accounti
 [token accounting contract](evaluation-protocol.md#token-accounting).
 USD figures are estimates, not invoices.
 
-Publish finalized collections using the [data storage commands](../data/README.md#storage).
+Publish finalized runs using the [data storage commands](../data/README.md#storage).
 
 ## View a remote browser
 

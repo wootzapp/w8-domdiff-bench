@@ -78,7 +78,11 @@ flowchart TD
     N --> O[Compare results]
 ```
 
-The schedule contains one row per task, arm and trial. The two arms of each
+Each `recordings/runN/` folder contains one trial's catalog snapshot and ledger,
+with one row per task and arm. Final attempts live under `<arm>/<task-id>/`;
+earlier technical attempts remain under `attempts/`. Paired verifier inputs live
+under `trajectories/runN/`, judge outputs under `evaluations/runN/`, and diagnostic
+logs under local `logs/runN/`. The two arms of each
 task/trial run back to back, with the starting arm alternating across tasks and
 trials. Grading follows both actor runs. One technical failure permits a fresh
 attempt for the same row. Both attempt records remain in the ledger; resume
@@ -147,8 +151,8 @@ observation retry. An action with uncertain delivery is not replayed. Exact
 target IDs and a tab/opener registry bind observation to the selected page.
 Private identity values live in an isolated JavaScript world. The CLI's active
 target is verified through CDP inspector metadata without reading or writing
-page globals. Per-call timings, events and failure health snapshots remain in
-the run folder.
+page globals. Per-call timings, events and failure health snapshots remain under local
+`logs/<run-name>/<arm>/<task-id>/`.
 
 Actor requests share the model, reasoning and limits in the
 [datacard](datacard.md#shared-controls). The screenshot actor uses HIGH media
