@@ -1,22 +1,23 @@
-"""Thin adapter around the official agent-browser CLI.
-
-This module owns only browser observation and action execution through the
-official CLI. ChromiumRL capture, DOM diffing, screenshots, and run artifacts
-remain the recorder's responsibility.
-"""
+"""Browser observations and actions through agent-browser commands and CDP."""
 
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import json
+import math
 import os
+import re
+import secrets
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
+
+from w8bench.run_paths import run_directory
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -42,6 +43,8 @@ class AgentBrowserError(AgentBrowserBaseError):
         super().__init__(f"agent-browser {' '.join(command)!r} failed: {error}")
         self.command = command
         self.error = error
+        if any(marker in error.lower() for marker in ("timed out", "internal error", "cdp websocket", "not attached to an active page", "connection closed")):
+            self.technical_failure_class = "cdp_stall"
 
 
 @dataclass(frozen=True)
@@ -49,6 +52,8 @@ class AgentBrowserPage:
     tab_id: str
     url: str
     title: str
+    target_id: str = ""
+    identity_marker: str = ""
 
 
 @dataclass(frozen=True)
@@ -99,8 +104,9 @@ class AgentBrowserClient:
         )
         self.connected = False
         self.version = ""
-        self.connection_result: dict[str, Any] = {}
-        self.reconnect_count = 0
+        self.recording_dir: Path | None = None
+        self._subprocesses: set[subprocess.Popen] = set()
+        self._cancelled = False
 
     def _invoke_sync(
         self,
@@ -108,7 +114,7 @@ class AgentBrowserClient:
         *,
         json_output: bool = True,
         use_session: bool = True,
-    ) -> dict[str, Any] | str:
+    ) -> dict[str, Any] | list[dict[str, Any]] | str:
         """Run one CLI command, enforcing timeout, exit status, and JSON shape."""
         command = [*self.command]
         if use_session:
@@ -118,22 +124,41 @@ class AgentBrowserClient:
             command.append("--json")
         environment = dict(os.environ)
         environment["NO_COLOR"] = "1"
+        started = time.monotonic()
+        from ..recorder_support import append_json_line, utc_now
+        receipt = {"command": arguments[0] if arguments else "", "started_at": utc_now(), "status": "started"}
         try:
-            completed = subprocess.run(
-                command,
-                cwd=PROJECT_ROOT,
-                env=environment,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=self.timeout,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as error:
-            raise AgentBrowserError(
-                arguments,
-                f"timed out after {self.timeout:g} seconds",
-            ) from error
+            if self._cancelled:
+                raise AgentBrowserError(arguments, "CLI call cancelled")
+            process = subprocess.Popen(command, cwd=PROJECT_ROOT, env=environment, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._subprocesses.add(process)
+            if self._cancelled:
+                process.kill()
+            try:
+                stdout, stderr = process.communicate(timeout=self.timeout)
+                completed = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+            except BaseException:
+                process.kill()
+                process.communicate()
+                raise
+            finally:
+                self._subprocesses.discard(process)
+            result = self._command_output(arguments, completed, json_output)
+            receipt.update(status="completed", exit_code=completed.returncode)
+            return result
+        except BaseException as error:
+            receipt.update(status="error", error_type=type(error).__name__)
+            if isinstance(error, subprocess.TimeoutExpired):
+                raise AgentBrowserError(arguments, f"timed out after {self.timeout:g} seconds") from error
+            raise
+        finally:
+            receipt.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+            if self.recording_dir is not None:
+                append_json_line(run_directory(self.recording_dir, area="logs") / "agent_browser_calls.jsonl", receipt)
+
+    @staticmethod
+    def _command_output(arguments: list[str], completed: Any, json_output: bool) -> dict[str, Any] | list[dict[str, Any]] | str:
         stdout = completed.stdout.strip()
         stderr = completed.stderr.strip()
         if completed.returncode != 0:
@@ -150,6 +175,8 @@ class AgentBrowserClient:
                 arguments,
                 f"invalid JSON output: {stdout[:2000]}",
             ) from error
+        if arguments[0] == "batch" and isinstance(payload, list):
+            return payload
         if not isinstance(payload, dict):
             raise AgentBrowserError(arguments, "JSON output was not an object")
         if payload.get("success") is False:
@@ -165,14 +192,17 @@ class AgentBrowserClient:
         *,
         json_output: bool = True,
         use_session: bool = True,
-    ) -> dict[str, Any] | str:
+    ) -> dict[str, Any] | list[dict[str, Any]] | str:
         """Run the blocking CLI subprocess on a worker thread."""
-        return await asyncio.to_thread(
-            self._invoke_sync,
-            arguments,
-            json_output=json_output,
-            use_session=use_session,
-        )
+        try:
+            return await asyncio.to_thread(self._invoke_sync, arguments,
+                json_output=json_output, use_session=use_session)
+        except asyncio.CancelledError:
+            self._cancelled = True
+            for process in list(self._subprocesses):
+                if process.poll() is None:
+                    process.kill()
+            raise
 
     async def connect(self) -> None:
         """Check the official CLI version and attach the named session to CDP."""
@@ -182,18 +212,13 @@ class AgentBrowserClient:
             use_session=False,
         )
         self.version = str(version).strip()
-        result = await self._invoke(["connect", self.cdp_target])
-        assert isinstance(result, dict)
-        self.connection_result = result
-        self.connected = True
+        await self.reconnect()
 
     async def reconnect(self) -> None:
         """Reattach the named CLI session without closing the browser target."""
         result = await self._invoke(["connect", self.cdp_target])
         assert isinstance(result, dict)
-        self.connection_result = result
         self.connected = True
-        self.reconnect_count += 1
 
     async def close(self) -> None:
         """Close only this CLI session; failures during cleanup are non-fatal."""
@@ -205,12 +230,76 @@ class AgentBrowserClient:
             pass
         self.connected = False
 
-    async def snapshot(self, *, interactive: bool = False) -> AgentBrowserObservation:
-        """Capture compact evidence or the interactive ref namespace used to act."""
-        # Keep the compact tree as the complete recorded accessibility evidence.
-        # The separate interactive tree is the action namespace supplied to the
-        # model and is captured last, so its refs are exactly the refs executed.
-        arguments = ["snapshot", "-i"] if interactive else ["snapshot", "-c"]
+    async def _viewport_geometry(self, targets: dict) -> tuple[dict, dict | None]:
+        viewport = None
+        # Batch read-only checks: no extra snapshots (which would replace
+        # the ref map), no per-ref subprocesses, and no scroll-into-view.
+        boxes: dict[str, dict[str, float]] = {}
+        ordered_refs = list(targets)
+        for start in range(0, len(ordered_refs), 128):
+            chunk = ordered_refs[start:start + 128]
+            checks = ["batch", shlex.join(["eval",
+                "({width:innerWidth,height:innerHeight})"]),
+                *(shlex.join(["get", "box", f"@{ref}"]) for ref in chunk)]
+            results = await self._invoke(checks)
+            if not isinstance(results, list) or len(results) != len(chunk) + 1:
+                raise AgentBrowserError(checks, "invalid viewport geometry batch")
+            viewport_row = results[0]
+            viewport_result = viewport_row.get("result") if isinstance(viewport_row, dict) else None
+            viewport = viewport_result.get("result") if isinstance(viewport_result, dict) else None
+            if (not isinstance(viewport_row, dict) or viewport_row.get("success") is not True
+                    or not isinstance(viewport, dict)
+                    or any(not isinstance(viewport.get(key), (int, float))
+                        or not math.isfinite(viewport[key]) or viewport[key] <= 0
+                        for key in ("width", "height"))):
+                raise AgentBrowserError(checks, "viewport dimensions unavailable")
+            for ref, row in zip(chunk, results[1:]):
+                box = row.get("result") if isinstance(row, dict) else None
+                if not isinstance(row, dict) or row.get("success") is not True or not isinstance(box, dict):
+                    raise AgentBrowserError(checks, f"viewport geometry unavailable for @{ref}")
+                if any(not isinstance(box.get(key), (int, float)) or not math.isfinite(box[key])
+                       for key in ("x", "y", "width", "height")):
+                    raise AgentBrowserError(checks, f"invalid viewport geometry for @{ref}")
+                boxes[ref] = box
+        return boxes, viewport
+
+    def _visible_snapshot(self, snapshot: str, targets: dict, boxes: dict, viewport: dict | None) -> tuple[str, dict]:
+        # Keep only ref-bearing lines. Non-ref structural/context lines can
+        # contain full-page text even after offscreen target refs are gone.
+        lines = []
+        emitted_refs = set()
+        # Child-frame boxes are frame-local, not top-level viewport
+        # coordinates. Snapshot indentation identifies their frame owner.
+        frames: list[tuple[int, float, float, tuple[float, float, float, float]]] = []
+        for line in snapshot.splitlines():
+            indent = len(line) - len(line.lstrip())
+            while frames and frames[-1][0] >= indent:
+                frames.pop()
+            line_refs = [ref for attributes in re.findall(r"\[([^\]]*)\]", line)
+                for ref in re.findall(r"(?:^|[\s,])ref=(@?e\d+)(?=$|[\s,])", attributes)]
+            if len(line_refs) != 1:
+                continue
+            ref = self.action_ref(line_refs[0])
+            box = boxes.get(ref)
+            if box is None:
+                continue
+            offset_x, offset_y = (frames[-1][1], frames[-1][2]) if frames else (0, 0)
+            clip = frames[-1][3] if frames else (0, 0, viewport["width"], viewport["height"])
+            x, y = box["x"] + offset_x, box["y"] + offset_y
+            intersection = (max(x, clip[0]), max(y, clip[1]),
+                min(x + box["width"], clip[2]), min(y + box["height"], clip[3]))
+            if targets[ref]["role"].lower() == "iframe":
+                frames.append((indent, x, y, intersection))
+            if intersection[2] > intersection[0] and intersection[3] > intersection[1]:
+                lines.append(line)
+                emitted_refs.add(ref)
+        snapshot = "\n".join(lines) or "[No executable targets overlap the viewport.]"
+        targets = {ref: target for ref, target in targets.items() if ref in emitted_refs}
+        return snapshot, targets
+
+    async def snapshot(self) -> AgentBrowserObservation:
+        """Capture viewport-overlapping executable refs without scrolling."""
+        arguments = ["snapshot", "-i"]
         payload = await self._invoke(arguments)
         assert isinstance(payload, dict)
         data = payload.get("data")
@@ -232,16 +321,20 @@ class AgentBrowserClient:
                 "role": str(raw_target.get("role", "")),
                 "name": str(raw_target.get("name", "")),
             }
+        boxes, viewport = await self._viewport_geometry(targets)
+        snapshot, targets = self._visible_snapshot(snapshot, targets, boxes, viewport)
         return AgentBrowserObservation(
             text=snapshot.rstrip() + "\n",
-            refs=frozenset(self.action_ref(ref) for ref in refs),
+            refs=frozenset(targets),
             targets=targets,
             origin=str(data.get("origin", "")),
             command=tuple(arguments),
         )
 
-    async def active_page(self) -> AgentBrowserPage:
-        """Return the official agent-browser session's one active tab."""
+
+    async def active_page(self, cdp: Any, *, target_id: str | None = None) -> AgentBrowserPage:
+        """Resolve the CLI tab by exact CDP identity and optionally select it."""
+        requested_target_id = target_id
         arguments = ["tab", "list"]
         payload = await self._invoke(arguments)
         assert isinstance(payload, dict)
@@ -269,11 +362,109 @@ class AgentBrowserClient:
                 arguments,
                 "active tab is missing tabId or url",
             )
-        return AgentBrowserPage(
-            tab_id=tab_id,
-            url=url,
-            title=str(active.get("title", "")).strip(),
-        )
+        target_id = str(active.get("targetId", "")).strip()
+        marker = ""
+        known_tab = cdp.target_registry.get(requested_target_id, {}).get("tab_id") if requested_target_id else None
+        if known_tab and known_tab != tab_id and any(str(tab.get("tabId", "")) == known_tab for tab in tabs if isinstance(tab, dict)):
+            # A cached unrelated tab may be stalled. Select a previously verified
+            # binding before evaluating that tab; still verify the exact ID.
+            await self._invoke(["tab", known_tab])
+            selected = await self.active_page(cdp)
+            if selected.target_id == requested_target_id:
+                return selected
+            cdp.target_registry[requested_target_id].pop("tab_id", None)
+            return await self.active_page(cdp, target_id=requested_target_id)
+        if not target_id:
+            from ..capture import LIVENESS_PROBE_SECONDS
+            # The pinned CLI exposes neither targetId nor an isolated-world eval.
+            # A no-op inspector script identifies its executing session through
+            # CDP metadata. It reads/writes no page globals or DOM. The isolated
+            # identity value never enters the main world, even transiently.
+            source_url = "w8-recorder-binding:" + secrets.token_hex(32)
+            cdp.identity_reads[source_url] = set()
+            sessions = []
+            prepared = []
+            receipts = []
+            try:
+                for candidate in list(cdp.target_registry):
+                    receipt = {"target_id": candidate, "started_at": time.time(), "stage": "attach"}
+                    try:
+                        session_id = str((await asyncio.wait_for(cdp.call("Target.attachToTarget", {
+                            "targetId": candidate, "flatten": True}, attached=False),
+                            timeout=LIVENESS_PROBE_SECONDS))["sessionId"])
+                        sessions.append(session_id)
+                        receipt["stage"] = "inspector_enable"
+                        await asyncio.wait_for(cdp.call("Debugger.enable", {"maxScriptsCacheSize": 0},
+                            session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                        await asyncio.wait_for(cdp.call("Debugger.setSkipAllPauses", {"skip": True},
+                            session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                        prepared.append((candidate, session_id))
+                        receipt["status"] = "prepared"
+                    except Exception as error:
+                        receipt.update(status="error", error_type=type(error).__name__)
+                        if cdp._page_failure is not None:
+                            raise cdp._page_failure
+                        if getattr(cdp, "_transport_error", None) is not None:
+                            raise cdp._transport_error
+                    finally:
+                        receipt["ended_at"] = time.time()
+                        receipts.append(receipt)
+                await self._invoke(["eval", "void 0\n//# sourceURL=" + source_url])
+                # Fences on prepared sessions flush scriptParsed events. Failure
+                # on an unrelated tab does not choose or invalidate the actor tab.
+                for candidate, session_id in prepared:
+                    try:
+                        await asyncio.wait_for(cdp.call("Debugger.disable", session_id=session_id),
+                            timeout=LIVENESS_PROBE_SECONDS)
+                    except Exception as error:
+                        receipts.append({"target_id": candidate, "stage": "inspector_disable",
+                            "status": "error", "error_type": type(error).__name__})
+                        if cdp._page_failure is not None:
+                            raise cdp._page_failure
+                        if getattr(cdp, "_transport_error", None) is not None:
+                            raise cdp._transport_error
+                matches = cdp.identity_reads[source_url]
+                if len(matches) != 1:
+                    raise AgentBrowserError(arguments, "active page has no unique exact CDP target identity")
+                target_id = next(iter(matches))
+                marker = cdp.target_registry.get(target_id, {}).get("identity_marker", "")
+            finally:
+                cdp.identity_reads.pop(source_url, None)
+                for session_id in sessions:
+                    cdp._expected_detaches.add(session_id)
+                    try:
+                        await asyncio.wait_for(cdp.call("Target.detachFromTarget", {
+                            "sessionId": session_id}, attached=False), timeout=LIVENESS_PROBE_SECONDS)
+                    except Exception as error:
+                        receipts.append({"session_id": session_id, "stage": "detach",
+                            "status": "error", "error_type": type(error).__name__})
+                if getattr(cdp, "recording_dir", None) is not None:
+                    from ..recorder_support import append_json_line
+                    for receipt in receipts:
+                        append_json_line(run_directory(cdp.recording_dir, area="logs") / "target_identity.jsonl", receipt)
+            # Reject a tab switch during the identity read, even if URLs match.
+            repeated = await self._invoke(arguments)
+            repeated_tabs = repeated.get("data", {}).get("tabs", []) if isinstance(repeated, dict) else []
+            active_ids = [str(row.get("tabId", "")) for row in repeated_tabs if row.get("active") is True]
+            if active_ids != [tab_id]:
+                raise AgentBrowserError(arguments, "active tab changed during exact target binding")
+        page = AgentBrowserPage(tab_id=tab_id, url=url,
+            title=str(active.get("title", "")).strip(), target_id=target_id, identity_marker=marker)
+        if requested_target_id and target_id != requested_target_id:
+            # The CLI accepts tab IDs, not CDP target IDs. Resolve candidates
+            # through the same inspector identity; URL and title never select.
+            for tab in tabs:
+                if not isinstance(tab, dict) or str(tab.get("tabId", "")) == tab_id or tab.get("type", "page") != "page":
+                    continue
+                candidate_tab = str(tab.get("tabId", ""))
+                if not candidate_tab:
+                    continue
+                await self._invoke(["tab", candidate_tab])
+                candidate = await self.active_page(cdp)
+                if candidate.target_id == requested_target_id:
+                    return candidate
+            raise AgentBrowserError(arguments, "requested exact CDP target has no CLI tab")
+        return page
 
     @staticmethod
     def action_ref(value: Any) -> str:
@@ -281,37 +472,110 @@ class AgentBrowserClient:
         ref = "" if value is None else str(value).strip()
         return ref[1:] if ref.startswith("@") else ref
 
-    async def execute(self, decision: dict[str, Any]) -> dict[str, Any] | str:
-        """Map one action to official CLI operations and report normalized input.
+    @staticmethod
+    async def _dispatch_pointer(decision: dict, cdp: Any, viewport: tuple[int, int]) -> dict:
+        action = decision["action"]
+        raw_x, raw_y = decision.get("x"), decision.get("y")
+        if (raw_x is None) != (raw_y is None):
+            raise AgentBrowserBaseError("supply both x and y coordinates in 0 to 1000 units")
+        if raw_x is not None:
+            if any(type(value) is not int or not 0 <= value <= 1000 for value in (raw_x, raw_y)):
+                raise AgentBrowserBaseError("coordinates must be integers from 0 to 1000")
+            x = max(0, min(viewport[0] - 1, round(raw_x * viewport[0] / 1000)))
+            y = max(0, min(viewport[1] - 1, round(raw_y * viewport[1] / 1000)))
+        else:
+            x, y = viewport[0] / 2, viewport[1] / 2
+        coordinates = {"model_coordinates": {"x": raw_x, "y": raw_y, "units": "normalized_1000"},
+            "executed_coordinates": {"x": x, "y": y, "units": "css_pixels"}, "viewport": list(viewport)}
+        cdp.last_pointer_coordinates = coordinates
+        await cdp.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
+        if action == "click":
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
+        else:
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mouseWheel", "x": x, "y": y,
+                "deltaX": 0, "deltaY": decision["pixels"]})
+        return coordinates
 
-        Most actions issue one CLI operation. A ref-targeted scroll first hovers
-        the ref and then issues the wheel operation so nested panes can receive it.
+    @staticmethod
+    async def _dispatch_key(decision: dict, cdp: Any) -> None:
+        parts = str(decision["key"]).split("+")
+        aliases = {"CTRL": "Control", "CONTROL": "Control", "ALT": "Alt",
+            "SHIFT": "Shift", "META": "Meta", "CMD": "Meta", "COMMAND": "Meta"}
+        modifiers = 0
+        for part in parts[:-1]:
+            name = aliases.get(part.upper())
+            if name is None:
+                raise AgentBrowserBaseError(f"unsupported key modifier: {part}")
+            modifiers |= {"Alt": 1, "Control": 2, "Meta": 4, "Shift": 8}[name]
+        key = parts[-1]
+        key = {"ESC": "Escape", "SPACE": " ", "ARROWUP": "ArrowUp",
+            "ARROWDOWN": "ArrowDown", "ARROWLEFT": "ArrowLeft",
+            "ARROWRIGHT": "ArrowRight", "ENTER": "Enter", "TAB": "Tab",
+            "BACKSPACE": "Backspace", "DELETE": "Delete", "HOME": "Home",
+            "END": "End", "PAGEUP": "PageUp", "PAGEDOWN": "PageDown"}.get(key.upper(), key)
+        code = {"Enter": 13, "Tab": 9, "Backspace": 8, "Delete": 46,
+            "Escape": 27, " ": 32, "ArrowLeft": 37, "ArrowUp": 38,
+            "ArrowRight": 39, "ArrowDown": 40, "Home": 36, "End": 35,
+            "PageUp": 33, "PageDown": 34}.get(key)
+        if code is None and len(key) == 1 and key.isascii() and key.isalnum():
+            code = ord(key.upper())
+        if code is None:
+            raise AgentBrowserBaseError(f"unsupported key: {key}")
+        params = {"key": key, "windowsVirtualKeyCode": code, "modifiers": modifiers}
+        if not modifiers and (len(key) == 1 or key == "Enter"):
+            params["text"] = "\r" if key == "Enter" else key
+        await cdp.call("Input.dispatchKeyEvent", {"type": "keyDown", **params})
+        await cdp.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", **{k: v for k, v in params.items() if k != "text"}})
+
+    async def _execute_input(self, decision: dict, cdp: Any, viewport: tuple[int, int]) -> dict:
+        # Coordinate and focused-keyboard actions use browser input events only: no locators,
+        # accessibility tree, Runtime.evaluate, or DOM-based hit testing.
+        # Both modes share these primitives; only DOM refs use the CLI.
+        action = decision["action"]
+        coordinates = {}
+        if action == "navigate":
+            result = await cdp.call("Page.navigate", {"url": decision["url"]})
+            if result.get("errorText"):
+                raise AgentBrowserBaseError(result["errorText"])
+        elif action == "back":
+            history = await cdp.call("Page.getNavigationHistory")
+            index = int(history["currentIndex"]) - 1
+            if index < 0:
+                raise AgentBrowserBaseError("no previous navigation entry")
+            await cdp.call("Page.navigateToHistoryEntry", {"entryId": history["entries"][index]["id"]})
+        elif action in {"click", "scroll"}:
+            coordinates = await self._dispatch_pointer(decision, cdp, viewport) or {}
+        elif action == "type":
+            await cdp.call("Input.insertText", {"text": decision["text"]})
+        elif action == "press":
+            await self._dispatch_key(decision, cdp)
+        elif action == "wait":
+            await asyncio.sleep(decision["seconds"])
+        else:
+            raise AgentBrowserBaseError(f"action {action!r} is not executable")
+        # Event delivery is not confirmation of a page-level outcome.
+        return {"success": True, "status": "input_dispatched", **coordinates}
+
+    async def execute(self, decision: dict[str, Any], *, cdp: Any,
+                      viewport: tuple[int, int] = (1365, 768)) -> dict[str, Any] | str:
+        """Map one action to browser input and report delivery.
+
+        Reference clicks use the CLI. A reference-targeted scroll first hovers
+        the ref and then scrolls so nested panes can receive input. Actions
+        without a reference use CDP input or a local wait.
         """
+        if decision.get("id") is None:
+            return await self._execute_input(decision, cdp, viewport)
         action = str(decision["action"])
         ref = self.action_ref(decision.get("id"))
         selector = f"@{ref}" if ref else ""
-        text = "" if decision.get("text") is None else str(decision.get("text"))
-
-        if action == "navigate":
-            url = "" if decision.get("url") is None else str(decision.get("url")).strip()
-            if not url.startswith(("http://", "https://")):
-                raise AgentBrowserBaseError("navigate requires an http(s) URL")
-            return await self._invoke(["open", url])
-        if action == "back":
-            return await self._invoke(["back"])
         if action == "click":
             return await self._invoke(["click", selector])
-        if action == "fill":
-            return await self._invoke(["fill", selector, text])
-        if action == "type":
-            if selector:
-                return await self._invoke(["type", selector, text])
-            return await self._invoke(["keyboard", "type", text])
-        if action == "select":
-            return await self._invoke(["select", selector, text])
-        if action == "press":
-            key = "" if decision.get("key") is None else str(decision.get("key"))
-            return await self._invoke(["press", key])
         if action == "scroll":
             raw_pixels = (
                 800.0
@@ -336,18 +600,5 @@ class AgentBrowserClient:
                     "pixels": magnitude if direction == "down" else -magnitude,
                 },
                 "hover_issued": hover_issued,
-            }
-        if action == "wait":
-            raw_seconds = (
-                1.0
-                if decision.get("seconds") is None
-                else float(decision.get("seconds"))
-            )
-            milliseconds = round(1000 * min(10.0, max(0.0, raw_seconds)))
-            result = await self._invoke(["wait", str(milliseconds)])
-            assert isinstance(result, dict)
-            return {
-                **result,
-                "normalized_parameters": {"seconds": milliseconds / 1000},
             }
         raise AgentBrowserBaseError(f"action {action!r} is not executable")

@@ -6,9 +6,20 @@ from __future__ import annotations
 import argparse
 import http.client
 import json
+import math
 import os
 import sys
 from typing import Any
+
+
+def positive_finite_float(value: str) -> float:
+    try:
+        number = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be finite and positive") from error
+    if not math.isfinite(number) or number <= 0:
+        raise argparse.ArgumentTypeError("must be finite and positive")
+    return number
 
 
 def env_int(name: str, default: int) -> int:
@@ -19,25 +30,33 @@ def env_int(name: str, default: int) -> int:
 def request_version(timeout: float) -> dict[str, Any]:
     host = os.environ.get("CDP_PROBE_HOST", "127.0.0.1")
     port = env_int("CDP_PORT", 9222)
-    conn = http.client.HTTPConnection(host, port, timeout=timeout)
-    try:
-        conn.request("GET", "/json/version")
-        response = conn.getresponse()
-        body = response.read().decode("utf-8", errors="replace")
-    finally:
-        conn.close()
-    if response.status < 200 or response.status >= 300:
-        raise RuntimeError(f"HTTP {response.status}: {body[:300]}")
-    payload = json.loads(body)
-    if not isinstance(payload, dict):
-        raise RuntimeError("/json/version did not return an object")
-    return payload
+    documents = {}
+    for path in ("/json/version", "/json/protocol"):
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        try:
+            conn.request("GET", path)
+            response = conn.getresponse()
+            body = response.read().decode("utf-8", errors="replace")
+        finally:
+            conn.close()
+        if response.status < 200 or response.status >= 300:
+            raise RuntimeError(f"{path} HTTP {response.status}: {body[:300]}")
+        payload = json.loads(body)
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"{path} did not return an object")
+        documents[path] = payload
+    commands = {command.get("name") for domain in documents["/json/protocol"].get("domains", [])
+                if domain.get("domain") == "ChromiumRL" for command in domain.get("commands", [])}
+    missing = {"enable", "captureStructuredSnapshot", "getModelDOM"} - commands
+    if missing:
+        raise RuntimeError(f"Browser lacks required ChromiumRL commands: {', '.join(sorted(missing))}")
+    return documents["/json/version"]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--timeout", type=float, default=2.0)
+    parser.add_argument("--timeout", type=positive_finite_float, default=2.0)
     args = parser.parse_args()
 
     status: dict[str, Any] = {
@@ -46,7 +65,7 @@ def main() -> int:
         "headless": os.environ.get("CHROMIUM_HEADLESS", "1"),
         "novnc_url": (
             f"http://127.0.0.1:{env_int('NOVNC_PORT', 6080)}/vnc.html?host=127.0.0.1&port={env_int('NOVNC_PORT', 6080)}&autoconnect=1&resize=scale"
-            if os.environ.get("CHROMIUM_HEADLESS", "1") != "1"
+            if os.environ.get("CHROMIUM_HEADLESS", "1") not in {"1", "true", "TRUE", "yes", "YES", "on", "ON"}
             else None
         ),
     }

@@ -1,2 +1,1 @@
-"""Offline experiment control plane."""
-
+"""Completion grading, modality verification, evidence audits and comparisons."""

@@ -1,55 +1,35 @@
 # Runbook
 
-This is the detailed operational guide for `w8-domdiff-bench`. It contains the
-commands for browser setup, task recording, verifier-input preparation, and
-verifier scoring. The [README](../README.md) presents the study and results;
-this runbook contains the full setup and execution steps, artifact details,
-and troubleshooting.
- 
+Follow this guide to build the browser, record tasks and evaluate their paired
+DOM/screenshot evidence. Use the [README](../README.md) for the project overview.
 
-
-Two workflows are available:
-
-1. **Recording** writes a raw browser run under `recordings/`.
-2. **Evaluation** scores local pairs under `trajectories/` or published pairs
-   downloaded under `dataset/`.
-
-| What you want to do | Sections to follow |
+| Workflow | Sections |
 | --- | --- |
-| Record a task | Requirements → Browser build → Get the benchmark and install Python → Create the local browser image → Environment configuration → Browser runtime → Record a task |
-| Score a prepared task | Requirements → Get the benchmark and install Python → Environment configuration → Score a prepared task |
-
+| Record tasks | Requirements → Browser build → Get the benchmark and install Python → Create the local browser image → Environment configuration → Browser runtime → Record a task |
+| Evaluate recordings | Requirements → Get the benchmark and install Python → Environment configuration → Recording and evaluation inputs → Score a prepared task |
 
 ## Requirements
 
-Prepared-pair evaluation requires 64-bit Linux or WSL 2, Git, Python 3.10 or
-newer, network access for dependencies and prepared data, and an OpenAI API
-key for executed model calls.
-
-Figure rendering and the full test suite also require Cairo. On Ubuntu or
-WSL, install it with `sudo apt install libcairo2`.
-
-Recording additionally requires Docker Engine with Compose and Buildx,
-`rsync`, approximately 32 GiB of RAM, and about 200 GiB of free disk space
-for Chromium.
-
-Keep the workspace on a Linux filesystem. Chromium builds under `/mnt/c` are
-considerably slower and can encounter filesystem compatibility problems.
+Use 64-bit Linux or WSL 2, Git, Python 3.10 or higher, network access, and a Google
+API key for paid model calls. Install Cairo with `sudo apt install libcairo2`.
+Recording also requires Docker Engine with Compose and Buildx, `rsync`, about
+32 GiB RAM and 200 GiB free disk space for Chromium. Keep the build on a Linux
+filesystem; `/mnt/c` is slower and can cause filesystem compatibility problems.
 
 ## Browser build
 
 ### 1. Create the build workspace and install `depot_tools`
 
-Create the browser build workspace:
+Create the workspace:
 
 ```bash
 mkdir -p w8-browser-build
 cd w8-browser-build
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-export PATH="$PATH:$(pwd)/depot_tools"
+export PATH="$(pwd)/depot_tools:$PATH"
 ```
 
-Run the `export` command in every terminal used for the Chromium build.
+Run the `export` command from `w8-browser-build` in every build terminal.
 
 ### 2. Fetch Chromium
 
@@ -62,74 +42,53 @@ gclient sync --nohooks \
   --reset --upstream -D --force --no-history --shallow
 ```
 
-The first download can take more than an hour. If it is interrupted, restore
-the `depot_tools` path, return to the `chromium` directory, and run the same
-`gclient sync` command again.
+If interrupted, restore the `depot_tools` path and repeat `gclient sync` from
+`chromium`. For an HTTP 429, allow a cooldown and retry with `--jobs=1`.
 
-### 3. Build the pinned Chromium revision
+### 3. Apply the browser overlay
+
+From `w8-browser-build/chromium`, return to the shared workspace, clone
+Wootzapp Browser and copy its `src/` overlay:
 
 ```bash
-cd src
-./build/install-build-deps.sh
-gclient runhooks
-gn gen out/Release --args='is_debug=false
+cd ../..
+git clone https://github.com/wootzapp/wootzapp-browser.git
+sudo chmod -R u+w w8-browser-build/chromium/src
+cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
+```
+
+### 4. Build Chromium
+
+Compile the overlaid source:
+
+```bash
+(
+  set -euo pipefail
+  export PATH="$(pwd)/w8-browser-build/depot_tools:$PATH"
+  cd w8-browser-build/chromium/src
+  ./build/install-build-deps.sh
+  gclient runhooks
+  gn gen out/Release --args='is_debug=false
 is_component_build=false
 symbol_level=0
 blink_symbol_level=0
 v8_symbol_level=0
 proprietary_codecs=true
 ffmpeg_branding="Chrome"'
-autoninja -C out/Release chrome
-./out/Release/chrome --version
+  autoninja -C out/Release chrome
+  ./out/Release/chrome --version
+)
 ```
 
-Do not continue unless this build succeeds.
-
-### 4. Fetch the Wootzapp Browser source overlay
-
-After the first build, return to the directory containing
-`w8-browser-build`, then clone the public browser repository:
-
-```bash
-cd ../../..
-git clone https://github.com/wootzapp/wootzapp-browser.git
-git -C wootzapp-browser checkout --detach 02bf5a35c5a7d02371deb6afa6adb57cc73aae72
-```
-
-The overlay revision is pinned in `protocol/browser-build.json`.
-
-### 5. Apply the overlay and rebuild
-
-Copy the maintained source overlay into Chromium:
-
-```bash
-sudo chmod -R u+w w8-browser-build/chromium/src
-cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
-```
-
-Only files below `wootzapp-browser/src/` are applied.
-
-```bash
-cd w8-browser-build/chromium
-gclient runhooks
-cd src
-gn gen out/Release
-autoninja -C out/Release chrome
-./out/Release/chrome --version
-cd ../../..
-```
-
-The existing `out/Release` directory retains the arguments from the first
-build. The final command returns to the shared workspace.
+Require a successful build. The shell stays in the shared workspace.
 
 ## Get the benchmark and install Python
 
-The browser-build flow is now back in the shared workspace containing
-`w8-browser-build`. Evaluation-only users can run the following commands from
-the directory where they want to keep the benchmark:
+From the directory containing `w8-browser-build`, or your chosen workspace for
+evaluation-only use:
 
 ```bash
-git clone https://github.com/wootzapp/w8-domdiff-bench.git
+git clone --branch paired-capture https://github.com/wootzapp/w8-domdiff-bench.git
 cd w8-domdiff-bench
 ```
 
@@ -138,347 +97,647 @@ Create the Python environment:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[test]"
+.venv/bin/python -m pip install -e ".[test]"
 ```
 
-The `scripts/` wrappers use this checkout's `.venv/bin/python`.
+The wrappers use this checkout's `.venv/bin/python`. Installations include the
+verifier integrity manifests; preflight verifies both packages and shared dependencies.
+
+Install the Hugging Face CLI and download the catalog and frozen rubrics:
+
+```bash
+curl -LsSf https://hf.co/cli/install.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+hf download WootzappLab/browser-agent-tasks tasks.jsonl \
+  --type dataset --revision paired-capture --local-dir data
+hf download WootzappLab/browser-agent-tasks --include "rubrics/*.json" \
+  --type dataset --revision paired-capture --local-dir data
+```
+
+The [dataset branch](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/paired-capture)
+stores published data. The launcher fetches tasks from `TASK_CATALOG_URL` and
+freezes the catalog once per batch. `--catalog-file` selects an explicit local
+snapshot; the local `data/` copy serves offline checks and rubric preparation.
 
 ## Create the local browser image
 
-From the benchmark repository, prepare the browser runtime payload:
+From the benchmark repository, stage the Release runtime files and build the image:
 
 ```bash
-rm -rf build
-mkdir build
-cd ../w8-browser-build/chromium/src
-gn desc out/Release //chrome:chrome runtime_deps | \
-  rsync -aR --files-from=- out/Release/ ../../../w8-domdiff-bench/build/
-test -x ../../../w8-domdiff-bench/build/chrome
-cd ../../../w8-domdiff-bench
+(
+  set -euo pipefail
+  bench_repo="$(pwd)"
+  bench_chromium_src="$bench_repo/../w8-browser-build/chromium/src"
+  bench_overlay="$bench_repo/../wootzapp-browser"
+  export PATH="$bench_repo/../w8-browser-build/depot_tools:$PATH"
+  rm -rf "$bench_repo/build"
+  mkdir "$bench_repo/build"
+  (
+    cd "$bench_chromium_src"
+    gn desc out/Release //chrome:chrome runtime_deps | \
+      rsync -aR --files-from=- out/Release/ "$bench_repo/build/"
+  )
+  test -x "$bench_repo/build/chrome"
+  CHROMIUM_IMAGE_NAME=w8-core:domdiff-bench \
+    ./scripts/build-browser-image "$bench_chromium_src" "$bench_overlay"
+  docker image inspect w8-core:domdiff-bench
+)
 ```
 
-Build and inspect the image:
-
-```bash
-./scripts/build-browser-image
-docker image inspect w8-core:domdiff-bench
-```
-
-The build checks the pinned overlay, applied source files, protocol and copied
-Release binary. It includes a `browser-build.json` receipt and source-revision
-labels. For other source locations, pass the Chromium source directory and
-browser-overlay directory as the script's two arguments.
-
-The image remains in the local Docker engine after the terminal closes. It
-only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or image
-runtime files change.
+The [build script](../scripts/build-browser-image) verifies the local source/protocol
+[pins](../protocol/browser-build.json) and copied binary. It launches the staged
+executable with a temporary profile and checks structured capture, model DOM and
+screenshot capture on a local fixture before building the image. The image's
+`browser-build.json` records the binary SHA-256 and capability result. The script
+does not fetch or switch the overlay.
+Set `.env`'s `IMAGE` to the built tag/digest, retain `SYS_NICE` in Compose, and keep
+one browser build throughout the comparison.
 
 ## Environment configuration
 
-If you will record tasks, create the browser configuration from the
-repository root:
+Create the recording configuration from the repository root:
 
 ```bash
-python -m w8bench.task_recorder.browser_runtime configure
+.venv/bin/python -m w8bench.task_recorder.browser_runtime configure
 ```
 
-If you only need verifier scoring, create the environment file without
-starting the browser:
+For evaluation without a browser:
 
 ```bash
-cp .env.example .env
+[ -f .env ] || cp .env.example .env
 ```
 
-Edit `.env`. `OPENAI_API_KEY` is required for executed recording and scoring.
-`OPENAI_MODEL` is also required for recording:
+Edit `.env`; keep keys out of terminal output and Git. Shell environment values
+take precedence over `.env`, and conflicting actor models are rejected.
 
 ```text
-OPENAI_API_KEY=your-api-key
-OPENAI_MODEL=your-supported-model
+GEMINI_API_KEY=your-google-api-key
+ACTOR_MODEL=gemini-3.8-flash
+NATIVE_JUDGE_PROFILE=primary
+EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview
+EVIDENCE_ADJUDICATOR_MODEL=gemini-4-argon
+TASK_CATALOG_URL=https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/resolve/paired-capture/tasks.jsonl
 ```
 
-Use `OPENAI_MODEL=gpt-5.6` to match the benchmark's recording model. Other
-supported models are allowed; the selected model is saved in `task.json`.
-The recorder reads this setting from the environment, with `--model` as an
-explicit override. It does not supply a fixed acting model.
+Models and judge endpoints are listed in the [datacard](datacard.md#judge-delivery)
+and `config/`. Model stages use Google's GenerateContent API through direct requests.
 
-Audit models use `.env` settings `EVIDENCE_AUDIT_MODEL` (inventory) and
-`EVIDENCE_ADJUDICATOR_MODEL` (adjudication). Set both explicitly. The matching
-CLI flags override them. Google models require `GEMINI_API_KEY` and
-`python -m pip install -e ".[gemini]"`. Judge settings remain in `config/`.
+| Setting | Purpose |
+| --- | --- |
+| `IMAGE` | Browser tag or digest |
+| `COMPOSE_PROJECT_NAME`, `CONTAINER_NAME` | Isolated service identities |
+| `CDP_HOST_PORT`, `NOVNC_HOST_PORT`, `VNC_HOST_PORT` | Browser-control and viewing ports |
+| `CHROMIUM_HEADLESS` | Display mode |
+| `CHROMIUM_RESET_PROFILE` | `1` clears browser history, cookies and storage at startup; host recordings are separate |
+| `GEMINI_BASE_URL` | Actor and normal completion endpoint |
+| `TASK_CATALOG_URL` | Hugging Face catalog source for task selection |
+| `W8_RUN_NAME` | Default recording name |
+
+Configure creates isolated service names and free ports, preferring CDP 49335,
+noVNC 16191 and VNC 15911. Use its printed names and URLs.
 
 ## Browser runtime
 
-Start the browser and verify every runtime component:
+Start and check the service:
 
 ```bash
-docker compose --env-file .env up -d --wait w8-core
-python -m w8bench.task_recorder.browser_runtime status
+docker compose --env-file .env config --quiet
+docker compose --env-file .env up -d --wait --force-recreate w8-core
+.venv/bin/python -m w8bench.task_recorder.browser_runtime status
+docker compose --env-file .env ps
 ```
 
-The status command prints the noVNC URL and checks the container, CDP,
-browser version, and bundled agent-browser version.
+Require healthy status and `ChromiumRL: ready`. Runtime health and status check
+the required ChromiumRL commands as well as CDP reachability. The launcher checks
+Compose ownership and creates a fresh browser per attempt. Run one batch at a time without other
+recordings or fixture checks on its browser; headless status skips noVNC.
 
 ## Record a task
 
-Run a catalog task:
+Commands below use the repository root. Scheduled paired runs require frozen rubrics.
+Diagnostics use `--execute` to submit provider requests; `--help` makes no browser
+or provider calls.
+
+### Check the configuration and schedule
 
 ```bash
-mkdir -p recordings
-./scripts/run-task task8 --output-dir recordings
+.venv/bin/python scripts/check-configuration.py
 ```
 
-Run a manual task:
+This [local check](../scripts/check-configuration.py) validates settings, key presence,
+catalog balance and package integrity without testing credit balance or provider access.
+Check browser ownership and reachability:
 
 ```bash
-./scripts/run-task local-check "Readable task name" \
+.venv/bin/python -m w8bench.task_recorder.browser_runtime status
+```
+
+Set `BENCH_TRIALS` to any positive integer and inspect the schedule:
+
+```bash
+: "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
+./scripts/run-task --trials "$BENCH_TRIALS" --catalog-file data/tasks.jsonl \
+  --max-turns 200 --max-output-tokens 10000 \
+  --output-dir recordings --run-name plan1 \
+  --judge-model gemini-3.6-flash --dry-run
+```
+
+Inspect the printed run names and paths. This command omits `--rubric-dir`, so
+it writes planning previews, not executable ledgers. With frozen rubrics, the
+recording commands supply `--rubric-dir` to create `ledger.jsonl` in each trial
+folder. Inspect all `80 × k` rows, alternating order, paths and settings; never
+rename `schedule_preview.jsonl` to `ledger.jsonl`.
+
+Expiry uses the inclusive UTC date in `internal/task_validity.json`; an explicit
+`--allow-expired` override must also be retained on resume. Broken-task replacements
+need a readiness reason/receipt, never a poor score. **Model calls: 0.**
+
+### Generate and review rubrics
+
+The catalog's frozen rubrics are in `data/rubrics` and are reused for recording
+and evaluation. Preparation requires an empty frozen-output directory. For a
+separate rubric version, use separate draft and rubric directories consistently
+in preparation, recording and evaluation commands.
+
+The generator sends expanded task text and start URL to `gemini-3.1-pro-preview`,
+using the native rubric and dependency prompts without actor results.
+Start with the read-only preflight:
+
+```bash
+.venv/bin/python -m w8bench.verifier.generate_frozen_rubric \
+  --stage draft --catalog-file data/tasks.jsonl \
+  --draft-dir internal/rubrics/drafts --rubric-dir data/rubrics
+```
+
+Generate rubric drafts:
+
+```bash
+.venv/bin/python -m w8bench.verifier.generate_frozen_rubric \
+  --stage draft --catalog-file data/tasks.jsonl \
+  --draft-dir internal/rubrics/drafts --rubric-dir data/rubrics --execute
+```
+
+Run one preparation command at a time; repeat it with matching tasks/settings to
+resume, retaining prior usage. Authentication exhaustion leaves a partial catalog
+and nonzero exit. Frozen versions refuse drafting; revisions need a distinct version.
+
+Create the offline review file:
+
+```bash
+.venv/bin/python -m w8bench.verifier.generate_frozen_rubric \
+  --stage review --catalog-file data/tasks.jsonl \
+  --draft-dir internal/rubrics/drafts --rubric-dir data/rubrics --execute
+```
+
+Review coverage, constraints, observability, weights, overlap and run-time values in
+`internal/rubrics/review.md`. Correct drafts without changing task identity/text/URL,
+then regenerate the review; changed drafts lose approval. Generation uses
+**80 nominal calls** before retries; review uses **0**. `task_XX.metrics.json`
+retains usage and unknown costs.
+
+### Approve and freeze rubrics
+
+In `internal/rubrics/review.json`, fill `approved_by`, `approval_date` (`YYYY-MM-DD`)
+and every task's `approved: true` and nonempty `review_notes`. Leave binding hashes intact.
+Validate, then freeze offline:
+
+```bash
+.venv/bin/python -m w8bench.verifier.generate_frozen_rubric \
+  --stage freeze --catalog-file data/tasks.jsonl \
+  --draft-dir internal/rubrics/drafts --rubric-dir data/rubrics
+
+.venv/bin/python -m w8bench.verifier.generate_frozen_rubric \
+  --stage freeze --catalog-file data/tasks.jsonl \
+  --draft-dir internal/rubrics/drafts --rubric-dir data/rubrics --execute
+```
+
+Require 40 valid rubrics. Freeze verifies bindings/weights and writes
+`data/rubrics/task_XX.json` plus `internal/rubrics/freeze.json`; changed frozen files
+are refused. Reuse them across arms, trials and judges. **Model calls: 0.**
+
+### Recording controls
+
+| Setting | Value |
+| --- | --- |
+| Actor | `gemini-3.8-flash`, MEDIUM thinking, temperature unset |
+| Model turns | At most 200 |
+| Output limit, including reasoning | Exactly 10,000 tokens |
+| Memory | 8,000 characters |
+| Viewport | 1365 × 768 CSS pixels, device pixel ratio 1 |
+| Screenshot media | HIGH; 1,100-token local image allowance |
+| Settle wait | 1 second |
+| Stall matches | Private advisories; proposals are not rejected |
+
+Keep controls equal; see [arm differences](datacard.md#observation-modes).
+Screenshot coordinates are 0–1000 integers, converted once to CSS pixels.
+Estimates above 50% input capacity trigger `countTokens` with a recorded fallback;
+confirmed/estimated overflow above 95% stops technically without truncation.
+Received responses count as turns; preflight/failed transport attempts do not.
+[Recovery rules](datacard.md#browser-recovery) allow transient request retries and
+one fresh technical rerun, without replaying actions. Website blocks, actor failures,
+turn caps and provider auth/quota/billing do not trigger that rerun. Final-attempt
+success/turns/tokens and earlier technical-attempt costs are reported separately.
+
+### Check model compatibility
+
+The compatibility check makes **7 nominal paid requests** covering both actors, native/rubric
+transports, completion, inventory and adjudication:
+
+```bash
+.venv/bin/python scripts/check-model-compatibility.py --execute
+```
+
+Require permitted IDs, complete responses, valid schema/JSON and readable markers in
+`internal/compatibility/check_NNNN/result.json`. Stop on mismatches/unsupported settings.
+The native ID gate is stricter than production diagnostics; the pilot checks long-context fit.
+
+### Browser coordinate calibration
+
+Use an idle browser: the fixture opens a page and closes other task tabs.
+This synthetic check makes **0 model calls**:
+
+```bash
+W8_CALIBRATION_CDP_URL="$(.venv/bin/python - <<'PY'
+import os
+from pathlib import Path
+from w8bench.task_recorder.runner import load_env
+load_env(Path('.env'))
+print('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'])
+PY
+)" .venv/bin/python -m pytest -q -s tests/capture/test_evidence.py \
+  -k normalized_coordinate_calibration_in_w8
+```
+
+Require all six hits, matching viewport/image dimensions and DPR 1 in
+`reports/browser_calibration/run_N/calibration.json`.
+Test the real screenshot actor/executor (**6 responses**):
+
+```bash
+.venv/bin/python scripts/calibrate-coordinates.py --execute
+```
+
+Require six hits, valid coordinates/IDs and complete responses in
+`internal/coordinate_calibration/check_NNNN/result.json`. The actor sees only its screenshot.
+
+### Screenshot text calibration
+
+With the browser idle, read fixture strings at 8, 10, 12 and 14 CSS pixels
+using HIGH (**1 paid response**, no actor action executed):
+
+```bash
+.venv/bin/python scripts/calibrate-text.py --execute
+```
+
+Review accuracy, ID, completeness and HIGH in
+`internal/screenshot_text_calibration/check_NNNN/result.json`; fixture accuracy does
+not guarantee general legibility. All three diagnostics use **14 nominal requests**, before retries.
+
+### Record the pilot
+
+Use task_01 (easy), task_12 (medium), task_29 (hard) and task_35 (complex), both
+arms, one trial each. Plan first:
+
+```bash
+./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
+  --output-dir recordings --run-name pilot1 --dry-run
+```
+
+Set `BENCH_PILOT_RUN` to the printed name, then execute and inspect:
+
+```bash
+: "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
+export BENCH_PILOT_RUN
+./scripts/run-task task_01 task_12 task_29 task_35 --trials 1 \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
+  --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
+
+./scripts/run-comparison --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" \
+  --output "reports/$BENCH_PILOT_RUN"
+```
+
+Each task/trial records both arms before completion, native verification and
+inventory; formats are paired only within a run. The
+[ledger evaluator](#controls-and-outputs) resumes evaluation, and loss decisions use
+[final adjudication](#final-adjudication). The ledger contains eight scheduled rows,
+with technical rerun attempts nested in each row. Per-run artifacts record
+isolation, capture integrity, returned IDs, rubric bindings, grades, coverage
+and costs. The pilot allows up to
+1,600 final-attempt responses, another 1,600 for technical reruns and 9,600 transport
+attempts; judge calls vary. Check [capture receipts](recordings.md#capture-intervals)
+for readiness/paired coverage: both arms reuse the 90-second navigation bound,
+and empty exports—including PDFs—remain valid paired observations with a screenshot.
+
+### Record the collection
+
+Use any positive `BENCH_TRIALS`; omit task selectors for all 40 tasks:
+
+```bash
+: "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
+./scripts/run-task --trials "$BENCH_TRIALS" \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
+  --output-dir recordings --run-name run1 --dry-run
+```
+
+Set `BENCH_FIRST_RUN` to the printed first run name and execute the schedule:
+
+```bash
+: "${BENCH_FIRST_RUN:?Set the printed first run name}"
+./scripts/run-task --trials "$BENCH_TRIALS" \
+  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
+  --output-dir recordings --run-name "$BENCH_FIRST_RUN" --resume
+```
+
+The schedule uses adjacent trial folders: starting from `run1` creates `run1`,
+`run2` and so on. Each contains its own catalog snapshot and 80-row ledger. All
+`80 × k` rows and technical attempts remain accounted for; arm order alternates
+and execution continues after individual errors. Reconcile every row and
+evaluation coverage. The response
+budget is 16,000 × k for final attempts plus the same for technical reruns, with up
+to 96,000 × k actor-generation transport attempts. Every final recording gets completion, native
+verification and inventory with frozen rubrics. The [final adjudication command](#final-adjudication)
+uses saved inventories; evidence and retries determine judge work.
+
+### Resume a recording
+
+Repeat execution with `--resume`, the same first run name and trial count to
+retain completed attempts and continue technical reruns. Catalog, trials, rubrics, settings and browser must
+match. Use a separate purpose/sequence name for another plan, without dates/times.
+Without `--resume`, collisions select the next free sequence of run names. Interrupted attempts reconcile from
+receipts; active recorders/launchers/judges must finish or stop first. Retry judging
+[separately](#controls-and-outputs) without repeating actors or discarding receipts.
+
+### Record one arm or a manual task
+
+A single-task command selects one arm and keeps a local attempt ledger:
+
+```bash
+./scripts/run-task task_12 --observation-mode dom \
+  --output-dir recordings --run-name single_task
+```
+
+Use `--observation-mode screenshot` for the other arm. Single tasks support
+`--catalog-url` and non-reserving `--dry-run`. `--no-browser-start` marks the initial
+attempt nonfresh; technical reruns start fresh. Manual tasks require instruction and URL:
+
+```bash
+./scripts/run-task local-check \
   --task "Inspect the page and report the requested visible values." \
-  --start-url "https://example.com/" \
-  --output-dir recordings
+  --start-url "https://example.com/" --observation-mode dom \
+  --output-dir recordings --run-name manual_check
 ```
 
-Human intervention is disabled by default. Use `--allow-human-intervention`
-only to permit assistance with a CAPTCHA or similar access challenge.
-Requests, timestamps and resume/abort status are logged and counted in the
-manifest; individual human clicks are not exported as agent actions.
-Keep assistance disabled for autonomous benchmark recordings.
-
-Catalog tasks use numbered directories. Additional attempts receive a numeric
-suffix, such as `task_01-2`, without overwriting an existing recording:
-
-```text
-recordings/run_1/task_01/
-  task.json
-  manifest.json
-  decisions.jsonl
-  final.json
-  trajectory.jsonl
-  web_surfer.log
-  steps/
-    step_001/
-      dom.json
-      dom_full.txt
-      dom_model.json
-      dom_model.txt
-      screenshot.png
-      agent_browser.txt
-      agent_browser_actions.txt
-      action.json
-```
-
-The first step is the initial state. Each later step is the state after an
-executed action. The final step can have no `action.json`.
+Human intervention is disabled. IDs select subsets of `task_01`–`task_40`; batches
+use scheduled catalog text, frozen rubrics and the explicit judge shown above.
 
 ## Recording and evaluation inputs
 
-The recorder output and verifier input are different contracts.
+Validate and stage same-run verifier inputs outside the immutable source tree:
 
-The recorder writes numbered step directories. The verifier expects a paired
-task bundle:
-
-```text
-trajectories/run_1/
-  data-ss/task_01/
-    task_data.json
-    final_answer.json
-    web_surfer.log
-    screenshot0.png
-    screenshot1.png
-  data-dom/task_01/
-    task_data.json
-    final_answer.json
-    web_surfer.log
-    dom_model0.txt
-    dom_model1.txt
+```bash
+.venv/bin/python -m w8bench.task_recorder.prepare_verifier_data \
+  recordings/run1 trajectories
 ```
 
-Both sides share the task, action history, and final answer. An execution with
-`N` actions supplies `N+1` captured states: the initial state and each after-state.
-The [dataset card](datacard.md#prepared-trajectory-files) describes the files.
+Add `--dry-run` to validate only. Exports retain task/arm/trial/hash identity, state
+IDs, format gaps and `input_receipt.json` under
+`trajectories/<run-name>/<arm>/<task-id>/`. Navigation states stay in verifiers but
+not directional audits; empty exports stay valid. Follow [export rules](recordings.md#integrity-and-export)
+for shared histories, URL checks and incomplete recordings. Never pair across runs.
 
 ## Score a prepared task
 
-For the full comparison, either prepare your recordings or fetch the published
-trajectories from Hugging Face. Choose one path below. Evaluation itself does
-not require the browser container.
+Evaluation uses finalized same-run evidence and frozen rubrics, without a browser:
+common completion → both native verifiers → audit, with identity and validity-date bindings.
 
 ### Use your recordings
 
-Convert the selected run's recordings into paired verifier inputs:
+Set the recording path from its ledger row and the matching task ID. Preflight,
+then execute or resume grading:
 
 ```bash
-python -m w8bench.task_recorder.prepare_verifier_data
+: "${BENCH_RECORDING:?Set one completed recording path from ledger.jsonl}"
+: "${BENCH_TASK_ID:?Set its task_XX catalog identity}"
+.venv/bin/python -m w8bench.verifier.run_comparison \
+  --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
+  --judge-model gemini-3.6-flash
+
+.venv/bin/python -m w8bench.verifier.run_comparison \
+  --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
+  --judge-model gemini-3.6-flash --execute
 ```
 
-- Original recordings and existing pairs are preserved; missing usable pairs are added.
-- Successes and failures are included when their captured evidence is usable.
-- `preparation_report.json` records source paths, hashes, warnings, and exclusions.
-  Exclusions return exit code 1; inspect the report before scoring.
-- Add `--dry-run` to check without writing. Use a separate output folder for a
-  different collection.
+Without `--execute`, this makes no calls or writes. Completed bound stages are
+reused; ungraded stages can retry with prior costs retained. The ledger evaluator
+reconciles bound stage receipts without repeating actors. Keep evidence, settings
+and receipts intact.
 
-Set `W8_RUN_NAME=run_1` in `.env`, or pass `--run-name run_1` to the commands.
-Recordings, trajectories and evaluations use the same run name. A different
-run uses a different folder, without changing the captured files.
-
-Independent runs use the same frozen rubrics:
-
-```bash
-python -m w8bench.task_recorder.prepare_verifier_data --run-name run_2 --frozen-rubrics evaluations/run_1
-./scripts/run-comparison --all --run-name run_2 --data-source local --frozen-rubrics evaluations/run_1 --execute
-```
-
-Validate the local pairs without model calls:
-
-```bash
-./scripts/run-comparison --all --data-source local
-```
-
-Run the full evaluation:
-
-```bash
-./scripts/run-comparison --all --data-source local --execute
-```
-
-### Use published trajectories
-
-If you have not recorded tasks, fetch and validate the published pairs:
-
-```bash
-./scripts/run-comparison --all --data-source huggingface
-```
-
-Run their evaluation:
-
-```bash
-./scripts/run-comparison --all --data-source huggingface --execute
-```
+Primary `completion.json` uses paired screenshots/DOM. Optional
+`--judge-evidence-policy actor_native` writes `completion_actor_native.json` separately.
+Use matching primary policies; `--judge-profile primary` and `pro` have separate roots.
+See [grading/repair rules](evaluation-protocol.md#completion-grading): completion/audit
+refusals and exhausted judgments stay ungraded; native ID mismatches are diagnostic.
 
 ### Controls and outputs
 
-- Local mode reads `trajectories/<run-name>/`; Hugging Face mode downloads to `dataset/<run-name>/`.
-  Neither falls back to the other. Changed download caches are rejected.
-- An initial `www`/bare-domain difference is a warning only when the scheme,
-  port, path and query match. Both URLs remain recorded; other hosts fail validation.
-- Replace `--all` with `--task task_01` for one task. `--data-root PATH` selects
-  another local input folder; use task names from the preparation report.
-- Both paths freeze one rubric, score screenshots and DOM text, and audit
-  source loss. `--execute` makes paid calls. The
-  [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
-- Results go to `evaluations/run_1/task_01/batch_01/`; batch summaries go to
-  `evaluations/run_1/batches/batch_01/`. `input_source.json` identifies the input source.
-- New output groups receive the next available batch number. `--run-id` can
-  select a named group; existing task outputs are never overwritten.
-- `run-id` groups outputs, not execution dates. The run manifest records the
-  source task ID and UTC scoring/audit times; batch summaries record their
-  start and completion times.
-- Preparation-report references are relative to their output folder; evaluation
-  references are relative to the repository root. Older absolute paths remain readable.
+The default `--stage evaluate` runs completion, both native verifiers and
+inventory through direct requests. It returns **0** when inventory is ready with
+`evaluation_outcome: awaiting_adjudication`. The launcher uses this stage.
+Evaluation failures retain their status and usage in the ledger.
+
+Set `BENCH_RUN` to one saved run name and preview selection:
+
+```bash
+: "${BENCH_RUN:?Set one saved run name}"
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl"
+```
+
+Evaluate:
+
+```bash
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage evaluate --execute
+```
+
+The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order and
+reconciles bound stage receipts. Completed stages are reused without repeating
+actors; failed stages retain earlier usage when retried.
+
+Preview and execute the Flash-Lite/Pro comparison on the saved pilot recordings:
+
+```bash
+: "${BENCH_PILOT_RUN:?Set the saved pilot run name}"
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" --compare-profiles
+
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" --compare-profiles --execute
+```
+
+`profile_comparison.json` reports agreement, both audits' screenshot-only subsets
+and union/intersection, losses, costs and quality coverage; see [profile rules](evaluation-protocol.md#judge-delivery-and-profiles).
+Completion is shared; native verifiers/audits repeat, actors/rubrics do not.
+Primary and Pro results never mix in primary aggregation.
+
+### Final adjudication
+
+Run final adjudication after all actors and technical reruns in the selected
+run finish.
+The command checks the saved inventories before dispatch. It sends adjudication requests
+only; saved completion, native-verifier and inventory results are reused.
+
+```bash
+: "${BENCH_RUN:?Set one saved run name}"
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage adjudicate
+
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_RUN/ledger.jsonl" --stage adjudicate --execute
+```
+
+`--compare-profiles` adjudicates both profiles' inventories and refreshes their
+comparison. Final loss values appear only after accepted adjudication; unavailable
+audits have no loss rate.
 
 ### Compare recorded runs
 
-Use the same catalog and frozen rubrics for every included run. Supply each
-completed evaluation directory to the aggregator:
+Aggregate one run locally (**0 model calls**):
 
 ```bash
-python -m pip install -e ".[figures]"
+: "${BENCH_RUN:?Set one saved run name}"
+./scripts/run-comparison --ledger "recordings/$BENCH_RUN/ledger.jsonl" \
+  --output "reports/$BENCH_RUN"
 ```
 
-PNG rendering uses the Cairo system library. On Ubuntu or WSL, install it
-with `sudo apt install libcairo2` if it is not already available.
+Aggregate the numbered runs together:
 
 ```bash
-python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --figures-dir docs/assets/evaluations
+./scripts/run-comparison --ledger recordings/run*/ledger.jsonl \
+  --output reports/comparison
 ```
 
-The summary reports each run and the mean rates, with paired task-then-run
-bootstrap intervals.
-Category annotations must match the saved finding hashes; unassigned findings
-remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
-The command writes `results/summary.json`, `results/evidence_categories.tsv`,
-and `results/comparison.md`. Each figure is written as both SVG and PNG from
-the same drawing. README tables and captions are maintained separately and
-should match the generated summary and figures.
-Run manifests identify the complete catalog and frozen rubrics. Recordings with
-no captured state remain unscored; the mean uses the audited tasks common to
-every run, with available task counts reported separately.
-When a run manifest is present, its audit paths select the evaluation batches.
-Set each entry's `audit` path to the batch selected for the comparison.
-Without one, each task must have exactly one audit. Dataset-download receipts
-record both the requested revision and the resolved commit SHA.
+Supported pass@k values follow the actual trial count; `--pass-k` restricts them.
+All-trial reliability is separate. Every attempt/unmatched arm remains visible;
+unknown/ungraded outcomes are distinct from failures. Fresh launcher provenance
+is required unless an explicit `--allow-nonfresh` comparison is requested.
+
+Comparison exports accepted source gaps in `evidence_categories.tsv`, including
+their driving arm, profile and finding hash. Follow the
+[category guide](evidence-categories.md#annotating-findings) to annotate each
+task's findings beside its audit, then repeat comparison for category counts.
+Unannotated findings remain `Unclassified`; audit decisions stay intact.
+
+| Output | Location |
+| --- | --- |
+| Schedule, attempts, outcomes and recording paths | `recordings/<run>/ledger.jsonl`; diagnostic logs stay in local `logs/<run>/` |
+| Actor turns, input/output tokens, cache/reasoning subsets and limit hits | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `metadata.json` |
+| Arm comparison tokens: actor plus matching native verifier | Per-run `arm_token_usage` and arm/category summaries; actor-only `token_usage` and `tokens_per_turn` remain separate |
+| Transport failures, durations, parser stage and usage coverage | Per-turn `metadata.json` and raw responses |
+| Paired artifacts, timing, hashes and capture gaps | `manifest.json`, `steps/step_*/capture.json`; see [recording files](recordings.md#run-level-artifacts) |
+| Completion, native scores, validity, both audit directions and coverage | `evaluations/<run>/<arm>/<task>/completion.json` and profile-bound `evaluation.json`, native results and `evidence_audit.json` |
+| Rubric preparation/approval | `internal/rubrics/drafts/task_XX.metrics.json`, `generation.json`, `review.json`, `freeze.json`; `data/rubrics/task_XX.json` |
+| Pair/task results, pass@k, arm/difficulty metrics and costs | `reports/<run>/pairs.json`, `per_task.json`, `summary.json`, `report.md` |
+| Evidence-loss category counts and per-finding annotations | Report `summary.json`, `report.md`, `evidence_categories.tsv`; task annotations in `evaluations/<run>/<arm>/<task>/<profile>/evidence_categories.tsv` |
+
+Separate actor/judge and technical-attempt costs, plus all-attempt/successful-pair
+costs. Unknown usage is not zero; cache/reasoning are subsets and per-turn means
+use known-call denominators. Report both losses per run (four per task/trial) with
+coverage. Preserve receipts; see [metrics](evaluation-protocol.md#measurements),
+[pass@k](evaluation-protocol.md#repeated-trial-results) and [pricing](../w8bench/verifier/run_metrics.py).
+Arm token comparison includes DOM actors plus DOM verification, or screenshot
+actors plus screenshot verification. Both native formats still run for the
+same-run audit. The opposite verifier and all other evaluation streams remain
+visible as overhead, with all cost streams retained for full-experiment accounting; see the
+[token accounting contract](evaluation-protocol.md#token-accounting).
+USD figures are estimates, not invoices.
+
+Publish finalized runs using the [data storage commands](../data/README.md#storage).
 
 ## View a remote browser
 
-Run the status command on the server and note the noVNC port:
+Run status on the server and note its noVNC port:
 
 ```bash
-python -m w8bench.task_recorder.browser_runtime status
+.venv/bin/python -m w8bench.task_recorder.browser_runtime status
 ```
 
-Forward that port from the local computer:
+Forward it from your computer:
 
 ```bash
-ssh -o ExitOnForwardFailure=yes -N -L 39084:127.0.0.1:16191 ubuntu@your-server-address
+ssh -o ExitOnForwardFailure=yes -N -L 39084:127.0.0.1:16191 user@server
 ```
 
-Replace `16191` with the port printed on the server. Open:
+Replace `16191` with the printed server port and open:
 
 ```text
 http://127.0.0.1:39084/vnc.html?resize=scale&autoconnect=1&path=websockify
 ```
 
-If local port `39084` is occupied, choose another local port in both places.
+If local port 39084 is occupied, use another port in both places. Viewing is for
+observation; do not interact with a recording.
 
 ## Tests
 
-Run all offline tests:
+Run all offline checks:
 
 ```bash
-python -m pytest
+.venv/bin/python -m pytest -q tests
+.venv/bin/python -m pip check
+git diff --check
 ```
 
-Run only recorder tests:
+Recorder divisions:
 
 ```bash
-python -m pytest tests/task_recorder
+.venv/bin/python -m pytest -q tests/actors tests/capture tests/scheduling
 ```
 
-Run only verifier tests:
+Verifier and reporting divisions:
 
 ```bash
-python -m pytest tests/dom_model tests/screenshot_verifier tests/verifier
+.venv/bin/python -m pytest -q tests/evaluation tests/metrics
 ```
 
-Browser-dependent tests require a disposable browser and an explicit CDP
-endpoint:
+Offline tests mock model/browser/process calls; shared fixtures are in
+`tests/conftest.py`. Browser tests require an idle isolated service:
 
 ```bash
-EVIDENCE_TEST_CDP_URL="http://127.0.0.1:$(sed -n 's/^CDP_HOST_PORT=//p' .env)" \
-  python -m pytest tests/task_recorder/test_browser_evidence.py
+W8_CAPTURE_TEST_CDP="$(.venv/bin/python - <<'PY'
+import os
+from pathlib import Path
+from w8bench.task_recorder.runner import load_env
+load_env(Path('.env'))
+print('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'])
+PY
+)" .venv/bin/python -m pytest -q tests/capture -m live_browser
 ```
 
-This reads the conflict-free host CDP port chosen during configuration. Do
-not point these tests at a browser that is recording a task.
+This fixture closes other tabs and verifies scroll/focus preservation. The
+[coordinate fixture](#browser-coordinate-calibration) has its own command.
 
 ## Runtime checks
 
-Check browser status:
+Check status:
 
 ```bash
-python -m w8bench.task_recorder.browser_runtime status
+.venv/bin/python -m w8bench.task_recorder.browser_runtime status
 docker compose --env-file .env ps
 ```
 
-Choose new ports only after stopping this checkout:
+Refresh ports only after stopping this checkout:
 
 ```bash
 docker compose --env-file .env down
-python -m w8bench.task_recorder.browser_runtime configure --refresh-ports
+.venv/bin/python -m w8bench.task_recorder.browser_runtime configure --refresh-ports
 docker compose --env-file .env up -d --wait w8-core
 ```
 
-If Docker cannot find `w8-core:domdiff-bench`, repeat
-[Create the local browser image](#create-the-local-browser-image). Rebuild the
-patched browser first only when its source or build configuration changed. If
-noVNC refuses the connection, use the current port printed by the status
-command instead of a saved URL.
+For a missing image, follow [Create the local browser image](#create-the-local-browser-image).
+Recompile Chromium when source/build settings change. For noVNC connection errors,
+use the URL printed by status. Keep Compose ownership and `SYS_NICE`; changed
+browser builds or effective settings require separate runs.

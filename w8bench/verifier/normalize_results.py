@@ -7,9 +7,10 @@ from math import isfinite
 from pathlib import Path
 from typing import Any
 
+from w8bench.usage import known_token_component
+
 from .common import (
-    CANONICAL_ACTION_MODEL,
-    CANONICAL_JUDGE_MODEL,
+    native_judge_model,
     CANONICAL_SETTINGS,
     load_canonical_rubric,
     load_json,
@@ -59,15 +60,7 @@ def _criteria(
     return rows
 
 
-def _normalize(
-    result_path: str | Path,
-    *,
-    mode: str,
-    input_task: str | Path,
-    rubric_file: str | Path,
-    generation_metrics: str | Path,
-    run_log: str | Path,
-) -> dict[str, Any]:
+def _load_bound_result(result_path, rubric_file, mode):
     source = Path(result_path).resolve(strict=True)
     raw = load_json(source)
     if not isinstance(raw, dict):
@@ -79,6 +72,10 @@ def _normalize(
         raise ValueError(f"{mode} result rubric hash differs from canonical rubric")
     if int(raw.get("rubric_generation_calls", 0) or 0) != 0:
         raise ValueError(f"{mode} scoring artifact reports rubric generation")
+    return source, raw, task, frozen
+
+
+def _scoring_rows(raw, frozen, mode):
     intermediate = raw.get("intermediate_mm_rubric_steps") or {}
     criterion_rows = intermediate.get("step6_rescoring_summary") or []
     criteria = _criteria(criterion_rows, frozen.rubric["items"], mode=mode)
@@ -105,14 +102,40 @@ def _normalize(
         or result_denominator != effective_denominator
     ):
         raise ValueError(f"{mode} criterion denominator drift")
+    return intermediate, criteria, penalties, frozen_denominator, result_denominator
+
+
+def _accounting(raw):
     usage_judge = raw.get("token_usage", {}).get("judge", {})
     usage_action = raw.get("token_usage", {}).get("action_judge", {})
     calls_judge = raw.get("call_metrics", {}).get("judge", {})
     calls_action = raw.get("call_metrics", {}).get("action_judge", {})
     combined_usage = sum_usage(usage_judge, usage_action)
+    for key in ("total_tokens", "unattributed_tokens"):
+        values = [value for row in (usage_judge, usage_action)
+            if (value := known_token_component(row.get(key))) is not None]
+        combined_usage[key] = sum(values) if values else None
+    reconciliation = [row.get("token_components_reconcile") for row in (usage_judge, usage_action)]
+    if any(value is not None for value in reconciliation):
+        combined_usage["token_components_reconcile"] = (False if False in reconciliation
+            else None if None in reconciliation else True)
+    for key in ("total_tokens", "unattributed_tokens"):
+        known = [row.get("usage_known_calls", {}).get(key) for row in (usage_judge, usage_action)]
+        if any(value is not None for value in known):
+            combined_usage.setdefault("usage_known_calls", {})[key] = sum(value for value in known if value is not None)
     combined_calls = sum_call_metrics(calls_judge, calls_action)
-    outcome = raw.get("outcome") or {}
-    failure = intermediate.get("step9_first_point_of_failure") or {}
+    return calls_judge, calls_action, combined_usage, combined_calls
+
+
+def _evidence_metadata(value):
+    if isinstance(value, dict):
+        return {key: _evidence_metadata(item) for key, item in value.items() if key != "citation_checks"}
+    if isinstance(value, list):
+        return [_evidence_metadata(item) for item in value]
+    return value
+
+
+def _metadata(raw, task, mode, frozen, input_task, generation_metrics):
     return {
         "task_id": task,
         "evidence_mode": mode,
@@ -121,37 +144,91 @@ def _normalize(
         "frozen_rubric_sha256": frozen.sha256,
         "phase_a_generation_metrics": os.path.relpath(Path(generation_metrics).resolve(strict=True), Path(__file__).resolve().parents[2]),
         "judge_models": {
-            "judge": CANONICAL_JUDGE_MODEL,
-            "action_and_validity_judge": CANONICAL_ACTION_MODEL,
+            "judge": native_judge_model(),
+            "action_and_validity_judge": native_judge_model(),
         },
         "pipeline_settings": dict(CANONICAL_SETTINGS),
+        "evaluation_context": raw.get("evaluation_context"),
+        "validity_date": raw.get("validity_date"),
+        "dom_model_evidence_audit": _evidence_metadata(raw.get("dom_model_evidence_audit")),
+    }
+
+
+def _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, result_denominator):
+    outcome = raw.get("outcome") or {}
+    failure = intermediate.get("step9_first_point_of_failure") or {}
+    trajectory_validity = intermediate.get("step9b_task_verification_with_trajectory") or {}
+    task_validity = intermediate.get("step10_task_verification") or {}
+    return {
+        "frozen_full_score": all(item["final_points"] == item["max_points"] for item in criteria),
+        "frozen_total_earned_points": sum(item["final_points"] for item in criteria),
+        "frozen_total_max_points": frozen_denominator,
+        "runtime_penalty_total_max_points": sum(item["max_points"] for item in penalties if item["is_applicable"]),
+        "process_score": float(raw.get("rubric_score", 0)),
+        "total_earned_points": float(raw.get("rubric_total_earned_points", 0)),
+        "total_max_points": result_denominator,
+        "rubric_is_success": bool(raw.get("rubric_is_success")),
+        "outcome_success": outcome.get("output_success"),
+        "has_failure": failure.get("has_failure"),
+        "first_failure_step": failure.get("first_failure_step"),
+        "is_ambiguous": trajectory_validity.get("is_ambiguous"),
+        "ambiguity_codes": trajectory_validity.get("ambiguity_codes"),
+        "is_invalid": task_validity.get("is_invalid"),
+        "trajectory_task_verification": trajectory_validity or None,
+        "task_only_verification": task_validity or None,
+        "duration_seconds": raw.get("duration_sec", 0),
+    }
+
+
+def _ungraded_metrics(raw):
+    unavailable = dict.fromkeys((
+        "frozen_full_score", "frozen_total_earned_points", "frozen_total_max_points",
+        "runtime_penalty_total_max_points", "process_score", "total_earned_points",
+        "total_max_points", "rubric_is_success", "outcome_success", "has_failure",
+        "first_failure_step", "is_ambiguous", "ambiguity_codes", "is_invalid",
+        "trajectory_task_verification", "task_only_verification",
+    ))
+    return {**unavailable, "status": "ungraded", "ungraded_reason": raw.get("ungraded_reason"),
+            "judge_fallback": raw.get("judge_fallback"), "duration_seconds": raw.get("duration_sec", 0)}
+
+
+def _llm_calls(combined_calls):
+    return {
+        native_judge_model(): combined_calls["logical_calls"],
+        "total": combined_calls["logical_calls"],
+        "api_attempts": combined_calls["api_attempts"],
+        "retries": combined_calls["retries"],
+        "rubric_generation_calls": 0,
+    }
+
+
+def _normalize(
+    result_path: str | Path,
+    *,
+    mode: str,
+    input_task: str | Path,
+    rubric_file: str | Path,
+    generation_metrics: str | Path,
+    run_log: str | Path,
+) -> dict[str, Any]:
+    source, raw, task, frozen = _load_bound_result(result_path, rubric_file, mode)
+    if raw.get("status") == "ungraded":
+        criteria, penalties = [], []
+        result = _ungraded_metrics(raw)
+    else:
+        intermediate, criteria, penalties, frozen_denominator, result_denominator = _scoring_rows(raw, frozen, mode)
+        result = _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, result_denominator)
+    calls_judge, calls_action, combined_usage, combined_calls = _accounting(raw)
+    return {
+        **_metadata(raw, task, mode, frozen, input_task, generation_metrics),
+        "provider_call_metrics": {"judge": calls_judge, "action_judge": calls_action},
         "trajectory": raw.get("preflight", {}),
-        "result": {
-            "process_score": float(raw.get("rubric_score", 0)),
-            "total_earned_points": float(raw.get("rubric_total_earned_points", 0)),
-            "total_max_points": result_denominator,
-            "rubric_is_success": bool(raw.get("rubric_is_success")),
-            "outcome_success": outcome.get("output_success"),
-            "has_failure": failure.get("has_failure"),
-            "first_failure_step": failure.get("first_failure_step"),
-            "is_ambiguous": failure.get("is_ambiguous", False),
-            "ambiguity_codes": failure.get("ambiguity_codes", []),
-            "is_invalid": (intermediate.get("step10_task_verification") or {}).get("is_invalid", False),
-            "duration_seconds": raw.get("duration_sec", 0),
-        },
+        "result": result,
         "criteria": criteria,
         **({"penalty_criteria": penalties} if penalties else {}),
-        "llm_calls": {
-            CANONICAL_JUDGE_MODEL: int(calls_judge.get("logical_calls", 0)),
-            CANONICAL_ACTION_MODEL: int(calls_action.get("logical_calls", 0)),
-            "total": combined_calls["logical_calls"],
-            "api_attempts": combined_calls["api_attempts"],
-            "retries": combined_calls["retries"],
-            "rubric_generation_calls": 0,
-        },
+        "llm_calls": _llm_calls(combined_calls),
         "token_usage": {
-            CANONICAL_JUDGE_MODEL: usage_judge,
-            CANONICAL_ACTION_MODEL: usage_action,
+            native_judge_model(): combined_usage,
             "combined": combined_usage,
         },
         "score_artifact": os.path.relpath(source, Path(__file__).resolve().parents[2]),

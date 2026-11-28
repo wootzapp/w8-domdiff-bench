@@ -1,2 +1,0 @@
-"""Task recorder tests."""
-

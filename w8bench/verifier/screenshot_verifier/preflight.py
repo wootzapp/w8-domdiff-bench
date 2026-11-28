@@ -1,0 +1,82 @@
+"""Dataset isolation and alignment checks for screenshot verifier tasks."""
+
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+
+_SCREENSHOT_RE = re.compile(r"^screenshot_?(\d+)\.png$")
+
+
+def _count_actions(root: Path) -> int:
+    logs = [path for path in (root / "web_surfer.log", root / "websurfer.log") if path.is_file()]
+    if len(logs) != 1:
+        raise ValueError(f"Expected exactly one web surfer log, found {len(logs)}")
+    actions = 0
+    for line in logs[0].read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        event = json.loads(line)
+        if isinstance(event, dict) and event.get("action") is not None:
+            actions += 1
+    return actions
+
+
+def _state_receipt(root: Path, screenshots: list[Path], actions: int) -> dict[str, Any]:
+    context = {}
+    task_path = root / "task_data.json"
+    if task_path.is_file():
+        task = json.loads(task_path.read_text(encoding="utf-8"))
+        task = task[0] if isinstance(task, list) else task
+        context = task.get("evaluation_context") or {}
+    if context:
+        expected = context["expected_state_ids"]
+        gaps = context.get("format_gaps", {}).get("screenshot", [])
+        actual = [int(_SCREENSHOT_RE.match(path.name).group(1)) for path in screenshots]
+        if len(expected) != actions + 1 or len(set(gaps)) != len(gaps) or not set(gaps) <= set(expected):
+            raise ValueError("Invalid screenshot state identity/gap receipt")
+        if actual != [index for index in expected if index not in gaps]:
+            raise ValueError("Available screenshot states differ from recorded capture gaps")
+    if not context and len(screenshots) != actions + 1:
+        raise ValueError(
+            f"Expected exactly N+1 screenshots for {actions} actions; "
+            f"found {len(screenshots)}"
+        )
+    receipt = {"actions": actions, "screenshots": len(screenshots)}
+    if context:
+        receipt.update(expected_state_ids=expected, missing_states=gaps, available_state_ids=actual,
+                       navigation_states=context.get("navigation_states", []))
+    return receipt
+
+
+def _validate_answer(root: Path, screenshots: list[Path]) -> None:
+    answers = list(root.glob("*_answer.json"))
+    if len(answers) != 1:
+        raise ValueError(f"Expected exactly one *_answer.json, found {len(answers)}")
+    answer = json.loads(answers[0].read_text(encoding="utf-8"))
+    declared = answer.get("screenshots") if isinstance(answer, dict) else None
+    expected_names = [path.name for path in screenshots]
+    if declared != expected_names:
+        raise ValueError(
+            "Final answer must declare all N+1 screenshots in chronological order; "
+            f"expected {expected_names}, found {declared}"
+        )
+
+
+def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
+    root = Path(task_dir).resolve(strict=True)
+    actions = _count_actions(root)
+    screenshots = sorted(
+        (
+            path
+            for path in root.iterdir()
+            if path.is_file() and _SCREENSHOT_RE.match(path.name)
+        ),
+        key=lambda path: int(_SCREENSHOT_RE.match(path.name).group(1)),
+    )
+    receipt = _state_receipt(root, screenshots, actions)
+    _validate_answer(root, screenshots)
+    return receipt

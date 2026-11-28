@@ -5,49 +5,45 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "w8-domdiff-bench"
 version = "0.1.0"
-description = "Record w8-core browser tasks and compare screenshot and DOM-model evidence."
+description = "Browser task recording with paired DOM and screenshot evidence for evidence-loss, model-usage, and task-completion analysis."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 dependencies = [
   "aiohttp>=3.9,<4",
-  "azure-identity==1.25.3",
   "httpx==0.28.1",
-  "huggingface_hub==0.36.2",
-  "openai==2.53.0",
+  "google-genai==2.34.0",
   "Pillow==12.3.0",
   "pydantic==2.13.4",
   "tiktoken==0.13.0",
 ]
 
 [project.optional-dependencies]
-gemini = ["google-genai>=1.0,<3"]
-figures = ["CairoSVG==2.9.1"]
-test = [
-  "pytest==9.1.1",
-  "pytest-asyncio==1.3.0",
-  "CairoSVG==2.9.1",
-]
+test = ["pytest==9.1.1", "pytest-asyncio==1.3.0", "CairoSVG==2.9.1"]
 
 [project.scripts]
 w8-browser = "w8bench.task_recorder.browser_runtime:main"
 w8-record-task = "w8bench.task_recorder.task_cli:main"
 w8-run-comparison = "w8bench.verifier.run_full_comparison:main"
-w8-dataset-sync = "w8bench.verifier.dataset_sync:main"
-w8-dom-verify = "w8bench.dom_model.runner:main"
-w8-screenshot-verify = "w8bench.screenshot_verifier.runner:main"
+w8-grade-run = "w8bench.verifier.run_comparison:main"
+w8-compare-turns = "w8bench.verifier.compare_results:main"
+w8-export-runs = "w8bench.task_recorder.prepare_verifier_data:main"
+w8-dom-verify = "w8bench.verifier.dom_model.runner:main"
+w8-screenshot-verify = "w8bench.verifier.screenshot_verifier.runner:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["w8bench*"]
+include = ["w8bench*", "manifests"]
 
 [tool.setuptools.package-data]
-"w8bench.dom_model" = ["resources/*.md"]
-"w8bench.screenshot_verifier" = ["resources/*.md"]
+"manifests" = ["*.json"]
+"w8bench.verifier.dom_model" = ["resources/*.md"]
+"w8bench.verifier.screenshot_verifier" = ["resources/*.md"]
 "w8bench.task_recorder" = ["runtime/*", "renderers/*.py"]
 "w8bench.task_recorder.agent_browser" = ["README.md", "runtime/*.json"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/actors", "tests/capture", "tests/scheduling", "tests/evaluation", "tests/metrics"]
 addopts = "-ra"
+markers = ["live_browser: requires an explicitly configured isolated browser"]
 

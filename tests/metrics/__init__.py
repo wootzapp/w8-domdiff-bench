@@ -1,0 +1,1 @@
+"""Metrics contract tests."""

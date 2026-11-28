@@ -1,1 +1,0 @@
-"""screenshot verifier-local utilities."""

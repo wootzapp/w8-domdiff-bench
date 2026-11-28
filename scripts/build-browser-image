@@ -28,18 +28,24 @@ for required in package.json package-lock.json; do
   fi
 done
 
-# Verify the declared source checkout and copied payload before assigning build
-# labels. The receipt belongs to this image; it is not evidence about older runs.
+# Verify source identities and exercise the staged executable before packaging.
 BUILD_METADATA="$(python3 - "${REPO_ROOT}" "${CHROMIUM_SOURCE_DIR}" "${OVERLAY_SOURCE_DIR}" <<'PY'
+import base64
 import hashlib
 import json
+import os
+import selectors
+import signal
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 root, chromium, overlay = (Path(value).resolve() for value in sys.argv[1:])
 settings = json.loads((root / "protocol/browser-build.json").read_text())
 try:
+    (root / "build/browser-build.json").unlink(missing_ok=True)
     overlay_revision = subprocess.check_output(
         ["git", "-C", str(overlay), "rev-parse", "HEAD"], text=True
     ).strip()
@@ -89,14 +95,112 @@ try:
         binary_hashes.append(digest.hexdigest())
     if binary_hashes[0] != binary_hashes[1]:
         raise ValueError("Copied browser differs from the Chromium Release binary")
+    with tempfile.TemporaryDirectory(prefix="w8-browser-check-") as profile, tempfile.TemporaryFile() as log:
+        command_read, command_write = os.pipe()
+        response_read, response_write = os.pipe()
+        with os.fdopen(command_write, "wb", buffering=0) as commands, os.fdopen(response_read, "rb", buffering=0) as responses:
+            try:
+                browser = subprocess.Popen(
+                    ["bash", "-c", 'exec 3<&"$1" 4>&"$2"; shift 2; exec "$@"', "browser-check",
+                     str(command_read), str(response_write), str(root / "build/chrome"),
+                     "--headless", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
+                     "--disable-background-networking", "--disable-component-update",
+                     "--disable-extensions", "--no-first-run", "--no-default-browser-check",
+                     f"--user-data-dir={profile}", "--remote-debugging-pipe", "about:blank"],
+                    pass_fds=(command_read, response_write), stdout=log, stderr=log,
+                    start_new_session=True,
+                )
+            finally:
+                os.close(command_read)
+                os.close(response_write)
+            try:
+                buffer, session_id, snapshot = b"", None, None
+                methods = ["Target.createTarget", "Target.attachToTarget", "Runtime.evaluate",
+                           "ChromiumRL.enable", "ChromiumRL.captureStructuredSnapshot",
+                           "ChromiumRL.getModelDOM", "Page.captureScreenshot"]
+                deadline = time.monotonic() + 30
+                with selectors.DefaultSelector() as selector:
+                    selector.register(responses, selectors.EVENT_READ)
+                    for call_id, method in enumerate(methods, 1):
+                        params = {}
+                        if method == "Target.createTarget":
+                            params = {"url": "about:blank"}
+                        elif method == "Target.attachToTarget":
+                            params = {"targetId": result["targetId"], "flatten": True}
+                        elif method == "Runtime.evaluate":
+                            params = {"expression": "document.body.innerHTML = '<main><p>ChromiumRL build check</p><button>Verify capture</button></main>'; new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))",
+                                      "awaitPromise": True, "returnByValue": True}
+                        elif method == "ChromiumRL.captureStructuredSnapshot":
+                            params = {"inViewportOnly": True, "maxNodes": 100, "maxTextChars": 10000}
+                        elif method == "ChromiumRL.getModelDOM":
+                            params = {"snapshot": snapshot}
+                        request = {"id": call_id, "method": method, "params": params}
+                        if session_id:
+                            request["sessionId"] = session_id
+                        commands.write(json.dumps(request).encode() + b"\0")
+                        while True:
+                            remaining = deadline - time.monotonic()
+                            if remaining <= 0:
+                                raise ValueError(f"Staged browser capability check timed out at {method}")
+                            if b"\0" not in buffer:
+                                if not selector.select(remaining):
+                                    raise ValueError(f"Staged browser capability check timed out at {method}")
+                                chunk = os.read(responses.fileno(), 65536)
+                                if not chunk:
+                                    raise ValueError(f"Staged browser closed the CDP pipe at {method}")
+                                buffer += chunk
+                                continue
+                            message, buffer = buffer.split(b"\0", 1)
+                            reply = json.loads(message)
+                            if reply.get("id") == call_id:
+                                break
+                        if "error" in reply:
+                            raise ValueError(f"Staged browser {method} failed: {reply['error']}. Compile Chromium after applying the overlay.")
+                        result = reply.get("result", {})
+                        if method == "Target.attachToTarget":
+                            session_id = result["sessionId"]
+                        elif method == "Runtime.evaluate" and result.get("exceptionDetails"):
+                            raise ValueError("Staged browser could not prepare the local capture fixture")
+                        elif method == "ChromiumRL.captureStructuredSnapshot":
+                            snapshot = result["snapshot"]
+                            if not snapshot.get("nodes") or "ChromiumRL build check" not in json.dumps(snapshot):
+                                raise ValueError("Staged browser structured capture did not contain the local fixture")
+                        elif method == "ChromiumRL.getModelDOM":
+                            if "ChromiumRL build check" not in json.dumps(result["modelDOM"].get("sections")):
+                                raise ValueError("Staged browser model DOM did not contain the local fixture")
+                        elif method == "Page.captureScreenshot":
+                            if not base64.b64decode(result["data"], validate=True).startswith(b"\x89PNG\r\n\x1a\n"):
+                                raise ValueError("Staged browser screenshot was not a PNG")
+            except Exception:
+                log.seek(0, 2)
+                log.seek(max(0, log.tell() - 2000))
+                print(log.read().decode("utf-8", errors="replace"), file=sys.stderr)
+                raise
+            finally:
+                try:
+                    try:
+                        commands.write(json.dumps({"id": len(methods) + 1, "method": "Browser.close"}).encode() + b"\0")
+                    except OSError:
+                        pass
+                    try:
+                        browser.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
+                finally:
+                    try:
+                        os.killpg(browser.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    browser.wait(timeout=5)
     receipt = {
         **settings,
         "chromium_revision": chromium_revision,
-        "chrome_sha256": binary_hashes[0],
-        "source_verification": "overlay files and Release payload matched at image creation",
+        "binary_sha256": binary_hashes[0],
+        "source_verification": "overlay files and Release payload matched; staged ChromiumRL capture verified",
+        "capability_check": {"methods": methods[3:], "local_fixture": "passed"},
     }
     (root / "build/browser-build.json").write_text(json.dumps(receipt, indent=2) + "\n")
-except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
+except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
     raise SystemExit(f"Browser build provenance check failed: {error}")
 print(version)
 print(overlay_revision)

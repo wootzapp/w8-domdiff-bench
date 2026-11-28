@@ -9,9 +9,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-from w8bench.dom_model.alignment import validate_alignment
-from w8bench.dom_model.state_parser import load_dom_model_states
-from w8bench.dom_model.trajectory_helpers import action_events, load_trajectory
+from w8bench.verifier.dom_model.alignment import validate_alignment
+from w8bench.verifier.dom_model.states import load_dom_model_states
+from w8bench.verifier.trajectory import action_events, load_trajectory
+from w8bench.verifier.dom_model.models import Trajectory
 
 from .common import (
     canonical_json_bytes,
@@ -40,6 +41,62 @@ CONTROL_FILES = {"task_data.json", "web_surfer.log", "final_answer.json"}
 SIDECAR = "task_data_with_canonical_rubric.json"
 
 
+def _action_arguments(event, mode, path, line_number):
+    arguments = event.get("arguments") or {}
+    if not isinstance(arguments, dict):
+        raise ValueError(f"{path}:{line_number}: arguments must be an object")
+    raw_name = str(arguments.get("action") or event.get("action") or "")
+    if raw_name not in ACTION_NAMES:
+        raise ValueError(f"{path}:{line_number}: unsupported action {raw_name!r}")
+    name = ACTION_NAMES[raw_name]
+    if name == "click":
+        coordinate = arguments.get("coordinate")
+        valid_coordinate = (
+            isinstance(coordinate, list)
+            and len(coordinate) == 2
+            and all(isinstance(v, (int, float)) for v in coordinate)
+        )
+        if not valid_coordinate and arguments.get("ref") is None and arguments.get("target") is None:
+            raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y], ref, or target")
+    # WebSurfer "type" also represents keyboard input to the focused control
+    # (including browser Find). Only an explicit fill or click requires a
+    # DOM target; inventing a ref for keyboard typing changes the recording.
+    if mode == "dom_model" and raw_name == "fill":
+        if arguments.get("ref") is None and arguments.get("target") is None:
+            raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
+    return arguments, name
+
+
+def _action_signature(event, arguments, name, ordinal):
+    signature: dict[str, Any] = {
+        "ordinal": ordinal,
+        "action": name,
+        "after_url": str(event.get("url") or ""),
+    }
+    if name == "navigate":
+        signature["url"] = str(arguments.get("url") or "")
+    elif name == "fill":
+        signature["text"] = arguments.get("text", arguments.get("value"))
+    elif name == "scroll":
+        for key in ("direction", "delta_x", "delta_y", "amount"):
+            if key in arguments:
+                signature[key] = arguments[key]
+    elif name == "wait" and "seconds" in arguments:
+        signature["seconds"] = arguments["seconds"]
+    elif name == "key" and "key" in arguments:
+        signature["key"] = arguments["key"]
+    target = arguments.get("target")
+    if isinstance(target, dict):
+        for key in ("role", "name"):
+            if target.get(key) is not None:
+                signature[f"target_{key}"] = target[key]
+    if "coordinate" in arguments:
+        signature["coordinate"] = arguments["coordinate"]
+    if arguments.get("ref") is not None:
+        signature["ref"] = arguments["ref"]
+    return signature
+
+
 def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -51,53 +108,8 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
             raise ValueError(f"{path}:{line_number}: {exc}") from exc
         if not isinstance(event, dict) or event.get("action") is None:
             continue
-        arguments = event.get("arguments") or {}
-        if not isinstance(arguments, dict):
-            raise ValueError(f"{path}:{line_number}: arguments must be an object")
-        raw_name = str(arguments.get("action") or event.get("action") or "")
-        if raw_name not in ACTION_NAMES:
-            raise ValueError(f"{path}:{line_number}: unsupported action {raw_name!r}")
-        name = ACTION_NAMES[raw_name]
-        if mode == "screenshot" and name == "click":
-            coordinate = arguments.get("coordinate")
-            valid_coordinate = (
-                isinstance(coordinate, list)
-                and len(coordinate) == 2
-                and all(isinstance(v, (int, float)) for v in coordinate)
-            )
-            if not valid_coordinate and arguments.get("ref") is None and arguments.get("target") is None:
-                raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y], ref, or target")
-        # WebSurfer "type" also represents keyboard input to the focused control
-        # (including browser Find). Only an explicit fill or click requires a
-        # DOM target; inventing a ref for keyboard typing changes the recording.
-        if mode == "dom_model" and (name == "click" or raw_name == "fill"):
-            if arguments.get("ref") is None and arguments.get("target") is None:
-                raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
-        signature: dict[str, Any] = {
-            "ordinal": len(actions) + 1,
-            "action": name,
-            "after_url": str(event.get("url") or ""),
-        }
-        if name == "navigate":
-            signature["url"] = str(arguments.get("url") or "")
-        elif name == "fill":
-            signature["text"] = arguments.get("text", arguments.get("value"))
-        elif name == "scroll":
-            for key in ("direction", "delta_x", "delta_y", "amount"):
-                if key in arguments:
-                    signature[key] = arguments[key]
-        elif name == "wait" and "seconds" in arguments:
-            signature["seconds"] = arguments["seconds"]
-        elif name == "key" and "key" in arguments:
-            signature["key"] = arguments["key"]
-        target = arguments.get("target")
-        if isinstance(target, dict):
-            for key in ("role", "name"):
-                if target.get(key) is not None:
-                    signature[f"target_{key}"] = target[key]
-        if arguments.get("ref") is not None:
-            signature["ref"] = arguments["ref"]
-        actions.append(signature)
+        arguments, name = _action_arguments(event, mode, path, line_number)
+        actions.append(_action_signature(event, arguments, name, len(actions) + 1))
     return actions
 
 
@@ -109,7 +121,7 @@ def compare_semantic_actions(screenshot: list[dict], dom_model: list[dict]) -> N
         "scroll": {"direction", "delta_x", "delta_y", "amount"},
         "wait": {"seconds"},
         "key": {"key"},
-        "click": {"ref", "target_role", "target_name"},
+        "click": {"ref", "target_role", "target_name", "coordinate"},
     }
     for ordinal, (left, right) in enumerate(zip(screenshot, dom_model), start=1):
         for key in {"action", "after_url"}:
@@ -133,7 +145,12 @@ def ordered_screenshots(root: Path) -> list[Path]:
             raise ValueError(f"Duplicate screenshot index {index} in {root}")
         indexed[index] = child
     actual = sorted(indexed)
-    if actual != list(range(len(actual))):
+    task = load_one_task(root / "task_data.json") if (root / "task_data.json").is_file() else {}
+    context = task.get("evaluation_context") or {}
+    expected = list(range(len(actual)))
+    if context:
+        expected = [index for index in context["expected_state_ids"] if index not in context.get("format_gaps", {}).get("screenshot", [])]
+    if actual != expected:
         raise ValueError(f"Screenshots must be contiguous from 0, got {actual}")
     return [indexed[index] for index in actual]
 
@@ -180,11 +197,9 @@ def _require_allowed_files(root: Path, allowed: set[str], mode: str) -> None:
         raise ValueError(f"Unexpected {mode} task files: {unexpected}")
 
 
-def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) -> dict[str, Any]:
+def _paired_tasks(screenshot_task, dom_task):
     screenshot = Path(screenshot_task).resolve(strict=True)
     dom = Path(dom_task).resolve(strict=True)
-    if screenshot.name != dom.name:
-        raise ValueError("Paired task folder aliases must match")
     _require_controls(screenshot, "screenshot")
     _require_controls(dom, "DOM-model")
     screenshot_data = load_one_task(screenshot / "task_data.json")
@@ -194,28 +209,22 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     internal_id = task_id(screenshot_data)
     if not internal_id or not task_instruction(screenshot_data) or not task_init_url(screenshot_data):
         raise ValueError("Task data must contain task ID, instruction, and initial URL")
+    return screenshot, dom, screenshot_data, dom_data, internal_id
+
+
+def _paired_actions(screenshot, dom):
     screenshot_actions = parse_actions(screenshot / "web_surfer.log", mode="screenshot")
     dom_actions = parse_actions(dom / "web_surfer.log", mode="dom_model")
     compare_semantic_actions(screenshot_actions, dom_actions)
     # Compare the text supplied to the judges, including action rationales and
     # annotations, as well as the executable action signatures above.
-    from .evidence_audit import verifier_action_history
+    from .audit_evidence import verifier_action_history
     if verifier_action_history(screenshot) != verifier_action_history(dom):
         raise ValueError("Screenshot and DOM judge-visible action histories differ")
-    screenshots = ordered_screenshots(screenshot)
-    if len(screenshots) != len(screenshot_actions) + 1:
-        raise ValueError("Screenshot task requires intentional N+1 states")
-    trajectory = load_trajectory(dom)
-    events = action_events(trajectory)
-    if len(events) != len(dom_actions):
-        raise ValueError("screenshot trajectory parsing changed the DOM-model action count")
-    states = load_dom_model_states(dom, action_count=len(dom_actions))
-    alignment = validate_alignment(
-        task_id=internal_id,
-        initial_url=task_init_url(dom_data),
-        actions=events,
-        states=states,
-    )
+    return screenshot_actions, dom_actions
+
+
+def _validate_answers(screenshot, dom):
     screenshot_answer = load_answer(screenshot / "final_answer.json")
     dom_answer = load_answer(dom / "final_answer.json")
     for field in ("final_answer", "is_aborted"):
@@ -226,13 +235,77 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     for reference in screenshot_answer.get("screenshots") or []:
         if not isinstance(reference, str) or not (screenshot / reference).is_file():
             raise ValueError(f"Missing screenshot referenced by final answer: {reference!r}")
+
+
+def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) -> dict[str, Any]:
+    screenshot, dom, screenshot_data, dom_data, internal_id = _paired_tasks(screenshot_task, dom_task)
+    screenshot_actions, dom_actions = _paired_actions(screenshot, dom)
+    screenshots = ordered_screenshots(screenshot)
+    context = screenshot_data.get("evaluation_context") or {}
+    if not context and len(screenshots) != len(screenshot_actions) + 1:
+        raise ValueError("Screenshot task requires intentional N+1 states")
+    trajectory = load_trajectory(dom, Trajectory)
+    events = action_events(trajectory)
+    if len(events) != len(dom_actions):
+        raise ValueError("screenshot trajectory parsing changed the DOM-model action count")
+    states = load_dom_model_states(dom, action_count=len(dom_actions))
+    alignment = validate_alignment(
+        task_id=internal_id,
+        initial_url=task_init_url(dom_data),
+        actions=events,
+        states=states,
+        evaluation_context=context,
+    )
+    _validate_answers(screenshot, dom)
     return {
         "task_id": internal_id,
-        "task_alias": screenshot.name,
+        "task_alias": internal_id,
         "actions": len(dom_actions),
         "screenshots": len(screenshots),
         "dom_model_states": len(states),
         "alignment": alignment.as_dict(),
+        **({"format_gaps": context.get("format_gaps", {}),
+            "navigation_states": context.get("navigation_states", []),
+            "audit_eligible_states": context.get("audit_eligible_states", [])} if context else {}),
+    }
+
+
+def _rubric_bindings(screenshot, dom, screenshot_data, dom_data, frozen, require_sidecars):
+    for label, task in (("screenshot", screenshot_data), ("DOM-model", dom_data)):
+        embedded = task.get("precomputed_rubric")
+        if embedded is not None and canonical_json_bytes(embedded) != canonical_json_bytes(frozen.rubric):
+            raise ValueError(f"{label} task-embedded rubric differs from canonical rubric")
+    screenshot_sidecar = validate_sidecar(screenshot, screenshot_data, frozen.rubric, required=require_sidecars)
+    dom_sidecar = validate_sidecar(dom, dom_data, frozen.rubric, required=require_sidecars)
+    return screenshot_sidecar, dom_sidecar
+
+
+def _allowed_pair_files(screenshot, dom, actions, screenshot_sidecar, dom_sidecar):
+    screenshots = ordered_screenshots(screenshot)
+    states = load_dom_model_states(dom, action_count=actions)
+    screenshot_allowed = CONTROL_FILES | {path.name for path in screenshots}
+    dom_allowed = CONTROL_FILES | {path.path.name for path in states}
+    if screenshot_sidecar:
+        screenshot_allowed.add(SIDECAR)
+    if dom_sidecar:
+        dom_allowed.add(SIDECAR)
+    _require_allowed_files(screenshot, screenshot_allowed, "screenshot")
+    _require_allowed_files(dom, dom_allowed, "DOM-model")
+
+
+def _rubric_metadata(frozen, screenshot_sidecar, dom_sidecar, generation_metrics, eval_config):
+    return {
+        "frozen_rubric": os.path.relpath(frozen.path, Path(__file__).resolve().parents[2]),
+        "frozen_rubric_sha256": frozen.sha256,
+        "criterion_order": [item["criterion"] for item in frozen.rubric["items"]],
+        "criterion_descriptions": [item["description"] for item in frozen.rubric["items"]],
+        "maximum_points": [float(item["max_points"]) for item in frozen.rubric["items"]],
+        "criterion_denominator": frozen.denominator,
+        "screenshot_sidecar_validated": screenshot_sidecar,
+        "dom_model_sidecar_validated": dom_sidecar,
+        "generation_metrics": os.path.relpath(Path(generation_metrics).resolve(), Path(__file__).resolve().parents[2]) if generation_metrics else None,
+        "rubric_generation_calls_during_scoring": 0,
+        "endpoint_config": validate_endpoint_configs(eval_config) if eval_config else None,
     }
 
 
@@ -251,42 +324,13 @@ def validate_pair(
     screenshot_data = load_one_task(screenshot / "task_data.json")
     dom_data = load_one_task(dom / "task_data.json")
     frozen = load_canonical_rubric(rubric_file, expected_task_id=receipt["task_id"])
-    for label, task in (("screenshot", screenshot_data), ("DOM-model", dom_data)):
-        embedded = task.get("precomputed_rubric")
-        if embedded is not None and canonical_json_bytes(embedded) != canonical_json_bytes(frozen.rubric):
-            raise ValueError(f"{label} task-embedded rubric differs from canonical rubric")
-    screenshot_sidecar = validate_sidecar(screenshot, screenshot_data, frozen.rubric, required=require_sidecars)
-    dom_sidecar = validate_sidecar(dom, dom_data, frozen.rubric, required=require_sidecars)
-    screenshots = ordered_screenshots(screenshot)
-    states = load_dom_model_states(dom, action_count=receipt["actions"])
-    screenshot_allowed = CONTROL_FILES | {path.name for path in screenshots}
-    dom_allowed = CONTROL_FILES | {path.path.name for path in states}
-    if screenshot_sidecar:
-        screenshot_allowed.add(SIDECAR)
-    if dom_sidecar:
-        dom_allowed.add(SIDECAR)
-    _require_allowed_files(screenshot, screenshot_allowed, "screenshot")
-    _require_allowed_files(dom, dom_allowed, "DOM-model")
-    metrics_receipt = None
+    screenshot_sidecar, dom_sidecar = _rubric_bindings(screenshot, dom, screenshot_data, dom_data, frozen, require_sidecars)
+    _allowed_pair_files(screenshot, dom, receipt["actions"], screenshot_sidecar, dom_sidecar)
     if generation_metrics is not None:
-        metrics_receipt = validate_generation_metrics(generation_metrics, frozen)
+        validate_generation_metrics(generation_metrics, frozen)
     elif require_sidecars:
         raise ValueError("Phase B requires --generation-metrics from Phase A")
-    receipt.update(
-        {
-            "frozen_rubric": os.path.relpath(frozen.path, Path(__file__).resolve().parents[2]),
-            "frozen_rubric_sha256": frozen.sha256,
-            "criterion_order": [item["criterion"] for item in frozen.rubric["items"]],
-            "criterion_descriptions": [item["description"] for item in frozen.rubric["items"]],
-            "maximum_points": [float(item["max_points"]) for item in frozen.rubric["items"]],
-            "criterion_denominator": frozen.denominator,
-            "screenshot_sidecar_validated": screenshot_sidecar,
-            "dom_model_sidecar_validated": dom_sidecar,
-            "generation_metrics": os.path.relpath(Path(generation_metrics).resolve(), Path(__file__).resolve().parents[2]) if generation_metrics else None,
-            "rubric_generation_calls_during_scoring": 0,
-            "endpoint_config": validate_endpoint_configs(eval_config) if eval_config else None,
-        }
-    )
+    receipt.update(_rubric_metadata(frozen, screenshot_sidecar, dom_sidecar, generation_metrics, eval_config))
     return receipt
 
 

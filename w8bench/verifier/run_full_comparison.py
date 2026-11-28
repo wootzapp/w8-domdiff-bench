@@ -1,404 +1,460 @@
 #!/usr/bin/env python3
-"""Generate one frozen rubric, then score screenshot and DOM evidence with it."""
-
+"""Aggregate actor efficiency, completion and within-run evaluation receipts."""
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+from collections import Counter
 import json
-import shutil
-import sys
-import tempfile
-from datetime import datetime, timezone
-import os
+import re
 from pathlib import Path
 
-
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-
-from .common import ensure_under
-from .common import load_env_file, load_json, write_json
-from .dataset_sync import (
-    DEFAULT_DATASET_ROOT,
-    DEFAULT_REPO_ID,
-    DEFAULT_REVISION,
-    fetch_trajectories,
-)
-from .evidence_audit import resolve_audit_config, check_audit_models, aggregate_audits, render_aggregate_markdown
-from .generate_frozen_rubric import main as generate_rubric
-from .run_comparison import main as run_comparison
-from .validate_inputs import dataset_only_preflight
+from w8bench.task_recorder.prepare_verifier_data import inspect_recording
+from w8bench.task_recorder.recorder_support import write_json
+from .compare_results import compare
+from .paired_metrics import aggregate, validate_settings_contracts, validate_recorded_settings
+from .run_metrics import summarize, _price_stream
+from w8bench.usage import valid_token_component
+from w8bench.settings import normalized_settings, require_same_settings
+from w8bench.run_paths import run_directory
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    selection = parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--task", help="Task folder alias, e.g. task_01")
-    selection.add_argument("--all", action="store_true", help="Run every paired task")
-    parser.add_argument("--data-source", choices=("local", "huggingface"), default="huggingface",
-                        help="Use local prepared trajectories or published Hugging Face trajectories")
-    parser.add_argument("--data-root", type=Path,
-                        help="Local trajectory folder (default in local mode: trajectories/)")
-    parser.add_argument("--eval-config", default=str(REPOSITORY_ROOT / "config"))
-    parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
-    parser.add_argument("--results-root", type=Path)
-    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
-    parser.add_argument("--frozen-rubrics", type=Path,
-                        help="Reuse the reference run's frozen rubrics and generation receipts")
-    parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
-    parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
-    parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
-    parser.add_argument("--audit-provider", choices=("openai", "google"))
-    parser.add_argument("--adjudicator-provider", choices=("openai", "google"))
-    parser.add_argument("--hf-repo", default=DEFAULT_REPO_ID)
-    parser.add_argument("--hf-revision", default=DEFAULT_REVISION)
-    parser.add_argument("--execute", action="store_true")
-    args = parser.parse_args(argv)
-    if args.data_source == "huggingface" and args.data_root is not None:
-        parser.error("--data-root requires --data-source local")
-    if args.task and (Path(args.task).name != args.task or args.task in {".", ".."} or "\\" in args.task):
-        parser.error("--task must name one task folder, not a path")
-    if args.run_id is not None and (not args.run_id or args.run_id in {".", ".."}
-        or not all(character.isalnum() or character in "._-" for character in args.run_id)):
-        parser.error("--run-id must be a single filename containing letters, digits, '.', '_' or '-'")
-    return args
+def _read_ledger(path):
+    paths = [path] if isinstance(path, (str, Path)) else path
+    ledger = [json.loads(line) for item in paths for line in Path(item).read_text().splitlines() if line.strip()]
+    if not ledger:
+        raise ValueError("empty attempt ledger")
+    identities = [(row["task_id"], row["trial"], row["arm"]) for row in ledger]
+    if len(set(identities)) != len(identities):
+        raise ValueError("duplicate ledger task/arm/trial")
+    trial_counts = {row["trials"] for row in ledger}
+    if any(type(count) is not int or count <= 0 for count in trial_counts):
+        raise ValueError("invalid configured trial count")
+    selected_trials = {row["trial"] for row in ledger}
+    if any(type(trial) is not int or trial <= 0 for trial in selected_trials):
+        raise ValueError("invalid trial number")
+    n = len(selected_trials)
+    paths = [str(Path(row["recording"]).resolve()) for row in ledger]
+    if len(set(paths)) != len(paths):
+        raise ValueError("a recording path is reused across scheduled attempts")
+    attempt_paths = []
+    for row in ledger:
+        attempts = row.get("attempts", [])
+        if len(attempts) > 2 or [item.get("attempt_number") for item in attempts] != list(range(1, len(attempts) + 1)):
+            raise ValueError("technical attempt ledger must contain at most two ordered attempts")
+        if attempts and str(Path(attempts[-1]["recording"]).resolve()) != str(Path(row["recording"]).resolve()):
+            raise ValueError("scheduled recording is not the final technical attempt")
+        attempt_paths.extend(str(Path(item["recording"]).resolve()) for item in attempts)
+    if len(attempt_paths) != len(set(attempt_paths)):
+        raise ValueError("a technical attempt recording is reused across scheduled rows")
+    task_ids = {row["task_id"] for row in ledger}
+    if set(identities) != {(task, trial, arm) for task in task_ids for trial in selected_trials for arm in ("dom","screenshot")}:
+        raise ValueError("ledger omits a scheduled task/arm/trial")
+    validate_settings_contracts(((row["task_id"], row.get("effective_settings")) for row in ledger), label="scheduled")
+    return ledger, n, task_ids
 
 
-def _task_path(data_root: Path, folder: str, task: str) -> Path:
-    return ensure_under(
-        (data_root / folder / task).resolve(strict=True),
-        data_root,
-        label=f"{folder} task",
-    )
+def _validate_scheduled_recording(row, mode, task, manifest):
+    if (task["source_task_id"] != row["task_id"] or task["observation_mode"] != mode
+            or task["instruction"] != row["task"]["instruction"] or task["start_url"] != row["task"]["start_url"]
+            or task["run_name"] != row["run_name"] or manifest["run_name"] != row["run_name"]
+            or any(task.get(key) != row["task"].get(key) for key in ("category", "difficulty"))):
+        raise ValueError("recording differs from its scheduled task, arm or run name")
+    if (task.get("catalog_sha256") != manifest.get("catalog_sha256")
+            or task.get("catalog_sha256") != row.get("catalog_sha256")
+            or task.get("catalog_sha256") != row["task"].get("catalog_sha256")):
+        raise ValueError("recording selected catalog hash differs from its schedule")
+    if manifest["status"] != row["technical_outcome"]:
+        raise ValueError("ledger technical outcome disagrees with recording")
 
 
-def _paired_tasks(data_root: Path) -> list[str]:
-    screenshot_root = data_root / "data-ss"
-    dom_root = data_root / "data-dom"
-    if not screenshot_root.is_dir() or not dom_root.is_dir():
-        raise ValueError(f"Verifier inputs lack paired data-ss and data-dom directories: {data_root}")
-    screenshot = {path.name for path in screenshot_root.iterdir() if path.is_dir()}
-    dom = {path.name for path in dom_root.iterdir() if path.is_dir()}
-    if screenshot != dom:
-        raise ValueError(
-            "Paired task aliases differ: "
-            + json.dumps(
-                {"screenshot_only": sorted(screenshot - dom), "dom_only": sorted(dom - screenshot)}
-            )
-        )
-    if not screenshot:
-        raise ValueError("No paired tasks were found")
-    return sorted(screenshot)
+def _scheduled_summary(row, recording, manifest):
+    configuration = row["configuration"]
+    compared = ("model", "max_turns", "max_output_tokens", "viewport", "reasoning_effort", "base_url",
+                "browser_lang", "browser_accept_language", "recorder_code_sha256")
+    require_same_settings({key: configuration[key] for key in compared if key in configuration},
+        {key: manifest["controls"].get(key) for key in compared if key in configuration}, label="recording controls against schedule")
+    expected = row.get("effective_settings")
+    if expected is not None:
+        require_same_settings(expected.get("actor"), manifest.get("effective_settings"), label="scheduled actor")
+    recording["scheduled_effective_settings"] = expected
+    summary = summarize(recording)
+    if expected is not None and summary.get("evaluation") is not None:
+        require_same_settings(expected, summary.get("evaluation_effective_settings"), label="scheduled evaluation")
+    if row.get("evaluation_path") and summary.get("evaluation_path") and Path(row["evaluation_path"]).resolve() != Path(summary["evaluation_path"]).resolve():
+        raise ValueError("evaluation receipt path differs from its scheduled attempt")
+    if row.get("evaluation_outcome") in {"complete", "incomplete", "awaiting_adjudication"} and (
+            summary.get("evaluation") is None or row["evaluation_outcome"] != summary["evaluation"].get("status")):
+        raise ValueError("evaluation outcome differs from its scheduled receipt")
+    return summary
 
 
-def _validate_task(data_root: Path, task: str) -> dict:
-    return dataset_only_preflight(
-        _task_path(data_root, "data-ss", task), _task_path(data_root, "data-dom", task)
-    )
+def _scheduled_grade(row, summary):
+    grade = summary["completion"]
+    grade_available = summary.get("completion_grade_available") is True or grade.get("method") != "ungraded"
+    if (grade_available or summary.get("evaluation")) and row.get("rubric"):
+        frozen = json.loads(Path(row["rubric"]).read_text())
+        rubric_hash = hashlib.sha256(json.dumps(frozen.get("precomputed_rubric", frozen),sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+        rubric_hashes = {rubric_hash}
+        if "criteria" in frozen and "precomputed_rubric" not in frozen:
+            canonical = {"items": [{"criterion": item["id"], "description": item["description"],
+                "max_points": 1, "earned_points": None, "justification": None} for item in frozen["criteria"]]}
+            rubric_hashes.add(hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest())
+        if (hashlib.sha256(Path(row["rubric"]).read_bytes()).hexdigest() != row["rubric_sha256"]
+                or summary.get("evaluation") is not None and summary["evaluation"].get("rubric_sha256") not in rubric_hashes
+                or grade_available and (grade.get("rubric_sha256") not in rubric_hashes
+                    or grade.get("judge_model") != row["judge_model"] or grade.get("evidence_policy") != "paired")):
+            raise ValueError("grade differs from scheduled rubric, judge or primary evidence policy")
+    return grade
 
 
-def _verify_local_preparation(data_root: Path, task: str) -> None:
-    """Detect stale or edited bundles using the converter's saved receipts."""
-    report_path = data_root / "preparation_report.json"
-    if not report_path.is_file():
-        return  # Explicit local pairs prepared outside this converter remain supported.
-    report = _preparation_report(data_root)
-    matches = [row for row in report.get("prepared", []) if row.get("task") == task]
-    if len(matches) != 1 or not isinstance(matches[0].get("output_sha256"), dict):
-        raise ValueError(f"Local task has no unique preparation receipt: {task}")
-    expected = matches[0]["output_sha256"]
-    actual = {}
-    for modality in ("data-ss", "data-dom"):
-        root = _task_path(data_root, modality, task)
-        for path in root.rglob("*"):
-            if path.is_file():
-                if not path.resolve(strict=True).is_relative_to(root):
-                    raise ValueError(f"Local evidence escapes its task folder: {path}")
-                actual[path.relative_to(data_root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    if not actual or actual != expected:
-        raise ValueError(f"Local verifier inputs differ from the preparation receipt: {task}")
+def _browser_identity(manifest, *, allow_nonfresh=False):
+    profile = manifest.get("browser_profile_provenance") or {}
+    fresh = (profile.get("profile_fresh_at_run_start") is True
+        and profile.get("freshly_recreated_by_launcher") is True
+        and profile.get("launch_mode") == "fresh"
+        and type(profile.get("tasks_previously_run_in_container")) is int
+            and profile["tasks_previously_run_in_container"] == 0
+        and (profile.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1")
+    build = (profile.get("browser_build") or {}).get("image_id")
+    environment = profile.get("browser_environment")
+    if not build or not isinstance(environment,dict) or not environment:
+        raise ValueError("browser build or runtime environment is unverified")
+    if not fresh and not allow_nonfresh:
+        raise ValueError("browser profile freshness is unverified; explicitly allow nonfresh runs to compare them")
+    return build, environment
 
 
-def _preparation_report(data_root: Path) -> dict:
-    report = load_json(data_root / "preparation_report.json")
-    if not isinstance(report, dict) or report.get("schema_version") != "1.0":
-        raise ValueError("Invalid preparation report schema")
-    for name in ("prepared", "excluded"):
-        rows = report.get(name)
-        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
-            raise ValueError(f"Preparation report {name} must be a list of objects")
-    if (report.get("prepared_count") != len(report["prepared"])
-        or report.get("excluded_count") != len(report["excluded"])
-        or report.get("selected_recordings") != len(report["prepared"]) + len(report["excluded"])):
-        raise ValueError("Preparation report counts disagree")
-    return report
+def _recorded_attempts(ledger, *, allow_nonfresh=False):
+    indexed = [{}, {}]
+    records = {}
+    protocols, builds, models, grading_policies, configurations = {}, set(), set(), set(), set()
+    environments, capture_policies = set(), set()
+    summaries = []
+    for row in ledger:
+        configurations.add(json.dumps(normalized_settings({key: value for key, value in row["configuration"].items()
+            if key not in {"prompt_sha256", "action_schema_sha256"}}), sort_keys=True))
+        source = Path(row["recording"])
+        key = (row["run_name"], row["task_id"])
+        if row["technical_outcome"] in {"not_started", "running"}:
+            continue
+        if not (source / "final.json").is_file():
+            continue
+        if row["technical_outcome"] == "technical_failure" and not (source / "manifest.json").is_file():
+            continue
+        recording = inspect_recording(source)
+        mode, task, manifest = row["arm"], recording["task"], recording["manifest"]
+        _validate_scheduled_recording(row, mode, task, manifest)
+        indexed[0 if mode == "dom" else 1][key] = recording
+        records[(row["task_id"],row["trial"],mode)] = recording
+        summary = _scheduled_summary(row, recording, manifest)
+        summaries.append((row["task_id"], summary))
+        models.update(summary["returned_actor_models"])
+        grade = _scheduled_grade(row, summary)
+        if grade.get("evidence_policy") is not None:
+            grading_policies.add(grade["evidence_policy"])
+        build, environment = _browser_identity(manifest, allow_nonfresh=allow_nonfresh)
+        builds.add(build)
+        environments.add(json.dumps(normalized_settings(environment),sort_keys=True))
+        capture_policies.add(json.dumps(normalized_settings({key: manifest.get(key) for key in
+            ("dom_capture_parameters","renderer_versions")}),sort_keys=True))
+        protocol = json.dumps(normalized_settings({"controls": manifest["controls"],
+            "dom_capture": manifest.get("dom_capture_parameters"), "renderers": manifest.get("renderer_versions"),
+            "action_driver": manifest.get("action_driver"), "action_driver_version": manifest.get("action_driver_version")}), sort_keys=True)
+        if mode in protocols and protocols[mode] != protocol:
+            raise ValueError(f"{mode} observation/action policy differs across trials")
+        protocols[mode] = protocol
+    if (len(configurations)>1 or len(builds)>1 or len(models)>1 or len(grading_policies)>1
+            or len(environments)>1 or len(capture_policies)>1):
+        raise ValueError("scheduled controls, browser builds/environments, capture policies, actor models or judge policies differ")
+    validate_recorded_settings(summaries)
+    return indexed, records
 
 
-def _input_source(args: argparse.Namespace, data_root: Path) -> dict:
-    receipt = {"data_source": args.data_source, "data_root": os.path.relpath(data_root, REPOSITORY_ROOT)}
-    if args.data_source == "huggingface":
-        receipt.update(hf_repo=args.hf_repo, hf_revision=args.hf_revision)
+def _partial_summary(row, arm, task_id):
+    source = Path(row["recording"])
+    decisions = []
+    undecodable_decisions = False
+    partial = source / "decisions.jsonl"
+    if partial.is_file():
+        for line in partial.read_text().splitlines():
+            try:
+                decision = json.loads(line)
+            except json.JSONDecodeError:
+                undecodable_decisions = undecodable_decisions or bool(line.strip())
+                continue
+            if isinstance(decision, dict):
+                decisions.append(decision)
+            else:
+                undecodable_decisions = True
+    task = {**row["task"], "source_task_id": task_id, "observation_mode": arm,
+        "run_name": row["run_name"]}
+    partial_manifest = {"steps": [], "states": [], "controls": row["configuration"]}
+    if (source / "manifest.json").is_file():
+        partial_manifest = json.loads((source / "manifest.json").read_text())
+    turn_evidence = any(any((source / "turns").glob(f"turn_*/{name}.json"))
+                        for name in ("request", "response", "metadata"))
+    reported_turns = partial_manifest.get("model_turns")
+    counter_clear = ("model_turns" not in partial_manifest or
+                     valid_token_component(reported_turns) and reported_turns == 0)
+    no_calls = ((row["technical_outcome"] in {"not_started", "startup_failure"} or row.get("actor_calls_attempted") is False)
+        and not decisions and not undecodable_decisions and not turn_evidence
+        and counter_clear and not partial_manifest.get("steps"))
+    summary = summarize({"source": str(source), "task": task,
+        "manifest": partial_manifest, "decisions": decisions, "recording_sha256": None,
+        "actor_calls_known_zero": no_calls,
+        "scheduled_effective_settings": row.get("effective_settings"),
+        "partial_recording": True, "final": {"run_status": row["technical_outcome"]}})
+    summary.update(recording_available=False, partial_recording=source.exists(),
+        turns_complete=no_calls, cost_coverage="complete" if no_calls else "partial")
+    response_turn_policy = partial_manifest.get("turn_policy") == "actor-response-turn/v2"
+    if response_turn_policy:
+        response_turns = {path.parent.name for path in (source / "turns").glob("*/response.json")}
+        pending_transport = False
+        for path in (source / "turns").glob("*/metadata.json"):
+            try:
+                metadata = json.loads(path.read_text())
+            except json.JSONDecodeError:
+                undecodable_decisions = True
+                continue
+            if any(receipt.get("response_received") is True for receipt in metadata.get("transport_attempts", [])):
+                response_turns.add(path.parent.name)
+            pending_transport |= metadata.get("pending_transport", {}).get("status") == "started"
+        summary["turns_complete"] = (not decisions and not undecodable_decisions and valid_token_component(reported_turns)
+            and reported_turns == 0 and not response_turns and not pending_transport)
+    if not no_calls and not decisions and not response_turn_policy:
+        summary["turns_missing_usage"] = 1
+    if no_calls:
+        summary["token_usage"].update(input_tokens=0, output_tokens=0, total_tokens=0)
+    return summary
+
+
+def _pair_attempt(rows, available, task_id, trial, *, allow_nonfresh=False):
+    reports, unmatched = [], []
+    if all(available.values()):
+        receipt, markdown = compare(available["dom"], available["screenshot"], allow_nonfresh=allow_nonfresh)
+        reports.append(f"Trial: {trial}\n\n{markdown}")
     else:
-        report = data_root / "preparation_report.json"
-        if report.is_file():
-            receipt["preparation_report_sha256"] = hashlib.sha256(report.read_bytes()).hexdigest()
-            prepared = _preparation_report(data_root)
-            receipt.update(selected_recordings=prepared["selected_recordings"],
-                           prepared_count=prepared["prepared_count"], excluded_count=prepared["excluded_count"])
-    return receipt
+        receipt = {"task_id": task_id, "shared_controls": {}, "both_successful": False,
+            "successful_pair_turn_delta": None}
+        for arm in ("dom", "screenshot"):
+            if available[arm]:
+                receipt[arm] = summarize(available[arm])
+            else:
+                unmatched.append({"task_id": task_id, "trial": trial, "arm": arm,
+                    "technical_outcome": rows[arm]["technical_outcome"]})
+                receipt[arm] = _partial_summary(rows[arm], arm, task_id)
+    if "browser_profile_policy" not in receipt:
+        nonfresh = []
+        for arm, recording in available.items():
+            if recording is None:
+                continue
+            profile = recording["manifest"].get("browser_profile_provenance") or {}
+            if not (profile.get("profile_fresh_at_run_start") is True
+                    and profile.get("freshly_recreated_by_launcher") is True
+                    and profile.get("launch_mode") == "fresh"
+                    and type(profile.get("tasks_previously_run_in_container")) is int
+            and profile["tasks_previously_run_in_container"] == 0
+                    and (profile.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1"):
+                nonfresh.append(arm)
+        receipt["browser_profile_policy"] = {"allow_nonfresh": allow_nonfresh,
+            "nonfresh_arms": nonfresh, "override_used": bool(nonfresh)}
+    for arm in ("dom", "screenshot"):
+        scheduled, summary = rows[arm], receipt[arm]
+        summary["attempt_number"] = scheduled.get("attempt_number", 1)
+        summary["attempts"] = scheduled.get("attempts", [])
+        summary["technical_failure"] = scheduled["technical_outcome"] == "technical_failure"
+        summary["technical_failure_class"] = scheduled.get("technical_failure_class")
+        if summary["technical_failure"]:
+            summary["technical_completion_diagnostic"] = summary["completion"]
+            summary["completion"] = {"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"}
+            summary["completion_grade_available"] = False
+        prior = []
+        for attempt in scheduled.get("attempts", []):
+            if attempt.get("technical_outcome") != "technical_failure" or Path(attempt["recording"]).resolve() == Path(scheduled["recording"]).resolve():
+                continue
+            attempt_path = Path(attempt["recording"])
+            previous = {**scheduled, **attempt}
+            if all((attempt_path / name).is_file() for name in ("final.json", "manifest.json", "task.json")):
+                recording = inspect_recording(attempt_path)
+                _validate_scheduled_recording(previous, arm, recording["task"], recording["manifest"])
+                item = summarize(recording)
+            else:
+                item = _partial_summary(previous, arm, task_id)
+            prior.append({"attempt_number": attempt["attempt_number"], "recording": str(attempt_path),
+                "technical_failure_class": attempt.get("technical_failure_class"),
+                "recording_sha256": item.get("recording_sha256"), "actor_model_turns": item["model_turns"],
+                "actor_cost": item["cost_streams"]["actor"]})
+        summary["technical_attempts"] = prior
+        members = [item["actor_cost"] for item in prior]
+        keys = ("input_tokens", "output_tokens", "total_tokens", "cached_input_tokens", "reasoning_tokens", "cache_write_input_tokens")
+        stream = {"model": scheduled["configuration"].get("model"),
+            "calls": sum(item["calls"] for item in members) if all(type(item.get("calls")) is int for item in members) else None,
+            "call_records": [call for item in members for call in item.get("call_records", [])],
+            "unknown_attempts": sum(item.get("unknown_attempts", 0) for item in members),
+            "usage": {key: sum(values) if (values := [(item.get("usage") or {})[key] for item in members
+                if valid_token_component((item.get("usage") or {}).get(key))]) else 0 if not members else None for key in keys},
+            "usage_coverage": "complete" if all(item.get("usage_coverage") == "complete" for item in members) else "partial",
+            "attempt_count": len(prior), "scope": "Prior technical attempts; excluded from final actor turns and tokens."}
+        _price_stream(stream)
+        summary["cost_streams"]["technical_attempts:actor"] = stream
+    if any(receipt[arm]["technical_failure"] for arm in ("dom", "screenshot")):
+        receipt.update(both_successful=False, successful_pair_turn_delta=None)
+    receipt["category"] = rows["dom"]["task"].get("category")
+    receipt["difficulty"] = rows["dom"]["task"].get("difficulty")
+    receipt["catalog_sha256"] = rows["dom"].get("catalog_sha256")
+    if rows["dom"].get("catalog_sha256") != rows["screenshot"].get("catalog_sha256"):
+        raise ValueError("scheduled arms use different selected catalog hashes")
+    receipt["trial_id"] = str(trial)
+    receipt["recordings_paired"] = all(available.values())
+    return receipt, reports, unmatched
 
 
-def _run_all(args: argparse.Namespace, data_root: Path) -> int:
-    tasks = _paired_tasks(data_root)
-    # Validate every selected input before any task can initialize paid clients.
-    for task in tasks:
-        if args.data_source == "local":
-            _verify_local_preparation(data_root, task)
-        preflight = _validate_task(data_root, task)
-        if getattr(args, "frozen_rubrics", None):
-            from .common import load_canonical_rubric, validate_generation_metrics
-            references = list((args.frozen_rubrics / task).glob("*/frozen_rubric.json"))
-            if len(references) != 1:
-                raise ValueError(f"Expected one reference frozen rubric for {task}")
-            frozen = load_canonical_rubric(references[0], expected_task_id=preflight["task_id"])
-            validate_generation_metrics(references[0].with_name("rubric_generation_metrics.json"), frozen)
-    results_root = ensure_under(Path(args.results_root), REPOSITORY_ROOT, label="results root")
-    run_id = args.run_id
-    if run_id is None:
-        number = 1
-        while any(results_root.glob(f"*/batch_{number:02d}")):
-            number += 1
-        run_id = f"batch_{number:02d}"
-    if not args.execute:
-        print(
-            json.dumps(
-                {
-                    "status": "preflight_ready",
-                    "paid_calls_authorized": False,
-                    "selected_tasks": len(tasks),
-                    "tasks": tasks,
-                    "input_source": _input_source(args, data_root),
-                    "audit_model": args.audit_model,
-                    "run_id": run_id,
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-        )
-        return 0
+def _paired_attempts(ledger, task_ids, records, *, allow_nonfresh=False):
+    pairs, reports, unmatched = [], [], []
+    for task_id in sorted(task_ids):
+        for trial in sorted({row["trial"] for row in ledger}):
+            rows = {row["arm"]: row for row in ledger if row["task_id"]==task_id and row["trial"]==trial}
+            available = {arm: records.get((task_id,trial,arm)) for arm in ("dom","screenshot")}
+            receipt, report, missing = _pair_attempt(rows, available, task_id, trial, allow_nonfresh=allow_nonfresh)
+            reports.extend(report)
+            unmatched.extend(missing)
+            pairs.append(receipt)
+    # Shared controls are checked across every recorded attempt, including unmatched ones.
+    shared = {json.dumps(normalized_settings({k:v for k,v in r["manifest"]["controls"].items() if k not in {"prompt_sha256", "action_schema_sha256"}}),sort_keys=True)
+        for r in records.values()}
+    if len(shared)>1:
+        raise ValueError("shared actor controls differ across recorded attempts")
+    for pair in pairs:
+        pair["shared_controls"] = json.loads(next(iter(shared))) if shared else next(iter(ledger))["configuration"]
+    return pairs, reports, unmatched
 
-    batch_started_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-    audits: list[dict] = []
-    failures: list[dict[str, str]] = []
-    batch_root = results_root / "batches" / run_id
-    batch_root.mkdir(parents=True, exist_ok=False)
-    for ordinal, task in enumerate(tasks, start=1):
-        print(f"[{ordinal}/{len(tasks)}] {task}", flush=True)
-        child_args = argparse.Namespace(**vars(args))
-        child_args.task, child_args.all, child_args.run_id = task, False, run_id
+
+def _report_markdown(summary, pairs, reports):
+    lines = ["# DOM versus screenshot actor turns", "",
+        f"Scheduled tasks: {summary['scheduled_tasks']}; recorded pairs: {summary['paired_attempts']}; scheduled pairs: {len(pairs)}. No model calls were performed.", "",
+        "| Mode | Confirmed successes / attempts | Definitively graded | Mean actor turns (all attempts) | Rejected turns | Stall advisories |",
+        "|---|---:|---:|---:|---:|---:|"]
+    for mode, row in summary["modes"].items():
+        lines.append(f"| {mode} | {row['completion_counts'].get('success', 0)} / {row['attempted_runs']} | {row['definitively_graded_tasks']} | {row['mean_turns_all_attempts']} | {row['rejected_turns']} | {row['stall_advisory_matches']} |")
+    lines += ["", "| Mode | Actor-only tokens (known) | Matching native verifier | Matching-verifier tokens (known) | Actor + matching-verifier tokens | Complete runs |",
+        "|---|---:|---|---:|---:|---:|"]
+    for mode, row in summary["modes"].items():
+        arm = row["arm_token_usage"]
+        actor = arm["actor_usage"]["total_tokens"]
+        native = arm["matching_verifier_usage"]["total_tokens"]
+        combined, lower = arm["usage"]["total_tokens"], arm["known_usage_lower_bound"]["total_tokens"]
+        displayed = str(combined) if valid_token_component(combined) else f"≥ {lower}" if valid_token_component(lower) else "unknown"
+        lines.append(f"| {mode} | {actor if valid_token_component(actor) else 'unknown'} | {arm['matching_verifier']} | {native if valid_token_component(native) else 'unknown'} | {displayed} | {arm['complete_runs']} / {arm['attempted_runs']} |")
+    lines += ["", "Arm tokens include the actor and its matching native verifier. Both native verifiers still run for each recording; all judge cost streams remain separate.",
+        "Component columns show known recorded usage; ≥ marks a lower bound. Actor tokens per turn remain actor-only."]
+    lines += ["", "| Mode | k | pass@k confirmed lower | Possible upper |", "|---|---:|---:|---:|"]
+    for mode in ("dom", "screenshot"):
+        for k, estimate in summary["modes"][mode]["pass_at_k"].items():
+            lines.append(f"| {mode} | {k} | {estimate['confirmed_lower']:.4f} | {estimate['possible_upper']:.4f} |")
+    lines += ["", "| Actor arm | Evidence category | Screenshot losses | DOM losses |",
+        "|---|---|---:|---:|"]
+    for arm in ("dom", "screenshot"):
+        for category, counts in summary["modes"][arm].get("evidence_loss_categories", {}).get("counts", {}).items():
+            lines.append(f"| {arm} | {category} | {counts['screenshot']} | {counts['dom_model']} |")
+    lines += ["", "Categories annotate the missing evidence, not its capture mechanism. Unclassified findings retain their loss flags.",
+        "", "pass@k requires at least one success among k attempts; all-trials reliability is reported separately.",
+        "Per-task criterion results and pass@k are in per_task.json; actor/judge usage and error coverage are in summary.json.",
+        "", f"Both-successful matched trial/task pairs: {summary['both_successful_pairs']}.", "", *summary["denominator_notes"], "", *reports]
+    return "\n".join(lines) + "\n"
+
+
+def _write_reports(output, indexed, summary, pairs, reports):
+    # Prevent reports from being mixed into immutable source recordings.
+    output = output.resolve()
+    from w8bench.run_paths import TEMPORAL_NAME_PATTERN
+    if any(not re.fullmatch(r"[0-9a-fA-F]{64}(?:_\d+)?(?:\.[A-Za-z0-9]+)?", part) and TEMPORAL_NAME_PATTERN.search(part) for part in output.parts):
+        raise ValueError("Report names must use labels and sequence numbers without dates or times")
+    if any(output.is_relative_to(Path(r["source"])) for catalog in indexed for r in catalog.values()):
+        raise ValueError("reports must be outside recording folders")
+    base, number = output, 1
+    while True:
         try:
-            rc = _run_task(child_args, data_root)
-            if rc:
-                raise RuntimeError(f"comparison exited with status {rc}")
-            task_root = results_root / task / run_id
-            audit_path = task_root / "evidence_audit.json"
-            if not audit_path.is_file():
-                error_path = task_root / "evidence_audit_error.json"
-                if error_path.is_file():
-                    receipt = load_json(error_path)
-                    raise RuntimeError(
-                        "audit_failed: " + str(receipt.get("message", "unknown audit error"))
-                    )
-                raise RuntimeError("comparison completed without an evidence-audit artifact")
-            audits.append(load_json(audit_path))
-        except Exception as exc:  # Batch runs must report rather than silently drop failures.
-            failures.append({"task": task, "error": f"{type(exc).__name__}: {exc}"})
-            print(f"{task}: FAILED: {exc}", file=sys.stderr, flush=True)
-
-    if not audits:
-        raise RuntimeError("All selected task comparisons failed; no aggregate was written")
-    summary = aggregate_audits(audits, failures)
-    summary.update({"run_id": run_id, "selected_tasks": len(tasks),
-                    "batch_started_at": batch_started_at,
-                    "batch_completed_at": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-                    "input_source": _input_source(args, data_root)})
-    write_json(batch_root / "evidence_loss_summary.json", summary)
-    (batch_root / "evidence_loss_summary.md").write_text(
-        render_aggregate_markdown(summary), encoding="utf-8"
-    )
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
-    return 1 if failures else 0
+            output.mkdir(parents=True, exist_ok=False)
+            break
+        except FileExistsError:
+            number += 1
+            output = base.with_name(f"{base.name}_{number}")
+    from .aggregate_runs import _loss_categories
+    findings = []
+    for pair in pairs:
+        for arm in ("dom", "screenshot"):
+            row = pair[arm]
+            if row.get("evidence_audit_status") != "complete":
+                continue
+            evaluation = row.get("evaluation") or {}
+            stage = evaluation.get("stages", {}).get("audit", {})
+            audit_path = Path(row["evaluation_path"]).parent / "evidence_audit.json"
+            if not audit_path.is_file() or hashlib.sha256(audit_path.read_bytes()).hexdigest() != stage.get("result_sha256"):
+                raise ValueError("Category report audit differs from its evaluation receipt")
+            audit = json.loads(audit_path.read_text())
+            context = (audit.get("shared_trajectory") or {}).get("evaluation_context") or {}
+            if any(context.get(key) != evaluation.get(key) for key in
+                    ("actor_arm", "task_id", "trial_id", "recording_sha256")):
+                raise ValueError("Category report belongs to a different recording")
+            findings.extend(_loss_categories({pair["task_id"]: {"audit": audit, "path": audit_path}},
+                {pair["task_id"]}, evaluation["trial_id"], {"inventory": set(), "adjudication": set()}))
+    for arm in ("dom", "screenshot"):
+        selected = [finding for finding in findings if finding["actor_arm"] == arm]
+        summary["modes"][arm]["evidence_loss_categories"] = {
+            "counts": {category: {side: sum(finding["category"] == category and finding["representation"] == side
+                for finding in selected) for side in ("screenshot", "dom_model")}
+                for category in sorted({finding["category"] for finding in selected})},
+            "labelled_losses": sum(finding["category"] != "Unclassified" for finding in selected),
+            "unclassified_losses": sum(finding["category"] == "Unclassified" for finding in selected),
+            "policy": "Reviewed source-gap annotations; categories do not change audit decisions."}
+    with (output / "evidence_categories.tsv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["run_name", "actor_arm", "judge_profile", "recording_sha256",
+            "task", "criterion_index", "representation", "category", "rationale", "finding_sha256", "source"],
+            delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(findings)
+    write_json(output / "summary.json", summary)
+    write_json(output / "pairs.json", pairs)
+    write_json(output / "per_task.json", summary["per_task"])
+    (output / "report.md").write_text(_report_markdown(summary, pairs, reports), encoding="utf-8")
+    print(json.dumps({"report": str(output / "report.md"), "paired_tasks": summary["paired_tasks"],
+        "paired_attempts": summary["paired_attempts"], "scheduled_pairs": summary["scheduled_pairs"],
+        "scheduled_tasks": summary["scheduled_tasks"], "evaluated_k": summary["evaluated_k"]}, indent=2))
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv)
-    if Path(args.env_file).is_file():
-        load_env_file(args.env_file)
-    from w8bench.run_paths import run_directory, resolve_run_name
-    args.run_name = resolve_run_name(args.run_name)
-    args.results_root = args.results_root or run_directory(REPOSITORY_ROOT / "evaluations", args.run_name)
-    audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
-    args.audit_model = audit_config["inventory"]["model"]
-    args.adjudicator_model = audit_config["adjudication"]["model"]
-    args.audit_provider = audit_config["inventory"]["provider"]
-    args.adjudicator_provider = audit_config["adjudication"]["provider"]
-    if args.execute:
-        check_audit_models(audit_config)
-    if args.data_source == "huggingface":
-        download_root = run_directory(DEFAULT_DATASET_ROOT, args.run_name)
-        if (download_root / "preparation_report.json").exists():
-            raise ValueError("The download folder contains locally prepared inputs; use local mode or a separate download folder")
-        fetched = fetch_trajectories(
-            data_root=download_root,
-            task=None if args.all else args.task,
-            repo_id=args.hf_repo,
-            revision=args.hf_revision,
-            run_name=args.run_name,
-        )
-        print(json.dumps({"dataset_fetch": fetched}, ensure_ascii=False, indent=2))
-        data_root = download_root.resolve(strict=True)
-    else:
-        # Local mode has no downloader call and no fallback to hosted inputs.
-        data_root = (args.data_root or run_directory(REPOSITORY_ROOT / "trajectories", args.run_name)).resolve(strict=True)
-    if args.all:
-        return _run_all(args, data_root)
-    return _run_task(args, data_root)
-
-
-def _run_task(args: argparse.Namespace, data_root: Path) -> int:
-    screenshot_source = _task_path(data_root, "data-ss", args.task)
-    dom_source = _task_path(data_root, "data-dom", args.task)
-    if args.data_source == "local":
-        _verify_local_preparation(data_root, args.task)
-    preflight = _validate_task(data_root, args.task)
-    if args.frozen_rubrics:
-        from .common import load_canonical_rubric, validate_generation_metrics
-        references = list((args.frozen_rubrics / args.task).glob("*/frozen_rubric.json"))
-        if len(references) != 1:
-            raise ValueError(f"Expected one reference frozen rubric for {args.task}")
-        frozen = load_canonical_rubric(references[0], expected_task_id=preflight["task_id"])
-        validate_generation_metrics(references[0].with_name("rubric_generation_metrics.json"), frozen)
-
-    eval_config = Path(args.eval_config).resolve(strict=True)
-    env_file = Path(args.env_file).resolve(strict=args.execute)
-    results_root = ensure_under(
-        Path(args.results_root), REPOSITORY_ROOT, label="results root"
-    )
-    run_id = args.run_id
-    if run_id is None:
-        number = 1
-        while any(results_root.glob(f"*/batch_{number:02d}")):
-            number += 1
-        run_id = f"batch_{number:02d}"
-
-    if (results_root / args.task / run_id).exists():
-        raise ValueError(
-            f"Run output already exists; choose a new --run-id: {results_root / args.task / run_id}"
-        )
-
-    if not args.execute:
-        print(
-            json.dumps(
-                {
-                    "status": "preflight_ready",
-                    "paid_calls_authorized": False,
-                    "task": args.task,
-                    "screenshot_task": os.path.relpath(screenshot_source, REPOSITORY_ROOT),
-                    "dom_task": os.path.relpath(dom_source, REPOSITORY_ROOT),
-                    "input_source": _input_source(args, data_root),
-                    "validation": preflight,
-                    "eval_config": os.path.relpath(eval_config, REPOSITORY_ROOT),
-                    "results_root": os.path.relpath(results_root, REPOSITORY_ROOT),
-                    "run_id": run_id,
-                    "audit_model": args.audit_model,
-                    "workflow": [
-                        "reuse the reference frozen rubric" if args.frozen_rubrics else "generate one fresh screenshot rubric",
-                        "freeze the rubric on isolated task copies",
-                        "score screenshot and DOM evidence with the same rubric",
-                        "inventory and adjudicate evidence loss and verifier misses automatically",
-                        "write the comparison",
-                    ],
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-        )
-        return 0
-
-    results_root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(
-        prefix=f".{args.task}-phase-a-", dir=REPOSITORY_ROOT
-    ) as staging_name:
-        staging_root = Path(staging_name)
-        screenshot_staged = staging_root / "data-ss" / args.task
-        dom_staged = staging_root / "data-dom" / args.task
-        shutil.copytree(screenshot_source, screenshot_staged)
-        shutil.copytree(dom_source, dom_staged)
-        rubric_file = staging_root / "frozen_rubric.json"
-        metrics_file = staging_root / "rubric_generation_metrics.json"
-
-        phase_a_args = [
-            "--screenshot-task", str(screenshot_staged),
-            "--dom-task", str(dom_staged),
-            "--staged-root", str(staging_root),
-            "--rubric-file", str(rubric_file),
-            "--metrics-file", str(metrics_file),
-            "--eval-config", str(eval_config),
-            "--env-file", str(env_file),
-            "--overwrite",
-            "--execute",
-        ]
-        if args.frozen_rubrics:
-            references = list((args.frozen_rubrics / args.task).glob("*/frozen_rubric.json"))
-            if len(references) != 1:
-                raise ValueError(f"Expected one reference frozen rubric for {args.task}")
-            shutil.copyfile(references[0], rubric_file)
-            shutil.copyfile(references[0].with_name("rubric_generation_metrics.json"), metrics_file)
-            from .common import load_canonical_rubric
-            from .generate_frozen_rubric import _sidecar_payload
-            frozen = load_canonical_rubric(rubric_file, expected_task_id=preflight["task_id"])
-            for folder in (screenshot_staged, dom_staged):
-                write_json(folder / "task_data_with_canonical_rubric.json",
-                           _sidecar_payload(folder / "task_data.json", frozen.rubric))
-        elif generate_rubric(phase_a_args) != 0:
-            return 1
-
-        phase_b_args = [
-            "--task", args.task,
-            "--screenshot-task", str(screenshot_staged),
-            "--dom-task", str(dom_staged),
-            "--staged-root", str(staging_root),
-            "--rubric-file", str(rubric_file),
-            "--generation-metrics", str(metrics_file),
-            "--eval-config", str(eval_config),
-            "--env-file", str(env_file),
-            "--results-root", str(results_root),
-            "--run-id", run_id,
-            "--run-name", args.run_name,
-            "--audit-model", args.audit_model,
-            "--adjudicator-model", args.adjudicator_model,
-            "--audit-provider", args.audit_provider,
-            "--adjudicator-provider", args.adjudicator_provider,
-            "--execute",
-        ]
-        result = run_comparison(phase_b_args)
-        run_root = results_root / args.task / run_id
-        if run_root.is_dir():
-            write_json(run_root / "input_source.json", _input_source(args, data_root))
-            audit_path = run_root / "evidence_audit.json"
-            if audit_path.is_file():
-                audit = load_json(audit_path)
-                if "evidence_paths" in audit:
-                    audit["evidence_paths"] = {
-                        "screenshots": [os.path.relpath(screenshot_source / Path(path).name, REPOSITORY_ROOT)
-                                        for path in audit["evidence_paths"]["screenshots"]],
-                        "dom_states": [os.path.relpath(dom_source / Path(path).name, REPOSITORY_ROOT)
-                                       for path in audit["evidence_paths"]["dom_states"]],
-                        "action_history": {"screenshot": os.path.relpath(screenshot_source / "web_surfer.log", REPOSITORY_ROOT),
-                                           "dom_model": os.path.relpath(dom_source / "web_surfer.log", REPOSITORY_ROOT)},
-                    }
-                    write_json(audit_path, audit)
-        return result
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ledger", type=Path, nargs="+", required=True, help="one or more run schedules and attempt outcomes")
+    parser.add_argument("--pass-k", type=int, nargs="+", help="k values; default is all scheduled trial counts")
+    parser.add_argument("--output", type=Path, required=True, help="new report directory")
+    parser.add_argument("--allow-nonfresh", action="store_true",
+        help="explicitly include reused or unverified browser profiles and record the override")
+    args = parser.parse_args(argv)
+    ledger, _, task_ids = _read_ledger(args.ledger)
+    indexed, records = _recorded_attempts(ledger, allow_nonfresh=args.allow_nonfresh)
+    pairs, reports, unmatched = _paired_attempts(ledger, task_ids, records, allow_nonfresh=args.allow_nonfresh)
+    summary = aggregate(pairs, pass_k=args.pass_k)
+    summary.update(browser_profile_policy={"allow_nonfresh": args.allow_nonfresh,
+        "override_used": any(pair.get("browser_profile_policy", {}).get("override_used") for pair in pairs)},
+        scheduled_attempts=len(ledger), scheduled_pairs=len(pairs),
+        paired_tasks=len({pair["task_id"] for pair in pairs if pair["recordings_paired"]}),
+        paired_attempts=sum(pair["recordings_paired"] for pair in pairs),
+        scheduled_tasks=len(task_ids), unmatched_arms=unmatched,
+        ledger=[str(path.resolve()) for path in args.ledger],
+        technical_outcomes=dict(Counter(row["technical_outcome"] for row in ledger)),
+        actor_attempts=sum(sum(bool(item.get("started_at")) or item.get("completed") is True
+            for item in row["attempts"]) if row.get("attempts") else int(row["technical_outcome"] not in {"not_started", "running"}) for row in ledger),
+        technical_reruns=sum(len(row.get("attempts", [])) == 2 and
+            (bool(row["attempts"][1].get("started_at")) or row["attempts"][1].get("completed") is True) for row in ledger),
+        technical_failures=sum(row["technical_outcome"] == "technical_failure" for row in ledger),
+        evaluation_outcomes=dict(Counter(row.get("evaluation_outcome", "not_available") for row in ledger)),
+        full_evaluation_completed_attempts=sum(row.get("evaluation_outcome") == "complete" for row in ledger),
+        full_evaluation_completion_rate=sum(row.get("evaluation_outcome") == "complete" for row in ledger) / len(ledger),
+        judge_processes_without_usage=sum(bool(row.get("judge_started_at")) and not run_directory(Path(row["recording"]), area="evaluations").joinpath("completion.json").is_file() for row in ledger))
+    _write_reports(args.output, indexed, summary, pairs, reports)
+    return 0
 
 
 if __name__ == "__main__":
