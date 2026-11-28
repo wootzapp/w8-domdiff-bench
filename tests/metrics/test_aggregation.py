@@ -570,6 +570,20 @@ def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
     assert (figures / "evidence-loss-rates.svg").is_file()
     for svg in figures.glob("*.svg"):
         assert svg.with_suffix(".png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    annotation = next(csv.DictReader(
+        (output / "evidence_categories.tsv").read_text().splitlines(), delimiter="\t"))
+    annotation.update(category="Chronology", rationale="The missing evidence is the ordering of the recorded events.")
+    annotation_path = roots[0] / "task_01" / "evidence_categories.tsv"
+    with annotation_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(annotation), delimiter="\t")
+        writer.writeheader()
+        writer.writerow(annotation)
+    value, categories = audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+    assert categories[0]["category"] == "Chronology"
+    assert value["mean"][audit_aggregate.LOSS_FLAGS[0]]["count"] == result["mean"][audit_aggregate.LOSS_FLAGS[0]]["count"]
+    annotation_path.write_text(annotation_path.read_text().replace(annotation["finding_sha256"], "0" * 64))
+    with pytest.raises(ValueError, match="Category annotation differs"):
+        audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
 
 def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
     import hashlib

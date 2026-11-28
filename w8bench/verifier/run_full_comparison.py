@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 from collections import Counter
 import json
@@ -352,7 +353,13 @@ def _report_markdown(summary, pairs, reports):
     for mode in ("dom", "screenshot"):
         for k, estimate in summary["modes"][mode]["pass_at_k"].items():
             lines.append(f"| {mode} | {k} | {estimate['confirmed_lower']:.4f} | {estimate['possible_upper']:.4f} |")
-    lines += ["", "pass@k requires at least one success among k attempts; all-trials reliability is reported separately.",
+    lines += ["", "| Actor arm | Evidence category | Screenshot losses | DOM losses |",
+        "|---|---|---:|---:|"]
+    for arm in ("dom", "screenshot"):
+        for category, counts in summary["modes"][arm].get("evidence_loss_categories", {}).get("counts", {}).items():
+            lines.append(f"| {arm} | {category} | {counts['screenshot']} | {counts['dom_model']} |")
+    lines += ["", "Categories annotate the missing evidence, not its capture mechanism. Unclassified findings retain their loss flags.",
+        "", "pass@k requires at least one success among k attempts; all-trials reliability is reported separately.",
         "Per-task criterion results and pass@k are in per_task.json; actor/judge usage and error coverage are in summary.json.",
         "", f"Both-successful matched trial/task pairs: {summary['both_successful_pairs']}.", "", *summary["denominator_notes"], "", *reports]
     return "\n".join(lines) + "\n"
@@ -374,6 +381,40 @@ def _write_reports(output, indexed, summary, pairs, reports):
         except FileExistsError:
             number += 1
             output = base.with_name(f"{base.name}_{number}")
+    from .aggregate_runs import _loss_categories
+    findings = []
+    for pair in pairs:
+        for arm in ("dom", "screenshot"):
+            row = pair[arm]
+            if row.get("evidence_audit_status") != "complete":
+                continue
+            evaluation = row.get("evaluation") or {}
+            stage = evaluation.get("stages", {}).get("audit", {})
+            audit_path = Path(row["evaluation_path"]).parent / "evidence_audit.json"
+            if not audit_path.is_file() or hashlib.sha256(audit_path.read_bytes()).hexdigest() != stage.get("result_sha256"):
+                raise ValueError("Category report audit differs from its evaluation receipt")
+            audit = json.loads(audit_path.read_text())
+            context = (audit.get("shared_trajectory") or {}).get("evaluation_context") or {}
+            if any(context.get(key) != evaluation.get(key) for key in
+                    ("actor_arm", "task_id", "trial_id", "recording_sha256")):
+                raise ValueError("Category report belongs to a different recording")
+            findings.extend(_loss_categories({pair["task_id"]: {"audit": audit, "path": audit_path}},
+                {pair["task_id"]}, evaluation["trial_id"], {"inventory": set(), "adjudication": set()}))
+    for arm in ("dom", "screenshot"):
+        selected = [finding for finding in findings if finding["actor_arm"] == arm]
+        summary["modes"][arm]["evidence_loss_categories"] = {
+            "counts": {category: {side: sum(finding["category"] == category and finding["representation"] == side
+                for finding in selected) for side in ("screenshot", "dom_model")}
+                for category in sorted({finding["category"] for finding in selected})},
+            "labelled_losses": sum(finding["category"] != "Unclassified" for finding in selected),
+            "unclassified_losses": sum(finding["category"] == "Unclassified" for finding in selected),
+            "policy": "Reviewed source-gap annotations; categories do not change audit decisions."}
+    with (output / "evidence_categories.tsv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["run_name", "actor_arm", "judge_profile", "recording_sha256",
+            "task", "criterion_index", "representation", "category", "rationale", "finding_sha256", "source"],
+            delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(findings)
     write_json(output / "summary.json", summary)
     write_json(output / "pairs.json", pairs)
     write_json(output / "per_task.json", summary["per_task"])

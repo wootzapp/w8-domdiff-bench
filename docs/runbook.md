@@ -626,6 +626,12 @@ All-trial reliability is separate. Every attempt/unmatched arm remains visible;
 unknown/ungraded outcomes are distinct from failures. Fresh launcher provenance
 is required unless an explicit `--allow-nonfresh` comparison is requested.
 
+Comparison exports accepted source gaps in `evidence_categories.tsv`, including
+their driving arm, profile and finding hash. Follow the
+[category guide](evidence-categories.md#annotating-findings) to annotate each
+task's findings beside its audit, then repeat comparison for category counts.
+Unannotated findings remain `Unclassified`; audit decisions stay intact.
+
 | Output | Location |
 | --- | --- |
 | Schedule, attempts, outcomes and recording paths | `recordings/<run>/ledger.jsonl`; diagnostic logs stay in local `logs/<run>/` |
@@ -636,6 +642,7 @@ is required unless an explicit `--allow-nonfresh` comparison is requested.
 | Completion, native scores, validity, both audit directions and coverage | `evaluations/<run>/<arm>/<task>/completion.json` and profile-bound `evaluation.json`, native results and `evidence_audit.json` |
 | Rubric preparation/approval | `internal/rubrics/drafts/task_XX.metrics.json`, `generation.json`, `review.json`, `freeze.json`; `data/rubrics/task_XX.json` |
 | Pair/task results, pass@k, arm/difficulty metrics and costs | `reports/<run>/pairs.json`, `per_task.json`, `summary.json`, `report.md` |
+| Evidence-loss category counts and per-finding annotations | Report `summary.json`, `report.md`, `evidence_categories.tsv`; task annotations in `evaluations/<run>/<arm>/<task>/<profile>/evidence_categories.tsv` |
 
 Separate actor/judge and technical-attempt costs, plus all-attempt/successful-pair
 costs. Unknown usage is not zero; cache/reasoning are subsets and per-turn means

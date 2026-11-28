@@ -368,17 +368,42 @@ def _loss_categories(tasks, aliases, run_name, returned):
                 returned[call["stage"]].add(call["response_model"])
         if alias not in aliases:
             continue
+        findings = []
+        context = (audit.get("shared_trajectory") or {}).get("evaluation_context") or {}
         for row in audit["criteria"]:
             for side in ("screenshot", "dom_model"):
                 if not row[side + "_evidence_loss"]:
                     continue
                 finding = row["adjudication"][side + "_evidence_loss"]
-                categories.append({"run_name": run_name, "task": alias,
+                findings.append({"run_name": run_name, "task": alias,
+                                   "actor_arm": context.get("actor_arm"),
+                                   "judge_profile": entry["path"].parent.name,
+                                   "recording_sha256": context.get("recording_sha256"),
                                    "criterion_index": row["criterion_index"], "representation": side,
                                    "category": row.get("loss_categories", {}).get(side, "Unclassified"),
                                    "rationale": finding["explanation"],
                                    "finding_sha256": canonical_sha256({"criterion": row["criterion"], "finding": finding}),
                                    "source": entry["path"].as_posix()})
+        annotation_path = entry["path"].with_name("evidence_categories.tsv")
+        if annotation_path.is_file():
+            with annotation_path.open(newline="", encoding="utf-8") as stream:
+                annotations = list(csv.DictReader(stream, delimiter="\t"))
+            indexed = {(str(row["criterion_index"]), row["representation"]): row for row in findings}
+            seen = set()
+            for annotation in annotations:
+                key = (annotation["criterion_index"], annotation["representation"])
+                finding = indexed.get(key)
+                if key in seen or finding is None or any(annotation.get(name) != str(finding[name])
+                        for name in ("run_name", "task", "finding_sha256")) or any(
+                        annotation.get(name) and annotation[name] != str(finding[name])
+                        for name in ("actor_arm", "judge_profile", "recording_sha256")):
+                    raise ValueError(f"Category annotation differs from its audit finding: {annotation_path}")
+                seen.add(key)
+                category, rationale = (annotation.get(name, "").strip() for name in ("category", "rationale"))
+                if not category or not rationale:
+                    raise ValueError(f"Category annotations require a category and rationale: {annotation_path}")
+                finding.update(category=category, rationale=rationale)
+        categories.extend(findings)
     return categories
 
 
@@ -597,7 +622,7 @@ def _write_outputs(args, summary, categories):
     args.output_dir = run_directory(args.output_dir.parent, args.output_dir.name, fresh=True)
     write_json(args.output_dir / "summary.json", summary)
     with (args.output_dir / "evidence_categories.tsv").open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["run_name", "task", "criterion_index", "representation", "category", "rationale", "finding_sha256", "source"], delimiter="\t", lineterminator="\n")
+        writer = csv.DictWriter(stream, fieldnames=["run_name", "actor_arm", "judge_profile", "recording_sha256", "task", "criterion_index", "representation", "category", "rationale", "finding_sha256", "source"], delimiter="\t", lineterminator="\n")
         writer.writeheader()
         writer.writerows(categories)
     table = render_table(summary)

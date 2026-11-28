@@ -215,6 +215,13 @@ Primary completion, native rubric/process scores, native outcome judgments and
 evidence loss are separate results. They must not be substituted for one
 another.
 
+[Evidence categories](evidence-categories.md) annotate each accepted source gap
+from its decisive evidence and citations. The vocabulary is open; annotations
+are bound to the recording, profile, criterion, representation and finding hash.
+Comparison reports category counts separately by driving arm and lost format.
+Unannotated findings remain `Unclassified` and keep their loss flags and
+denominators. Category review does not change audit judgments or make model calls.
+
 
 Each final actor recording in each trial receives both auxiliary verifiers and
 one evidence audit within that recording when its inputs permit evaluation. Thus one

@@ -278,6 +278,10 @@ result/metrics folders, `audit_inventory.json` and `evidence_audit.json` under
 lives one level above the profile folders; judge diagnostics stay under
 `logs/<run-name>/`. Completed result hashes are checked before reuse. Primary completion, auxiliary signals, fallback quality,
 audit coverage and every cost stream remain distinct.
+Optional `evidence_categories.tsv` annotations sit beside the accepted audit.
+They bind each label and rationale to its original finding hash without altering
+audit JSON; comparison exports all findings, including `Unclassified` entries.
+See the [category guide](evidence-categories.md#annotating-findings).
 Each stage also records its normalized effective settings and returned-model
 diagnostics. Ungraded stages retain failure reasons and attempt usage for resume;
 native score fields remain null after scoring exhaustion. DOM citation diagnostics

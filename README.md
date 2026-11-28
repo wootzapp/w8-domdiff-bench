@@ -33,6 +33,7 @@ cost streams remain visible for full-experiment accounting.
 | [Runbook](docs/runbook.md) | Setup, browser build, offline checks, rubric approval, pilot, collection, judging and reporting commands. |
 | [Recordings](docs/recordings.md) | Ledgers, state artifacts, call receipts, provenance and export contracts. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Completion, native profiles, evidence-loss decisions, denominators and metrics. |
+| [Evidence categories](docs/evidence-categories.md) | Missing-evidence types, reviewed annotations and category counts. |
 | [Browser protocol](protocol/README.md) | ChromiumRL source and protocol pins, and binary build records. |
 
 ## Setup
